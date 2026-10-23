@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local build caches and one-off investigation artifacts.
+    ".tmp/**",
+    ".npm-cache/**",
+    "contracts/lib/**",
+    "contracts/out/**",
+    "contracts/cache/**",
   ]),
 ]);
 
