@@ -418,7 +418,7 @@ export function MintCard({
     (Boolean(address) && !wrongChain && emptyDrop);
 
   return (
-    <div className="glass flex flex-col rounded-2xl p-4 lg:sticky lg:top-24 lg:self-start">
+    <div className="glass flex flex-col rounded-[28px] p-4 sm:p-5 lg:sticky lg:top-[92px] lg:self-start">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[9px] uppercase tracking-[0.18em] text-paper-mute">

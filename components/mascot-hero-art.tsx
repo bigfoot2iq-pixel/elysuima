@@ -1,14 +1,24 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { HERO_MASCOT_ID, getMascot, MASCOT_GLOWS } from "@/lib/mascots";
 
 export function MascotHeroArt({
   mascotId = HERO_MASCOT_ID,
   className,
-  priority = false,
+  preload = false,
+  sizes = "(max-width: 1024px) 92vw, 620px",
+  zoom = 1,
 }: {
   mascotId?: string;
   className?: string;
-  priority?: boolean;
+  preload?: boolean;
+  sizes?: string;
+  /**
+   * Scales the character inside the frame. The art is composed with the head in
+   * the upper half, so a zoom around that same point keeps the face framed
+   * while the body falls away into the fade.
+   */
+  zoom?: number;
 }) {
   const mascot = getMascot(mascotId);
   const glow = MASCOT_GLOWS[mascot.accent];
@@ -48,12 +58,18 @@ export function MascotHeroArt({
 
       {/* The character itself. The source art is a dark square, so it fades
           into the page instead of showing a visible container edge. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={mascot.image}
         alt={`${mascot.name} — ${mascot.title}`}
-        {...(priority ? { fetchPriority: "high" as const } : {})}
+        fill
+        sizes={sizes}
+        {...(preload ? { preload: true } : {})}
         className="absolute inset-0 size-full object-cover object-[50%_34%] [mask-image:radial-gradient(circle_at_50%_38%,black_58%,transparent_74%)]"
+        style={
+          zoom === 1
+            ? undefined
+            : { transform: `scale(${zoom})`, transformOrigin: "50% 38%" }
+        }
       />
 
       {/* Bottom fade into the card */}

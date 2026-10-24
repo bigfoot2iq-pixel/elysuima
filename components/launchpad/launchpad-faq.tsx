@@ -62,7 +62,7 @@ export function LaunchpadFaq({
       className="section-shell scroll-mt-28 pb-20 pt-6 sm:pb-24"
       aria-labelledby="launchpad-faq-heading"
     >
-      <div className="glass rounded-2xl px-4 py-3">
+      <div className="glass rounded-[28px] px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2
             id="launchpad-faq-heading"

@@ -120,8 +120,11 @@ export function LaunchpadContent() {
     <>
       <LaunchpadSummary config={config} inspection={inspection} now={now} />
 
-      <section className="section-shell pb-6 pt-4">
-        <div className="grid items-start gap-4 lg:grid-cols-[380px_minmax(0,420px)] lg:justify-center">
+      <section className="section-shell pb-2 pt-6">
+        {/* The preview takes the free width and the mint panel holds a fixed
+            rail on the right, so both columns line up with the summary card
+            above instead of floating in the middle of the page. */}
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-5">
           <LaunchpadPreview />
           <MintCard config={config} inspection={inspection} now={now} />
         </div>
@@ -153,9 +156,31 @@ function LaunchpadSkeleton() {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[380px_minmax(0,420px)] lg:justify-center">
-        <div className="glass aspect-square animate-pulse rounded-2xl" />
-        <div className="glass h-[420px] animate-pulse rounded-2xl" />
+      <div className="mt-5 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-5">
+        <div className="glass animate-pulse rounded-[28px] p-3 sm:p-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_212px] xl:gap-5">
+            <div className="mx-auto aspect-square w-full max-w-[520px] rounded-2xl bg-paper/[0.05] xl:mx-0 xl:max-w-none" />
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="space-y-3">
+                <div className="h-3 w-16 rounded-full bg-paper/[0.06]" />
+                <div className="h-5 w-28 rounded-full bg-paper/[0.07]" />
+                <div className="h-3 w-32 rounded-full bg-paper/[0.05]" />
+                <div className="h-14 w-full rounded-xl bg-paper/[0.04]" />
+              </div>
+              <div className="@container min-w-0 border-t border-paper/[0.07] pt-4">
+                <div className="grid grid-cols-1 gap-2 @min-[320px]:grid-cols-2">
+                  {[0, 1, 2, 3, 4, 5].map((item) => (
+                    <div
+                      key={item}
+                      className="h-12 rounded-xl bg-paper/[0.04]"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="glass h-[460px] animate-pulse rounded-[28px]" />
       </div>
     </div>
   );
