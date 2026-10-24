@@ -1,12 +1,12 @@
 import type { Address, Hex } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { CLAIM_ADDRESS } from "@/lib/config";
-import { elysiumTestnet } from "@/lib/chains";
+import { elysium } from "@/lib/chains";
 
 export const CLAIM_DOMAIN = {
   name: "ElyziumaDailyClaim",
   version: "1",
-  chainId: elysiumTestnet.id,
+  chainId: elysium.id,
   verifyingContract: CLAIM_ADDRESS,
 } as const;
 

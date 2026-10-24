@@ -1,28 +1,156 @@
 import { defineChain } from "viem";
 
-export const elysiumTestnet = defineChain({
-  id: 99801,
-  name: "Elysium Testnet",
-  nativeCurrency: {
-    name: "HYPE",
-    symbol: "HYPE",
-    decimals: 18,
+/**
+ * The Elysium networks this app can target.
+ *
+ * Elysium Testnet is Kinetiq's Arbitrum Orbit chain that settles to HyperEVM
+ * (chain id 99801). Elysium mainnet is chain id 99901.
+ *
+ * Do NOT use the `elysiumTestnet` export from `viem/chains`: that is Vulcan
+ * Forged's unrelated chain with id 1338 and LAVA as its gas token.
+ */
+export const ELYSIUM_CHAIN_IDS = [99801, 99901] as const;
+
+export type ElysiumChainId = (typeof ELYSIUM_CHAIN_IDS)[number];
+
+export type ElysiumChainInfo = {
+  id: ElysiumChainId;
+  /** Full name, e.g. "Elysium Testnet". */
+  name: string;
+  /** Short name for compact UI, e.g. "Testnet". */
+  label: string;
+  testnet: boolean;
+  nativeCurrency: { name: string; symbol: string; decimals: number };
+  /** Built-in RPC, used when the admin console has not set one. */
+  rpcUrl: string;
+  /** Explorer origin, without a path. */
+  explorerUrl: string;
+  /** Explorer path segment for an address. */
+  explorerAddressPath: string;
+  /** Explorer path segment for a transaction. */
+  explorerTxPath: string;
+  /** Canonical Multicall3 deployment, required by viem for `readContracts`. */
+  multicall3: `0x${string}`;
+};
+
+const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11";
+
+export const ELYSIUM_CHAINS: Record<ElysiumChainId, ElysiumChainInfo> = {
+  99801: {
+    id: 99801,
+    name: "Elysium Testnet",
+    label: "Testnet",
+    testnet: true,
+    nativeCurrency: { name: "HYPE", symbol: "HYPE", decimals: 18 },
+    rpcUrl: "https://testnet-rpc.elysium.kinetiq.xyz",
+    explorerUrl: "https://elysium.kinetiq.xyz/testnet-explorer",
+    explorerAddressPath: "address",
+    explorerTxPath: "transaction",
+    multicall3: MULTICALL3,
   },
-  rpcUrls: {
-    default: {
-      http: [
-        process.env.NEXT_PUBLIC_ELYSIUM_RPC_URL ??
-          "https://testnet-rpc.elysium.kinetiq.xyz",
-      ],
-    },
+  99901: {
+    id: 99901,
+    name: "Elysium",
+    label: "Mainnet",
+    testnet: false,
+    nativeCurrency: { name: "HYPE", symbol: "HYPE", decimals: 18 },
+    rpcUrl: "https://rpc.elyspump.com",
+    explorerUrl: "https://scan.elyspump.com",
+    explorerAddressPath: "#/address",
+    explorerTxPath: "#/tx",
+    multicall3: MULTICALL3,
   },
+};
+
+export function isElysiumChainId(value: unknown): value is ElysiumChainId {
+  return (
+    typeof value === "number" &&
+    (ELYSIUM_CHAIN_IDS as readonly number[]).includes(value)
+  );
+}
+
+/**
+ * The chain the app targets by default. `NEXT_PUBLIC_ELYSIUM_CHAIN_ID` selects
+ * it at build time; the admin console can switch the live chain at runtime.
+ */
+export function getDefaultChainId(): ElysiumChainId {
+  const configured = Number(process.env.NEXT_PUBLIC_ELYSIUM_CHAIN_ID);
+  return isElysiumChainId(configured) ? configured : 99901;
+}
+
+/** Registry entry for a chain id, falling back to the default chain. */
+export function getElysiumChain(chainId: number): ElysiumChainInfo {
+  return isElysiumChainId(chainId)
+    ? ELYSIUM_CHAINS[chainId]
+    : ELYSIUM_CHAINS[getDefaultChainId()];
+}
+
+/**
+ * RPC for a chain. `NEXT_PUBLIC_ELYSIUM_RPC_URL` overrides the default chain
+ * only, so the built-in URL of the other chain stays reachable.
+ */
+export function getChainRpcUrl(chainId: number): string {
+  const chain = getElysiumChain(chainId);
+  if (chain.id === getDefaultChainId()) {
+    const configured = process.env.NEXT_PUBLIC_ELYSIUM_RPC_URL?.trim();
+    if (configured) return configured.replace(/\/+$/, "");
+  }
+  return chain.rpcUrl;
+}
+
+/** Explorer origin for a chain, with the same override rule as the RPC. */
+export function getChainExplorerUrl(chainId: number): string {
+  const chain = getElysiumChain(chainId);
+  if (chain.id === getDefaultChainId()) {
+    const configured = process.env.NEXT_PUBLIC_ELYSIUM_EXPLORER_URL?.trim();
+    if (configured) return configured.replace(/\/+$/, "");
+  }
+  return chain.explorerUrl;
+}
+
+/** Explorer link for a contract or wallet on the given chain. */
+export function explorerAddressFor(chainId: number, address: string) {
+  const chain = getElysiumChain(chainId);
+  return `${getChainExplorerUrl(chain.id)}/${chain.explorerAddressPath}/${address}`;
+}
+
+/** Explorer link for a transaction on the given chain. */
+export function explorerTxFor(chainId: number, hash: string) {
+  const chain = getElysiumChain(chainId);
+  return `${getChainExplorerUrl(chain.id)}/${chain.explorerTxPath}/${hash}`;
+}
+
+/**
+ * The viem chain objects registered with wagmi. Both are always present so the
+ * wallet can switch between them when the admin console changes the chain.
+ */
+export const elysium = defineChain({
+  id: 99901,
+  name: ELYSIUM_CHAINS[99901].name,
+  nativeCurrency: { ...ELYSIUM_CHAINS[99901].nativeCurrency },
+  rpcUrls: { default: { http: [getChainRpcUrl(99901)] } },
+  contracts: { multicall3: { address: ELYSIUM_CHAINS[99901].multicall3 } },
   blockExplorers: {
     default: {
-      name: "Elysium Explorer",
-      url: "https://elysium.kinetiq.xyz/testnet-explorer",
+      name: "ElysScan",
+      url: getChainExplorerUrl(99901),
     },
   },
+});
+
+export const elysiumTestnet = defineChain({
+  id: 99801,
+  name: ELYSIUM_CHAINS[99801].name,
   testnet: true,
+  nativeCurrency: { ...ELYSIUM_CHAINS[99801].nativeCurrency },
+  rpcUrls: { default: { http: [getChainRpcUrl(99801)] } },
+  contracts: { multicall3: { address: ELYSIUM_CHAINS[99801].multicall3 } },
+  blockExplorers: {
+    default: {
+      name: "Elysium Testnet Explorer",
+      url: getChainExplorerUrl(99801),
+    },
+  },
 });
 
 export const ELIGIBILITY_CHAINS = [

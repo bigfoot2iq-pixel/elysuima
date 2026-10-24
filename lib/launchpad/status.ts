@@ -1,0 +1,132 @@
+import type {
+  ContractInspection,
+  PublicLaunchpadConfig,
+} from "./types";
+
+export type DropStatusTone = "mint" | "brand" | "warn" | "danger" | "muted";
+
+export type DropStatus = {
+  tone: DropStatusTone;
+  label: string;
+  detail: string;
+};
+
+function bigintOrUndefined(value?: string) {
+  if (!value) return undefined;
+  try {
+    return BigInt(value);
+  } catch {
+    return undefined;
+  }
+}
+
+export function getSupplyState(
+  config: PublicLaunchpadConfig,
+  inspection?: ContractInspection,
+) {
+  const totalSupply = bigintOrUndefined(inspection?.totalSupply);
+  const inspectedMax = bigintOrUndefined(inspection?.maxSupply);
+  const configuredMax =
+    config.maxSupply > 0 ? BigInt(config.maxSupply) : undefined;
+  const maxSupply =
+    inspectedMax && inspectedMax > 0n ? inspectedMax : configuredMax;
+
+  if (!maxSupply || maxSupply === 0n) {
+    return { totalSupply, maxSupply: undefined, remaining: undefined };
+  }
+
+  const supply = totalSupply ?? 0n;
+  const remaining = maxSupply > supply ? maxSupply - supply : 0n;
+
+  return { totalSupply, maxSupply, remaining };
+}
+
+export function getDropStatus(
+  config: PublicLaunchpadConfig,
+  inspection: ContractInspection | undefined,
+  nowSeconds: number,
+): DropStatus {
+  if (!config.enabled) {
+    return {
+      tone: "muted",
+      label: "Closed",
+      detail: "The owner has paused minting.",
+    };
+  }
+
+  if (!config.collectionAddress) {
+    return {
+      tone: "warn",
+      label: "Setup",
+      detail: "The collection address has not been configured yet.",
+    };
+  }
+
+  if (inspection && !inspection.ok) {
+    return {
+      tone: "warn",
+      label: "Unavailable",
+      detail: inspection.message ?? "The collection could not be read.",
+    };
+  }
+
+  const { remaining } = getSupplyState(config, inspection);
+  const soldOut = remaining === 0n;
+
+  // The Elyziuma collection keeps its phase on-chain, so the contract is the
+  // source of truth for what is live right now.
+  const drop = inspection?.elyziumaDrop;
+  if (drop) {
+    if (soldOut) {
+      return {
+        tone: "danger",
+        label: "Sold out",
+        detail: "The maximum supply has been reached.",
+      };
+    }
+    if (drop.publicMintOpen) {
+      return {
+        tone: "mint",
+        label: "Live",
+        detail: "The public mint is open.",
+      };
+    }
+    return {
+      tone: "muted",
+      label: "Closed",
+      detail: "The owner has not opened the public mint.",
+    };
+  }
+
+  const seaDrop = inspection?.seaDrop;
+  if (seaDrop) {
+    if (seaDrop.startTime > 0 && nowSeconds < seaDrop.startTime) {
+      return {
+        tone: "brand",
+        label: "Scheduled",
+        detail: "The public mint has not opened yet.",
+      };
+    }
+    if (seaDrop.endTime > 0 && nowSeconds >= seaDrop.endTime) {
+      return {
+        tone: "muted",
+        label: "Ended",
+        detail: "The public mint window has closed.",
+      };
+    }
+  }
+
+  if (soldOut) {
+    return {
+      tone: "danger",
+      label: "Sold out",
+      detail: "The maximum supply has been reached.",
+    };
+  }
+
+  return {
+    tone: "mint",
+    label: "Live",
+    detail: "The public mint is open.",
+  };
+}

@@ -12,8 +12,30 @@ via_ir = false
 
 remappings = [
   "@openzeppelin/=../node_modules/@openzeppelin/",
+  "erc721a/=../node_modules/erc721a/",
   "forge-std/=lib/forge-std/src/",
 ]
+
+# Profile for the Elysium testnet (chain 99801) deploy of ElyziumaNFT.
+#
+# Elysium runs stock ArbOS, so the deployed bytecode must not rely on Cancun
+# opcodes. "paris" removes PUSH0, MCOPY, TSTORE and TLOAD from the output.
+#
+# OpenZeppelin v5.6.1's utils/Bytes.sol uses `mcopy` in inline assembly, which
+# only compiles for Cancun. Bytes.sol is reached from ElyziumaNFT.sol only via
+# EIP712 -> Strings -> Bytes, i.e. through DailyClaim.sol. ElyziumaNFT.sol
+# itself only needs Ownable, ReentrancyGuard and ERC721A, so it compiles
+# cleanly for paris.
+#
+# Usage:
+#   FOUNDRY_PROFILE=nft forge build
+#   FOUNDRY_PROFILE=nft forge create src/ElyziumaNFT.sol:ElyziumaNFT ...
+#   FOUNDRY_PROFILE=nft forge verify-contract ...
+[profile.nft]
+evm_version = "paris"
+out = "out-nft"
+cache_path = "cache-nft"
+skip = ["src/DailyClaim.sol", "test/DailyClaim.t.sol", "script/Deploy.s.sol"]
 
 [fuzz]
 runs = 256

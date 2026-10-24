@@ -298,6 +298,13 @@ export function AdminDashboard() {
           title="Contracts are not configured"
           body="Set NEXT_PUBLIC_CLAIM_ADDRESS and NEXT_PUBLIC_TOKEN_ADDRESS in the environment, then restart the app."
         />
+        <Link
+          href="/admin/collection"
+          className="mt-4 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand transition hover:text-brand/80"
+        >
+          <Settings2 className="size-3" />
+          Collection console
+        </Link>
       </div>
     );
   }
@@ -322,6 +329,20 @@ export function AdminDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/admin/launchpad"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-brand/25 bg-brand/[0.06] px-3 font-mono text-[9px] uppercase tracking-[0.16em] text-brand transition hover:bg-brand/10"
+          >
+            <Settings2 className="size-3" />
+            Launchpad
+          </Link>
+          <Link
+            href="/admin/collection"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-brand/25 bg-brand/[0.06] px-3 font-mono text-[9px] uppercase tracking-[0.16em] text-brand transition hover:bg-brand/10"
+          >
+            <Settings2 className="size-3" />
+            Collection
+          </Link>
           <span
             className={cn(
               "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.16em]",

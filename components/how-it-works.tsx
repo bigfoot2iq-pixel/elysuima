@@ -11,16 +11,16 @@ const STEPS = [
     number: "01",
     icon: Wallet,
     title: "Connect on Elysium",
-    body: "Switch your wallet to Elysium Testnet. New here? Grab a little HYPE from the official faucet for gas.",
-    href: LINKS.faucet,
-    linkLabel: "Elysium faucet",
+    body: "Switch your wallet to Elysium (chain 99901). Need gas? Bridge HYPE from HyperEVM through ElysPump.",
+    href: LINKS.bridge,
+    linkLabel: "Bridge HYPE",
   },
   {
     number: "02",
     icon: ShieldCheck,
     title: "Verify your wallet",
     body: "We read your native ETH balance on Ethereum, Abstract, Base, and Ink. Holding 0.001 ETH on any one chain is enough.",
-    href: "#eligibility",
+    href: "/claim#eligibility",
     linkLabel: "See the check",
   },
   {
@@ -28,7 +28,7 @@ const STEPS = [
     icon: Timer,
     title: "Claim every 24 hours",
     body: "The faucet contract enforces a per-wallet cooldown. A short-lived signature authorizes each claim and cannot be replayed.",
-    href: "#faq",
+    href: "/claim#faq",
     linkLabel: "Read the rules",
   },
 ];
@@ -41,10 +41,8 @@ export function HowItWorks() {
     >
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-[9px] uppercase tracking-[0.22em] text-brand">
-            How it works
-          </p>
-          <h2 className="mt-3 max-w-xl text-3xl font-semibold tracking-[-0.04em] text-paper sm:text-4xl">
+          <p className="eyebrow">Daily claim</p>
+          <h2 className="mt-4 max-w-xl font-display text-3xl font-extrabold tracking-[-0.04em] text-paper sm:text-4xl">
             Three steps. One claim a day.
           </h2>
         </div>
@@ -58,7 +56,7 @@ export function HowItWorks() {
         {STEPS.map((step) => (
           <article
             key={step.number}
-            className="group glass-soft relative overflow-hidden rounded-3xl p-5 transition hover:border-brand/20 sm:p-6"
+            className="group ink-panel relative overflow-hidden rounded-3xl p-5 transition hover:border-brand/35 sm:p-6"
           >
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] tracking-[0.18em] text-brand">

@@ -4,16 +4,19 @@ import { LINKS } from "@/lib/config";
 import { TokenMark } from "./token-mark";
 
 const PRODUCT = [
-  { label: "Claim", href: "/#claim" },
+  { label: "Launchpad", href: "/launchpad" },
+  { label: "Daily claim", href: "/claim" },
+  { label: "Bridge", href: "/bridge" },
+  { label: "Roadmap", href: "/#roadmap" },
+  { label: "Our vision", href: "/#vision" },
   { label: "How it works", href: "/#how-it-works" },
-  { label: "Activity", href: "/#activity" },
   { label: "FAQ", href: "/#faq" },
 ];
 
 const ELYSIUM = [
-  { label: "Testnet faucet", href: LINKS.faucet },
-  { label: "Bridge", href: LINKS.bridge },
-  { label: "Explorer", href: LINKS.explorer },
+  { label: "ElysPump bridge", href: LINKS.elyspump },
+  { label: "Boxa bridge", href: LINKS.boxa },
+  { label: "ElysScan", href: LINKS.explorer },
   { label: "Docs", href: LINKS.docs },
 ];
 
@@ -30,13 +33,13 @@ export function SiteFooter() {
                   ELYZIUMA
                 </span>
                 <span className="mt-1 font-mono text-[9px] uppercase tracking-[0.24em] text-brand/80">
-                  daily claim
+                  claim · mint
                 </span>
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-[11px] leading-6 text-paper-mute">
-              A daily ELYZ drop for the Elysium community. Built on Elysium
-              Testnet. No sign-ups, no custody, no promises.
+              A 2,222-piece NFT collection on Elysium, plus a daily ELYZ claim.
+              No sign-ups, no custody, no promises.
             </p>
             <a
               href={LINKS.x}
@@ -57,29 +60,34 @@ export function SiteFooter() {
             </p>
             <Link
               href="/admin"
-              className="mt-4 inline-flex items-center gap-1.5 text-[11px] text-paper-dim transition hover:text-brand"
+              className="mt-4 flex items-center gap-1.5 text-[11px] text-paper-dim transition hover:text-brand"
             >
-              Admin console <ArrowUpRight className="size-3" />
+              Claim admin <ArrowUpRight className="size-3" />
+            </Link>
+            <Link
+              href="/admin/launchpad"
+              className="mt-2.5 flex items-center gap-1.5 text-[11px] text-paper-dim transition hover:text-brand"
+            >
+              Launchpad admin <ArrowUpRight className="size-3" />
             </Link>
             <p className="mt-6 text-[9px] uppercase tracking-[0.18em] text-paper-mute">
               Network
             </p>
-            <p className="mt-2 font-mono text-[11px] text-paper-dim">
-              Elysium Testnet
-            </p>
+            <p className="mt-2 font-mono text-[11px] text-paper-dim">Elysium</p>
             <p className="mt-1 font-mono text-[10px] text-paper-mute">
-              Chain ID 99801
+              Chain ID 99901
             </p>
           </div>
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-paper/[0.07] pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[9px] uppercase tracking-[0.14em] text-paper-mute">
-            © 2026 Elyziuma. Testnet only.
+            © 2026 Elyziuma. Experimental.
           </p>
           <p className="max-w-xl text-[9px] leading-5 text-paper-mute/80 sm:text-right">
-            ELYZ has no monetary value. This page is an experimental interface
-            for Elysium Testnet and is not financial advice.
+            Elysium is pre-launch and the chain may be reset. ELYZ and the
+            launchpad collection have no guaranteed value. This is not
+            financial advice.
           </p>
         </div>
       </div>

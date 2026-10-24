@@ -1,4 +1,10 @@
 import type { Address } from "viem";
+import {
+  explorerAddressFor,
+  explorerTxFor,
+  getChainExplorerUrl,
+  getDefaultChainId,
+} from "@/lib/chains";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -25,17 +31,18 @@ export const TOKEN_FALLBACK = {
 } as const;
 
 export const LINKS = {
-  faucet: "https://elysium.kinetiq.xyz/testnet-faucet",
-  bridge: "https://elysium.kinetiq.xyz/testnet-bridge",
-  explorer: "https://elysium.kinetiq.xyz/testnet-explorer",
+  bridge: "https://elyspump.com",
+  elyspump: "https://elyspump.com/#/",
+  boxa: "https://boxa.pro/#/bridge",
+  explorer: getChainExplorerUrl(getDefaultChainId()),
   docs: "https://elysium.kinetiq.xyz/docs",
   x: "https://x.com/Elyziumaa",
 } as const;
 
 export function explorerAddress(address: string) {
-  return `${LINKS.explorer}/address/${address}`;
+  return explorerAddressFor(getDefaultChainId(), address);
 }
 
 export function explorerTx(hash: string) {
-  return `${LINKS.explorer}/tx/${hash}`;
+  return explorerTxFor(getDefaultChainId(), hash);
 }

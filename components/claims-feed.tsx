@@ -15,7 +15,7 @@ import {
   TOKEN_ADDRESS,
   explorerTx,
 } from "@/lib/config";
-import { elysiumTestnet } from "@/lib/chains";
+import { elysium } from "@/lib/chains";
 import { formatAmount, formatRelative, shortAddress } from "@/lib/format";
 import { useNow } from "@/hooks/use-now";
 import { TokenMark } from "./token-mark";
@@ -31,7 +31,7 @@ const MAX_ITEMS = 8;
 const LOOKBACK_BLOCKS = 20_000n;
 
 export function ClaimsFeed() {
-  const publicClient = usePublicClient({ chainId: elysiumTestnet.id });
+  const publicClient = usePublicClient({ chainId: elysium.id });
   const now = useNow(30_000);
   const [claims, setClaims] = useState<ClaimItem[]>([]);
   const [loading, setLoading] = useState(true);

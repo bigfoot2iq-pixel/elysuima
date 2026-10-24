@@ -10,19 +10,21 @@ import {
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
-import { http, WagmiProvider } from "wagmi";
-import { elysiumTestnet } from "@/lib/chains";
+import { WagmiProvider } from "wagmi";
+import { elysium, elysiumTestnet } from "@/lib/chains";
 import { WALLETCONNECT_PROJECT_ID } from "@/lib/config";
+import { createRuntimeTransport } from "@/lib/launchpad/runtime";
+import { useRuntimeNetworkSync } from "@/hooks/use-launchpad-config";
 
+// Both Elysium networks are registered so the admin console can switch the
+// chain at runtime and the wallet can follow.
 const wagmiConfig = getDefaultConfig({
   appName: "Elyziuma",
   projectId: WALLETCONNECT_PROJECT_ID,
-  chains: [elysiumTestnet],
+  chains: [elysium, elysiumTestnet],
   transports: {
-    [elysiumTestnet.id]: http(
-      process.env.NEXT_PUBLIC_ELYSIUM_RPC_URL ??
-        "https://testnet-rpc.elysium.kinetiq.xyz",
-    ),
+    [elysium.id]: createRuntimeTransport(elysium.id),
+    [elysiumTestnet.id]: createRuntimeTransport(elysiumTestnet.id),
   },
   ssr: true,
 });
@@ -34,6 +36,11 @@ const rainbowTheme = darkTheme({
   fontStack: "system",
   overlayBlur: "small",
 });
+
+function NetworkBootstrap() {
+  useRuntimeNetworkSync();
+  return null;
+}
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -52,6 +59,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
+        <NetworkBootstrap />
         <RainbowKitProvider
           theme={rainbowTheme}
           modalSize="compact"

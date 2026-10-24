@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { claimAbi, tokenAbi } from "@/lib/abis";
-import { ELIGIBILITY_CHAINS, elysiumTestnet } from "@/lib/chains";
+import { ELIGIBILITY_CHAINS, elysium } from "@/lib/chains";
 import {
   CLAIM_ADDRESS,
   IS_CONFIGURED,
@@ -220,7 +220,7 @@ export function ClaimCard() {
   const buttonLabel = (() => {
     if (!IS_CONFIGURED) return "Claim not live yet";
     if (!address) return "Connect wallet";
-    if (chainId !== elysiumTestnet.id) return "Switch to Elysium";
+    if (chainId !== elysium.id) return "Switch to Elysium";
     if (busy) {
       if (phase === "authorizing") return "Authorizing claim…";
       if (phase === "submitting") return "Confirm in wallet…";
@@ -249,7 +249,7 @@ export function ClaimCard() {
     !dataReady ||
     faucetEmpty ||
     (Boolean(address) &&
-      chainId === elysiumTestnet.id &&
+      chainId === elysium.id &&
       eligible &&
       !ready);
 
@@ -261,12 +261,12 @@ export function ClaimCard() {
       return;
     }
 
-    if (chainId !== elysiumTestnet.id) {
+    if (chainId !== elysium.id) {
       try {
-        await switchChainAsync({ chainId: elysiumTestnet.id });
+        await switchChainAsync({ chainId: elysium.id });
       } catch {
         toast.error("Could not switch network", {
-          description: "Add Elysium Testnet to your wallet and try again.",
+          description: "Add Elysium to your wallet and try again.",
         });
       }
       return;
@@ -499,12 +499,12 @@ export function ClaimCard() {
           Gas paid in HYPE
         </span>
         <a
-          href={LINKS.faucet}
+          href={LINKS.bridge}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1 transition hover:text-paper"
         >
-          Get testnet HYPE <ExternalLink className="size-3" />
+          Bridge HYPE <ExternalLink className="size-3" />
         </a>
       </div>
 

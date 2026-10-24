@@ -1,14 +1,20 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Elyziuma — claim your daily ELYZ on Elysium Testnet";
+  "Elyziuma — daily ELYZ and NFT mints on Elysium";
 export const size = {
   width: 1200,
   height: 630,
 };
 export const contentType = "image/png";
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const logo = await readFile(
+    path.join(process.cwd(), "public", "brand", "elyziuma-logo.png"),
+  );
+  const logoDataUrl = `data:image/png;base64,${logo.toString("base64")}`;
   return new ImageResponse(
     (
       <div
@@ -68,22 +74,15 @@ export default function OpengraphImage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <div
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 24,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "linear-gradient(145deg, #7cd8f2, #34b7dd 55%, #2d7388)",
-                color: "#04181c",
-                fontSize: 38,
-                fontWeight: 800,
-              }}
-            >
-              E
-            </div>
+            {/* Satori renders the OG image, so it needs a plain <img>. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoDataUrl}
+              alt=""
+              width={72}
+              height={72}
+              style={{ borderRadius: 22 }}
+            />
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div
                 style={{
@@ -102,7 +101,7 @@ export default function OpengraphImage() {
                   color: "#34b7dd",
                 }}
               >
-                DAILY CLAIM · ELYSIUM TESTNET
+                DAILY CLAIM · NFT LAUNCHPAD
               </div>
             </div>
           </div>
@@ -127,7 +126,7 @@ export default function OpengraphImage() {
                   boxShadow: "0 0 18px rgba(125,240,196,0.8)",
                 }}
               />
-              LIVE ON ELYSIUM
+              LIVE ON ELYSIUM · 99901
             </div>
             <div
               style={{
@@ -172,7 +171,7 @@ export default function OpengraphImage() {
             }}
           >
             <span>elyziumaa.xyz</span>
-            <span style={{ letterSpacing: "0.18em" }}>ONE CLAIM. EVERY 24 HOURS.</span>
+            <span style={{ letterSpacing: "0.18em" }}>CLAIM · MINT · VERIFY</span>
           </div>
         </div>
       </div>

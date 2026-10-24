@@ -31,6 +31,8 @@
 # foundry
 /contracts/out/
 /contracts/cache/
+/contracts/out-nft/
+/contracts/cache-nft/
 /contracts/broadcast/
 /contracts/lib/forge-std/
 
@@ -50,3 +52,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime launchpad settings written by the admin console
+/data/launchpad.json
+/data/launchpad.json.*.tmp

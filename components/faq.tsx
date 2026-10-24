@@ -5,7 +5,22 @@ const FAQS = [
   {
     question: "What is Elyziuma?",
     answer:
-      "Elyziuma is a daily claim experiment on Elysium Testnet. Each wallet can claim 100 ELYZ once every 24 hours. The owner sets the amount; the contract enforces the cooldown.",
+      "Elyziuma is a 2,222-piece NFT collection built on Elysium. On top of the mint, each wallet can claim 100 ELYZ once every 24 hours. The owner sets the amount; the contract enforces the cooldown.",
+  },
+  {
+    question: "How many pieces are in the collection?",
+    answer:
+      "2,222 unique NFTs. The collection is Phase 1 of a longer roadmap: the first raffle platform on Elysium comes next, then our own token and ways to give back to the people who supported us from the beginning.",
+  },
+  {
+    question: "What is the raffle platform?",
+    answer:
+      "Phase 2. The goal is to build the first raffle platform on Elysium — a place where the community can participate in raffles and have a real reason to stay involved. Elyziuma holders will have free access to participate in upcoming raffles.",
+  },
+  {
+    question: "What is the launchpad?",
+    answer:
+      "It is a separate mint page for the Elyziuma NFT collection on Elysium. The owner configures the collection address, mint price, and wallet limit from the admin console. Minting goes directly to the collection, or through OpenSea SeaDrop when the drop uses it.",
   },
   {
     question: "Why do I need 0.001 ETH?",
@@ -30,7 +45,7 @@ const FAQS = [
   {
     question: "Do I need HYPE for gas?",
     answer:
-      "Yes. Elysium uses HYPE for gas. The claim itself is a normal transaction, so you need a small amount of testnet HYPE. Use the official Elysium faucet if you are starting from zero.",
+      "Yes. Elysium uses HYPE for gas. The claim itself is a normal transaction, so you need a small amount of HYPE. If you are starting from zero, bridge HYPE from HyperEVM through ElysPump.",
   },
   {
     question: "I just bridged ETH. Why am I still not eligible?",
@@ -45,7 +60,7 @@ const FAQS = [
   {
     question: "Is ELYZ worth anything?",
     answer:
-      "No. ELYZ is a testnet token with no monetary value, no presale, and no expectation of future value. This is an experimental claim page on Elysium Testnet.",
+      "No. ELYZ is an experimental token with no monetary value, no presale, and no expectation of future value. Elysium is still pre-launch, and the chain may be reset.",
   },
   {
     question: "What happens if the faucet is empty?",
@@ -59,16 +74,14 @@ export function Faq() {
     <section id="faq" className="section-shell scroll-mt-28 pb-20 sm:pb-28">
       <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start">
-          <p className="text-[9px] uppercase tracking-[0.22em] text-brand">
-            FAQ
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-paper sm:text-4xl">
+          <p className="eyebrow">FAQ</p>
+          <h2 className="mt-4 font-display text-3xl font-extrabold tracking-[-0.04em] text-paper sm:text-4xl">
             The fine print,
             <span className="block text-paper-dim">without the fine print.</span>
           </h2>
           <p className="mt-4 max-w-sm text-xs leading-6 text-paper-mute">
-            Everything you need to know about the daily claim, the cross-chain
-            check, and the trust model behind the signature.
+            Everything you need to know about the collection, the daily claim,
+            the cross-chain check, and the trust model behind the signature.
           </p>
           <a
             href={LINKS.x}

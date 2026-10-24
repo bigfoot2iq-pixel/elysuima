@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, DM_Sans, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SITE_URL } from "@/lib/config";
 import "./globals.css";
@@ -16,42 +16,62 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+// Display face for the collection identity. Bricolage Grotesque carries the
+// same chunky, illustrated confidence as the mascot art without the usual
+// startup-gradient look.
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Elyziuma — Your daily ELYZ on Elysium",
+    default: "Elyziuma — 2,222 NFTs on Elysium",
     template: "%s · Elyziuma",
   },
   description:
-    "Claim 100 ELYZ every 24 hours on Elysium. Hold at least 0.001 ETH on Ethereum, Abstract, Base, or Ink to qualify.",
+    "Elyziuma is a 2,222-piece NFT collection built on Elysium. Claim 100 ELYZ every 24 hours, mint the collection, and follow the roadmap to the first raffle platform on Elysium.",
   applicationName: "Elyziuma",
   keywords: [
     "Elyziuma",
     "ELYZ",
     "Elysium",
+    "NFT collection",
+    "raffle platform",
     "daily claim",
-    "faucet",
-    "testnet",
+    "NFT launchpad",
+    "mint",
+    "OpenSea SeaDrop",
     "Kinetiq",
   ],
   authors: [{ name: "Elyziuma" }],
   creator: "Elyziuma",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
+  },
   openGraph: {
     type: "website",
     siteName: "Elyziuma",
-    title: "Elyziuma — Your daily ELYZ on Elysium",
+    title: "Elyziuma — 2,222 NFTs on Elysium",
     description:
-      "One claim every 24 hours. Hold at least 0.001 ETH on Ethereum, Abstract, Base, or Ink.",
+      "A 2,222-piece NFT collection on Elysium, with a daily ELYZ claim and a roadmap to the first raffle platform on the chain.",
     url: SITE_URL,
     locale: "en_US",
+    images: ["/brand/elyziuma-logo.png"],
   },
   twitter: {
     card: "summary_large_image",
     site: "@Elyziumaa",
     creator: "@Elyziumaa",
-    title: "Elyziuma — Your daily ELYZ on Elysium",
+    title: "Elyziuma — 2,222 NFTs on Elysium",
     description:
-      "One claim every 24 hours. Hold at least 0.001 ETH on Ethereum, Abstract, Base, or Ink.",
+      "A 2,222-piece NFT collection on Elysium, with a daily ELYZ claim and a roadmap to the first raffle platform on the chain.",
   },
   robots: {
     index: true,
@@ -68,7 +88,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
     >
       <body className="relative flex min-h-full flex-col bg-ink text-paper">
         <div className="site-bg" aria-hidden="true" />
