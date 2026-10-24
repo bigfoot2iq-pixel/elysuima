@@ -1,4 +1,8 @@
-import { Quote } from "lucide-react";
+import Image from "next/image";
+import { ArrowUpRight, Quote } from "lucide-react";
+
+const OMNIA_X = "https://x.com/0xOmnia";
+const OMNIA_POST_X = "https://x.com/0xOmnia/status/2110811924879564876";
 
 export function Origin() {
   return (
@@ -48,22 +52,46 @@ export function Origin() {
         </div>
 
         {/* The post that started it, rendered as a keepsake card. */}
-        <figure className="ink-panel sticker relative overflow-hidden rounded-[26px] p-6 sm:p-8">
+        <figure className="ink-panel sticker group/omnia relative overflow-hidden rounded-[26px] p-6 transition-colors hover:border-brand/25 sm:p-8">
           <div
             aria-hidden="true"
             className="absolute -right-16 -top-16 size-52 rounded-full bg-brand/10 blur-[70px]"
           />
-          <div className="relative flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-full border border-brand/25 bg-brand/10 font-display text-sm font-extrabold text-brand">
-              O
-            </span>
+
+          {/*
+           * Stretched link: the whole post opens the tweet, while the byline
+           * above it stays a separate link to Omnia's profile.
+           */}
+          <a
+            href={OMNIA_POST_X}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open Omnia's post on X in a new tab"
+            className="absolute inset-0 z-10 rounded-[26px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand/70"
+          />
+
+          <a
+            href={OMNIA_X}
+            target="_blank"
+            rel="noreferrer"
+            className="group/byline relative z-20 flex w-fit items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+          >
+            <Image
+              src="/brand/omnia-avatar.jpg"
+              alt=""
+              width={40}
+              height={40}
+              className="size-10 rounded-full border border-brand/25 object-cover transition group-hover/byline:border-brand/50"
+            />
             <span className="flex flex-col leading-tight">
-              <span className="text-[13px] font-semibold text-paper">Omnia</span>
+              <span className="text-[13px] font-semibold text-paper transition group-hover/omnia:text-brand">
+                Omnia
+              </span>
               <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-mute">
                 The spark
               </span>
             </span>
-          </div>
+          </a>
 
           <blockquote className="relative mt-6 font-display text-xl font-semibold leading-snug tracking-[-0.03em] text-paper sm:text-[26px]">
             <Quote
@@ -77,7 +105,9 @@ export function Origin() {
 
           <figcaption className="relative mt-7 flex items-center justify-between gap-4 border-t border-paper/[0.07] pt-4 font-mono text-[9px] uppercase tracking-[0.18em]">
             <span className="text-paper-mute">Source · artwork on X</span>
-            <span className="text-brand/80">Elyziuma</span>
+            <span className="inline-flex items-center gap-1 text-brand/80 transition group-hover/omnia:text-brand">
+              View post <ArrowUpRight className="size-3" />
+            </span>
           </figcaption>
         </figure>
       </div>
