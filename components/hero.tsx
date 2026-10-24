@@ -5,10 +5,10 @@ import { LINKS } from "@/lib/config";
 import { MASCOTS, getMascot, HERO_MASCOT_ID, MASCOT_GLOWS } from "@/lib/mascots";
 import { NetworkBadge } from "./network-badge";
 
-const FACTS = [
+const FACTS: { label?: string; value: string }[] = [
   { label: "Collection", value: "2,222 pieces" },
-  { label: "Minted on", value: "Elysium · 99901" },
-  { label: "Standard", value: "ERC-721 / 1155" },
+  { label: "Minted on", value: "Elysium testnet" },
+  { value: "ERC-721" },
 ];
 
 export function Hero() {
@@ -61,7 +61,7 @@ export function Hero() {
             </span>
           </h1>
 
-          <p className="mt-6 max-w-lg text-[15px] leading-7 text-paper-dim sm:text-base">
+          <p className="mt-6 text-[15px] leading-7 text-paper-dim sm:text-base">
             Elyziuma is a 2,222-piece NFT collection built on Elysium. Five
             characters, each holding a different job in the ecosystem — the
             guardian, the operator, the runner, the reader, the builder. Own
@@ -84,12 +84,14 @@ export function Hero() {
             </a>
           </div>
 
-          <dl className="mt-8 grid max-w-lg grid-cols-3 gap-4 border-t border-paper/[0.07] pt-5">
+          <dl className="mt-8 grid grid-cols-3 gap-4 border-t border-paper/[0.07] pt-5">
             {FACTS.map((fact) => (
-              <div key={fact.label}>
-                <dt className="text-[9px] uppercase tracking-[0.16em] text-paper-mute">
-                  {fact.label}
-                </dt>
+              <div key={fact.value} className="flex flex-col justify-end">
+                {fact.label ? (
+                  <dt className="text-[9px] uppercase tracking-[0.16em] text-paper-mute">
+                    {fact.label}
+                  </dt>
+                ) : null}
                 <dd className="mt-2 font-mono text-[11px] leading-5 text-paper sm:text-xs">
                   {fact.value}
                 </dd>
