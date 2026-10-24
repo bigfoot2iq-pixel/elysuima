@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
 import { LINKS } from "@/lib/config";
 import { MASCOTS, getMascot, HERO_MASCOT_ID, MASCOT_GLOWS } from "@/lib/mascots";
+import { NetworkBadge } from "./network-badge";
 
 const FACTS = [
   { label: "Collection", value: "2,222 pieces" },
@@ -108,10 +109,13 @@ export function Hero() {
             />
 
             <figure className="ink-panel eye-glow sticker relative overflow-hidden rounded-[24px]">
-              {/* Framing ticks, echoing the art's card labels. */}
-              <div className="absolute inset-x-5 top-4 z-20 flex items-center justify-between font-mono text-[8px] uppercase tracking-[0.2em] text-paper/55">
-                <span>Elyziuma</span>
-                <span className="text-brand/80">Elysium</span>
+              {/* Framing ticks, echoing the art's card labels. The network mark
+                  replaces the old plain-text chain label. */}
+              <div className="absolute inset-x-4 top-3 z-20 flex items-start justify-between gap-3">
+                <span className="pt-1.5 font-mono text-[8px] uppercase tracking-[0.2em] text-paper/55">
+                  Elyziuma
+                </span>
+                <NetworkBadge />
               </div>
 
               {/* The source art is square, so the frame stays square — no cropping,

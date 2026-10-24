@@ -1,6 +1,11 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import {
   useLaunchpadConfig,
@@ -72,6 +77,63 @@ export function LaunchpadContent() {
   const waitingForContract =
     configured && !contractQuery.data && !contractQuery.isError;
 
+  const inspection = useMemo<ContractInspection | undefined>(() => {
+    if (!config) return undefined;
+    if (contractQuery.data) return contractQuery.data;
+    if (!contractQuery.isError) return undefined;
+    return {
+      ok: false,
+      rpcUrl: config.rpcUrl,
+      collectionAddress: config.collectionAddress,
+      methods: [],
+      message:
+        "The collection could not be read from the configured RPC. Minting is disabled until it recovers.",
+    };
+  }, [config, contractQuery.data, contractQuery.isError]);
+
+  // The contract route caches its inspection for a few seconds, so a mint is
+  // not visible on the next read. Keep the supply the visitor just contributed
+  // as a floor: the progress UI moves immediately and the floor stops applying
+  // as soon as the chain reports the same (or a higher) total.
+  const [mintedFloor, setMintedFloor] = useState<{
+    collection: string;
+    supply: number;
+  } | null>(null);
+
+  const activeFloor =
+    mintedFloor && mintedFloor.collection === config?.collectionAddress
+      ? mintedFloor.supply
+      : null;
+
+  const displayInspection = useMemo(() => {
+    if (!inspection || activeFloor === null) return inspection;
+    const chain = Number(inspection.totalSupply ?? 0);
+    if (chain >= activeFloor) return inspection;
+    return { ...inspection, totalSupply: String(activeFloor) };
+  }, [inspection, activeFloor]);
+
+  const refetchContract = contractQuery.refetch;
+
+  const handleMintConfirmed = useCallback(
+    (quantity: number) => {
+      if (!config) return;
+      const collection = config.collectionAddress;
+      const chain = Number(inspection?.totalSupply ?? 0);
+      setMintedFloor((floor) => {
+        const base =
+          floor && floor.collection === collection ? floor.supply : chain;
+        return {
+          collection,
+          supply: Math.max(chain, base) + quantity,
+        };
+      });
+      // Pull the real supply as soon as the route cache lets a fresh read
+      // through; the optimistic floor above covers the gap.
+      void refetchContract();
+    },
+    [config, inspection?.totalSupply, refetchContract],
+  );
+
   if (!hydrated || configQuery.isPending || waitingForContract) {
     return <LaunchpadSkeleton />;
   }
@@ -103,22 +165,13 @@ export function LaunchpadContent() {
     );
   }
 
-  const inspection: ContractInspection | undefined =
-    contractQuery.data ??
-    (contractQuery.isError
-      ? {
-          ok: false,
-          rpcUrl: config.rpcUrl,
-          collectionAddress: config.collectionAddress,
-          methods: [],
-          message:
-            "The collection could not be read from the configured RPC. Minting is disabled until it recovers.",
-        }
-      : undefined);
-
   return (
     <>
-      <LaunchpadSummary config={config} inspection={inspection} now={now} />
+      <LaunchpadSummary
+        config={config}
+        inspection={displayInspection}
+        now={now}
+      />
 
       <section className="section-shell pb-2 pt-6">
         {/* The preview takes the free width and the mint panel holds a fixed
@@ -126,11 +179,16 @@ export function LaunchpadContent() {
             above instead of floating in the middle of the page. */}
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-5">
           <LaunchpadPreview />
-          <MintCard config={config} inspection={inspection} now={now} />
+          <MintCard
+            config={config}
+            inspection={displayInspection}
+            now={now}
+            onMintConfirmed={handleMintConfirmed}
+          />
         </div>
       </section>
 
-      <LaunchpadFaq config={config} inspection={inspection} />
+      <LaunchpadFaq config={config} inspection={displayInspection} />
     </>
   );
 }

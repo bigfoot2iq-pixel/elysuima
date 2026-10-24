@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { useClaimAccess } from "@/hooks/use-claim-access";
 import { LINKS } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { TokenMark } from "./token-mark";
 import { WalletButton } from "./wallet-button";
+import { XLogo } from "./x-logo";
 
 const NAV = [
   { label: "Launchpad", href: "/launchpad" },
@@ -21,6 +23,10 @@ const NAV = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { authorized } = useClaimAccess();
+  const nav = authorized
+    ? NAV
+    : NAV.filter((item) => item.href !== "/claim");
 
   return (
     <header className="sticky top-0 z-50 border-b border-paper/[0.07] bg-ink/70 backdrop-blur-xl">
@@ -42,7 +48,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active =
               item.href === pathname ||
               (item.href.startsWith("/") &&
@@ -71,10 +77,11 @@ export function SiteHeader() {
             href={LINKS.x}
             target="_blank"
             rel="noreferrer"
-            className="hidden h-11 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-paper-dim transition hover:text-paper sm:inline-flex"
+            aria-label="Elyziumaa on X"
+            className="hidden h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-paper px-3.5 text-sm font-semibold text-ink transition hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:inline-flex xl:px-5"
           >
-            X
-            <ArrowUpRight className="size-3" />
+            <XLogo className="size-4" />
+            <span className="hidden xl:inline">Elyziumaa</span>
           </a>
           <div className="hidden sm:block">
             <WalletButton />
@@ -98,7 +105,7 @@ export function SiteHeader() {
         )}
       >
         <div className="space-y-1 px-5 py-5">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -112,9 +119,10 @@ export function SiteHeader() {
             href={LINKS.x}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1 rounded-xl px-3 py-3 text-sm text-paper-dim transition hover:bg-paper/[0.05] hover:text-paper"
+            className="mt-2 flex h-11 items-center justify-center gap-2 rounded-full border border-paper/15 bg-paper/[0.05] px-4 text-sm font-semibold text-paper transition hover:border-paper/25 hover:bg-paper/[0.09]"
           >
-            Follow on X <ArrowUpRight className="size-3.5" />
+            <XLogo className="size-4" />
+            Elyziumaa
           </a>
           <div className="pt-3 sm:hidden">
             <WalletButton compact />

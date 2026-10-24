@@ -34,6 +34,7 @@ export const LINKS = {
   bridge: "https://elyspump.com",
   elyspump: "https://elyspump.com/#/",
   boxa: "https://boxa.pro/#/bridge",
+  testnetFaucet: "https://elysium.kinetiq.xyz/testnet-faucet",
   explorer: getChainExplorerUrl(getDefaultChainId()),
   docs: "https://elysium.kinetiq.xyz/docs",
   x: "https://x.com/Elyziumaa",

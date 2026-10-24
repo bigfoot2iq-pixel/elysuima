@@ -153,24 +153,41 @@ export const elysiumTestnet = defineChain({
   },
 });
 
+/**
+ * Chains that can satisfy the claim threshold.
+ *
+ * Hyperliquid (HyperCore) and HyperEVM share the same HYPE token, but they are
+ * different balance surfaces: HyperCore spot balances are read from the
+ * Hyperliquid info API, while HyperEVM balances are read over JSON-RPC. Both
+ * rows are shown so the check describes exactly where a balance was found.
+ */
 export const ELIGIBILITY_CHAINS = [
+  {
+    key: "hyperliquid",
+    name: "Hyperliquid",
+    shortName: "HYPE",
+    chainId: 999,
+    nativeSymbol: "HYPE",
+    color: "#97FCE4",
+    explorer: "https://app.hyperliquid.xyz/explorer",
+  },
+  {
+    key: "hyperevm",
+    name: "HyperEVM",
+    shortName: "HYPE",
+    chainId: 999,
+    nativeSymbol: "HYPE",
+    color: "#50D2C1",
+    explorer: "https://hyperevmscan.io",
+  },
   {
     key: "ethereum",
     name: "Ethereum",
     shortName: "ETH",
     chainId: 1,
     nativeSymbol: "ETH",
-    color: "#8A92B2",
+    color: "#627EEA",
     explorer: "https://etherscan.io",
-  },
-  {
-    key: "abstract",
-    name: "Abstract",
-    shortName: "ABS",
-    chainId: 2741,
-    nativeSymbol: "ETH",
-    color: "#C7F9FF",
-    explorer: "https://abscan.org",
   },
   {
     key: "base",
@@ -187,7 +204,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "INK",
     chainId: 57073,
     nativeSymbol: "ETH",
-    color: "#7B61FF",
+    color: "#7132F5",
     explorer: "https://explorer.inkonchain.com",
   },
 ] as const;

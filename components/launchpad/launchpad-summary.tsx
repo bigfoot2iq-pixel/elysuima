@@ -42,11 +42,18 @@ export function LaunchpadSummary({
   now: number;
 }) {
   const status = getDropStatus(config, inspection, now);
-  const { totalSupply, maxSupply } = getSupplyState(config, inspection);
+  const { totalSupply, maxSupply, remaining } = getSupplyState(
+    config,
+    inspection,
+  );
   const mascot = getMascot(HERO_MASCOT_ID);
 
   const perWallet = getPerWalletLimit(config, inspection);
 
+  const mintedCount = totalSupply !== undefined ? Number(totalSupply) : 0;
+  const cap = maxSupply ? Number(maxSupply) : 0;
+  const supplyProgress =
+    cap > 0 ? Math.min(100, (mintedCount / cap) * 100) : null;
   const stats = [
     {
       label: "Supply",
@@ -148,6 +155,29 @@ export function LaunchpadSummary({
             </div>
           ))}
         </dl>
+
+        {supplyProgress !== null ? (
+          <div className="mt-3 flex items-center gap-2.5">
+            <div
+              role="progressbar"
+              aria-label="Collection mint progress"
+              aria-valuemin={0}
+              aria-valuemax={cap}
+              aria-valuenow={mintedCount}
+              className="h-1 flex-1 overflow-hidden rounded-full bg-paper/[0.06]"
+            >
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-brand to-mint transition-[width] duration-700 ease-out"
+                style={{ width: `${Math.max(supplyProgress, 1.5)}%` }}
+              />
+            </div>
+            <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-paper-mute">
+              {remaining !== undefined
+                ? `${Number(remaining).toLocaleString("en-US")} left`
+                : ""}
+            </span>
+          </div>
+        ) : null}
       </div>
     </section>
   );

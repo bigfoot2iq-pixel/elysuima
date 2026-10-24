@@ -206,8 +206,9 @@ export function ClaimCard() {
       : "100";
 
   const summary = useMemo(() => {
-    if (!address) return "Connect a wallet to check all four chains.";
-    if (checking) return "Checking Ethereum, Abstract, Base, and Ink…";
+    if (!address) return "Connect a wallet to check all five chains.";
+    if (checking)
+      return "Checking Hyperliquid, HyperEVM, Ethereum, Base, and Ink…";
     if (eligibility.isError) return "Balance check unavailable. Tap to retry.";
     if (eligibility.data?.eligible)
       return `Eligible via ${eligibility.data.bestChain}.`;
@@ -398,7 +399,7 @@ export function ClaimCard() {
                     result?.error
                       ? `${chain.name}: unavailable`
                       : result
-                        ? `${chain.name}: ${result.balanceFormatted} ETH`
+                        ? `${chain.name}: ${result.balanceFormatted} ${chain.nativeSymbol}`
                         : `${chain.name}: waiting`
                   }
                   className={cn(
@@ -508,11 +509,9 @@ export function ClaimCard() {
         </a>
       </div>
 
-      {!IS_CONFIGURED && process.env.NODE_ENV === "development" ? (
-        <p className="mt-3 rounded-xl border border-warn/20 bg-warn/[0.06] px-3 py-2 text-[10px] leading-5 text-warn">
-          Contracts are not configured. Set{" "}
-          <span className="font-mono">NEXT_PUBLIC_CLAIM_ADDRESS</span> and{" "}
-          <span className="font-mono">NEXT_PUBLIC_TOKEN_ADDRESS</span>.
+      {!IS_CONFIGURED ? (
+        <p className="mt-3 rounded-xl border border-paper/10 bg-paper/[0.03] px-3 py-2 text-[10px] leading-5 text-paper-mute">
+          Claim isn&apos;t live yet. Check back soon.
         </p>
       ) : null}
 

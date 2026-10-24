@@ -77,7 +77,7 @@ The live successor had `airdropTotal = 214,823e18` and `airdropRemaining = 0` at
 | One claim per address, ever | One claim per wallet every 24 hours | Explicit product requirement |
 | Random lottery amount | Owner-set fixed daily amount | Explicit product requirement |
 | $0.20 payable claim | Free claim; gas only | No fee was requested |
-| Binance Agent ID gate | Cross-chain 0.001 ETH check + EIP-712 signature | Elysium cannot read the four source chains on-chain |
+| Binance Agent ID gate | Cross-chain 0.001 native-token check + EIP-712 signature | Elysium cannot read the source chains on-chain |
 | Single contract, owner renounced | Separate token + faucet, owner controls | Allows refilling, pausing, signer rotation, and emergency withdrawal |
 | `block.prevrandao` randomness | No randomness | Avoids validator-influenced payouts |
 

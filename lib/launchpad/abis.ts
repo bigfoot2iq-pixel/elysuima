@@ -14,6 +14,14 @@ export const launchpadReadAbi = parseAbi([
   "function mintSeaDrop(address minter, uint256 quantity)",
 ]);
 
+/**
+ * ERC-721 transfer event, used to read the token IDs a mint produced from the
+ * confirmed transaction receipt.
+ */
+export const erc721TransferAbi = parseAbi([
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+]);
+
 export const launchpadMintAbi = parseAbi([
   "function mint(address to, uint256 quantity) payable",
   "function mint(uint256 quantity) payable",

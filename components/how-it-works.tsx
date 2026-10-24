@@ -5,6 +5,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { LINKS } from "@/lib/config";
+import { ClaimAccessOnly } from "./claim/claim-access-only";
 
 const STEPS = [
   {
@@ -19,7 +20,7 @@ const STEPS = [
     number: "02",
     icon: ShieldCheck,
     title: "Verify your wallet",
-    body: "We read your native ETH balance on Ethereum, Abstract, Base, and Ink. Holding 0.001 ETH on any one chain is enough.",
+    body: "We read your native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, and Ink. Holding 0.001 on any one chain is enough.",
     href: "/claim#eligibility",
     linkLabel: "See the check",
   },
@@ -47,7 +48,7 @@ export function HowItWorks() {
           </h2>
         </div>
         <p className="max-w-sm text-xs leading-6 text-paper-mute">
-          No account, no email, no custody. Eligibility is checked across four
+          No account, no email, no custody. Eligibility is checked across five
           chains and enforced by the claim contract.
         </p>
       </div>
@@ -72,15 +73,27 @@ export function HowItWorks() {
             <p className="mt-2 text-[12px] leading-6 text-paper-dim">
               {step.body}
             </p>
-            <a
-              href={step.href}
-              target={step.href.startsWith("http") ? "_blank" : undefined}
-              rel={step.href.startsWith("http") ? "noreferrer" : undefined}
-              className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-paper-mute transition hover:text-brand"
-            >
-              {step.linkLabel}
-              <ArrowUpRight className="size-3" />
-            </a>
+            {step.href.startsWith("/claim") ? (
+              <ClaimAccessOnly>
+                <a
+                  href={step.href}
+                  className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-paper-mute transition hover:text-brand"
+                >
+                  {step.linkLabel}
+                  <ArrowUpRight className="size-3" />
+                </a>
+              </ClaimAccessOnly>
+            ) : (
+              <a
+                href={step.href}
+                target={step.href.startsWith("http") ? "_blank" : undefined}
+                rel={step.href.startsWith("http") ? "noreferrer" : undefined}
+                className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-paper-mute transition hover:text-brand"
+              >
+                {step.linkLabel}
+                <ArrowUpRight className="size-3" />
+              </a>
+            )}
           </article>
         ))}
       </div>

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Box, Waves } from "lucide-react";
-import { BRIDGES } from "@/lib/bridges";
+import { ArrowRight, ArrowUpRight, Box, Droplet, Waves } from "lucide-react";
+import { BRIDGES, TESTNET_FAUCET } from "@/lib/bridges";
 
 const ICONS = {
   waves: Waves,
   box: Box,
+  droplet: Droplet,
 } as const;
 
 const STEPS = [
@@ -25,11 +26,7 @@ const STEPS = [
   },
 ];
 
-const FACTS = [
-  { label: "Network", value: "Elysium" },
-  { label: "Chain ID", value: "99901" },
-  { label: "Gas token", value: "HYPE" },
-];
+const RESOURCES = [...BRIDGES, TESTNET_FAUCET];
 
 export function BridgeContent() {
   return (
@@ -57,21 +54,9 @@ export function BridgeContent() {
               </p>
               <p className="mt-3 max-w-xl text-[13px] leading-7 text-paper-dim">
                 Before joining Elyziuma, you can bridge your assets to the
-                Elysium network using one of the following bridges:
+                Elysium network with one of the following bridges. Testing on
+                testnet? Grab gas from the faucet below.
               </p>
-
-              <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 border-t border-paper/[0.07] pt-5">
-                {FACTS.map((fact) => (
-                  <div key={fact.label}>
-                    <dt className="text-[9px] uppercase tracking-[0.16em] text-paper-mute">
-                      {fact.label}
-                    </dt>
-                    <dd className="mt-2 font-mono text-[11px] text-paper sm:text-xs">
-                      {fact.value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
             </div>
 
             {/* The route, in three moves. */}
@@ -114,15 +99,18 @@ export function BridgeContent() {
         </div>
       </section>
 
-      {/* The bridges themselves. */}
-      <section className="section-shell pb-16 sm:pb-24" aria-label="Bridges">
-        <div className="grid gap-4 md:grid-cols-2">
-          {BRIDGES.map((bridge, index) => {
-            const Icon = ICONS[bridge.icon];
+      {/* The bridges themselves, plus testnet gas. */}
+      <section
+        className="section-shell pb-16 sm:pb-24"
+        aria-label="Bridges and faucet"
+      >
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {RESOURCES.map((resource, index) => {
+            const Icon = ICONS[resource.icon];
 
             return (
               <article
-                key={bridge.key}
+                key={resource.key}
                 className="group ink-panel animate-rise relative overflow-hidden rounded-[28px] p-6 transition hover:border-brand/40 sm:p-8"
                 style={{ animationDelay: `${120 + index * 90}ms` }}
               >
@@ -136,29 +124,29 @@ export function BridgeContent() {
                     <Icon className="size-5" />
                   </span>
                   <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-paper-mute">
-                    Bridge 0{index + 1}
+                    {resource.label}
                   </span>
                 </div>
 
                 <h2 className="relative mt-6 font-display text-2xl font-extrabold tracking-[-0.03em] text-paper">
-                  {bridge.name}
+                  {resource.name}
                 </h2>
                 <p className="relative mt-2 max-w-sm text-[12px] leading-6 text-paper-dim">
-                  {bridge.description}
+                  {resource.description}
                 </p>
 
                 <div className="relative mt-7 flex flex-wrap items-center gap-4">
                   <a
-                    href={bridge.href}
+                    href={resource.href}
                     target="_blank"
                     rel="noreferrer"
                     className="btn-ink"
                   >
-                    Open {bridge.name}
+                    Open {resource.name}
                     <ArrowUpRight className="size-4" />
                   </a>
                   <span className="font-mono text-[10px] text-paper-mute">
-                    {bridge.host}
+                    {resource.host}
                   </span>
                 </div>
               </article>

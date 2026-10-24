@@ -20,7 +20,7 @@ const FACTS = [
 const STEPS = [
   {
     title: "Hold the threshold",
-    body: "Keep at least 0.001 ETH on Ethereum, Abstract, Base, or Ink. The check is read from your address, not from an account.",
+    body: "Keep at least 0.001 ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The check is read from your address, not from an account.",
   },
   {
     title: "Connect and switch",
@@ -38,9 +38,9 @@ const STEPS = [
 
 const FAQS = [
   {
-    question: "Why 0.001 ETH?",
+    question: "Why the 0.001 threshold?",
     answer:
-      "The threshold is a cheap anti-sybil check. It keeps bots out without asking for meaningful capital. Any one of the four supported chains qualifies, so you do not need to split funds across them.",
+      "The threshold is a cheap anti-sybil check. It keeps bots out without asking for meaningful capital. Any one of the five supported chains qualifies, so you do not need to split funds across them.",
   },
   {
     question: "How long is the cooldown?",
@@ -60,7 +60,7 @@ const FAQS = [
   {
     question: "Why is a chain unavailable?",
     answer:
-      "Public RPCs rate-limit and occasionally time out. An unavailable chain does not disqualify you as long as one of the other three qualifies. Retry the check if everything is unreachable.",
+      "Public RPCs rate-limit and occasionally time out. An unavailable chain does not disqualify you as long as one of the other four qualifies. Retry the check if everything is unreachable.",
   },
 ];
 
@@ -98,16 +98,16 @@ export function ClaimContent() {
 
             <p className="mt-5 max-w-xl text-[15px] leading-7 text-paper-dim sm:text-base">
               Hold at least{" "}
-              <span className="font-mono text-paper">0.001 ETH</span> on
-              Ethereum, Abstract, Base, or Ink, then claim{" "}
+              <span className="font-mono text-paper">0.001 ETH or HYPE</span> on
+              Hyperliquid, HyperEVM, Ethereum, Base, or Ink, then claim{" "}
               <span className="font-mono text-paper">100 ELYZ</span> every 24
               hours. No sign-up, no account — just your wallet.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2">
               {[
-                { icon: ShieldCheck, label: "0.001 ETH threshold" },
-                { icon: Sparkles, label: "4 chains accepted" },
+                { icon: ShieldCheck, label: "0.001 ETH / HYPE threshold" },
+                { icon: Sparkles, label: "5 chains accepted" },
                 { icon: Clock3, label: "24h cooldown" },
               ].map((item) => (
                 <span

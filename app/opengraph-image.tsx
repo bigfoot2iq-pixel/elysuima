@@ -155,7 +155,7 @@ export default async function OpengraphImage() {
               <span style={{ color: "#2d7388" }}>·</span>
               <span>every 24 hours</span>
               <span style={{ color: "#2d7388" }}>·</span>
-              <span>0.001 ETH on ETH / ABSTRACT / BASE / INK</span>
+              <span>0.001 ETH / HYPE · 5 CHAINS</span>
             </div>
           </div>
 

@@ -1,5 +1,15 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * Chain marks are adapted from each project's official brand kit. The source
+ * art is kept as SVG paths so the icons stay sharp at every size and can sit on
+ * either a tinted or a solid tile:
+ *
+ * - Hyperliquid / HyperEVM: hyperliquid.gitbook.io/hyperliquid-docs/brand-kit
+ * - Ethereum: ethereum.org/en/assets (eth-diamond)
+ * - Base: github.com/base/brand-kit (The Square)
+ * - Ink: docs.inkonchain.com/work-with-ink/brand-kit
+ */
 export function ChainIcon({
   chainKey,
   size = 36,
@@ -18,12 +28,45 @@ export function ChainIcon({
     className: cn("shrink-0", className),
   };
 
+  if (chainKey === "hyperliquid") {
+    return (
+      <svg {...common}>
+        <rect width="40" height="40" rx="12" fill="#97FCE4" fillOpacity="0.12" />
+        <g transform="translate(2.75 4) scale(0.17)">
+          <path
+            fill="#97FCE4"
+            d="M175.11589,99.27891c0,49.46366-30.3687,65.33789-46.47302,51.30413-13.11357-11.5031-17.02471-35.88989-36.81018-38.42055-25.07698-2.99085-27.37764,30.36839-43.94216,30.36839-19.3254,0-23.00642-27.83773-23.00642-42.33179,0-14.72405,4.14115-34.73961,20.47565-34.73961,19.09528,0,20.24566,28.75802,44.17226,27.14754,23.69661-1.61047,24.1567-31.51877,39.80103-44.17224,13.57335-11.27313,45.78283.69019,45.78283,50.84413Z"
+          />
+        </g>
+      </svg>
+    );
+  }
+
+  if (chainKey === "hyperevm") {
+    return (
+      <svg {...common}>
+        <rect width="40" height="40" rx="12" fill="#50D2C1" />
+        <g transform="translate(2.75 4) scale(0.17)">
+          <path
+            fill="#072723"
+            d="M175.11589,99.27891c0,49.46366-30.3687,65.33789-46.47302,51.30413-13.11357-11.5031-17.02471-35.88989-36.81018-38.42055-25.07698-2.99085-27.37764,30.36839-43.94216,30.36839-19.3254,0-23.00642-27.83773-23.00642-42.33179,0-14.72405,4.14115-34.73961,20.47565-34.73961,19.09528,0,20.24566,28.75802,44.17226,27.14754,23.69661-1.61047,24.1567-31.51877,39.80103-44.17224,13.57335-11.27313,45.78283.69019,45.78283,50.84413Z"
+          />
+        </g>
+      </svg>
+    );
+  }
+
   if (chainKey === "ethereum") {
     return (
       <svg {...common}>
-        <rect width="40" height="40" rx="12" fill="#8A92B2" fillOpacity="0.12" />
-        <path d="M20 7L11.5 21.2L20 26.2L28.5 21.2L20 7Z" fill="#C8CFE8" />
-        <path d="M11.5 23.2L20 33L28.5 23.2L20 28.1L11.5 23.2Z" fill="#8A92B2" />
+        <rect width="40" height="40" rx="12" fill="#627EEA" fillOpacity="0.14" />
+        <g transform="scale(0.0208333333)" fill="#C9D2EA">
+          <path d="m959.8 730.9-539.8 245.4 539.8 319.1 539.9-319.1z" opacity=".6" />
+          <path d="m420.2 976.3 539.8 319.1v-564.5-650.3z" opacity=".45" />
+          <path d="m960 80.6v650.3 564.5l539.8-319.1z" opacity=".8" />
+          <path d="m420 1078.7 539.8 760.7v-441.8z" opacity=".45" />
+          <path d="m959.8 1397.6v441.8l540.2-760.7z" opacity=".8" />
+        </g>
       </svg>
     );
   }
@@ -31,46 +74,38 @@ export function ChainIcon({
   if (chainKey === "base") {
     return (
       <svg {...common}>
-        <rect width="40" height="40" rx="12" fill="#0052FF" fillOpacity="0.14" />
-        <circle cx="20" cy="20" r="10.5" fill="#0052FF" />
-        <rect x="13" y="18.4" width="14" height="3.2" rx="1.6" fill="#F8F7F4" />
+        <g transform="translate(4 4) scale(0.025)">
+          <path
+            fill="#0052FF"
+            d="M0,101.12c0-34.64,0-51.95,6.53-65.28,6.25-12.76,16.56-23.07,29.32-29.32C49.17,0,66.48,0,101.12,0h1077.76c34.63,0,51.96,0,65.28,6.53,12.75,6.25,23.06,16.56,29.32,29.32,6.52,13.32,6.52,30.64,6.52,65.28v1077.76c0,34.63,0,51.96-6.52,65.28-6.26,12.75-16.57,23.06-29.32,29.32-13.32,6.52-30.65,6.52-65.28,6.52H101.12c-34.64,0-51.95,0-65.28-6.52-12.76-6.26-23.07-16.57-29.32-29.32-6.53-13.32-6.53-30.65-6.53-65.28V101.12Z"
+          />
+        </g>
       </svg>
     );
   }
 
-  if (chainKey === "abstract") {
+  if (chainKey === "ink") {
     return (
       <svg {...common}>
-        <rect width="40" height="40" rx="12" fill="#C7F9FF" fillOpacity="0.12" />
-        <rect x="8" y="8" width="24" height="24" rx="8" fill="#C7F9FF" fillOpacity="0.16" />
-        <path
-          d="M13 27L20 12L27 27"
-          stroke="#C7F9FF"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path d="M16 22H24" stroke="#C7F9FF" strokeWidth="2.4" strokeLinecap="round" />
+        <rect width="40" height="40" rx="12" fill="#7132F5" fillOpacity="0.16" />
+        <g transform="translate(5 5) scale(0.1657459)">
+          <path
+            fill="#9E70FF"
+            d="M90.4486 0C140.402 -2.18353e-06 180.897 40.4952 180.897 90.4486C180.897 140.402 140.402 180.897 90.4486 180.897C40.4952 180.897 2.18353e-06 140.402 0 90.4486C-2.18353e-06 40.4952 40.4952 2.18353e-06 90.4486 0Z"
+          />
+          <path
+            fill="#FFFFFF"
+            d="M91.1735 169.409C98.3217 169.266 103.358 164.278 103.358 158.142C103.358 151.916 98.4517 147.302 92.1713 147.302C89.0105 147.302 87.5766 147.302 86.1452 147.243C84.7325 147.184 83.3221 147.067 80.2561 146.835C74.0838 146.368 68.8693 141.81 68.8693 135.565C68.8693 129.339 73.957 124.295 80.2561 124.295H91.9897C98.2702 124.295 103.358 119.252 103.358 113.025C103.358 106.781 98.2702 101.737 91.9897 101.737H53.4334C47.1343 101.737 42.0466 96.6933 42.0466 90.4671C42.0466 84.2225 47.1343 79.1603 53.4334 79.1603L129.904 79.1603C136.184 79.1603 141.272 74.1166 141.272 67.8904C141.272 61.6643 136.184 56.6206 129.904 56.6206H80.2561C73.957 56.6206 68.8693 51.5768 68.8693 45.3137C68.8693 39.0876 74.6581 34.4925 80.2561 34.0439C85.8542 33.5953 86.1414 33.5953 91.9895 33.5953C97.8379 33.5953 103.358 29.0001 103.358 22.7555C103.358 16.6199 99.2199 11.6325 91.1531 11.4888C90.9185 11.4867 90.6836 11.4857 90.4484 11.4857C46.8383 11.4857 11.4854 46.8387 11.4854 90.4488C11.4854 134.015 46.7679 169.341 90.3181 169.412H90.5787C90.7771 169.411 90.9754 169.41 91.1735 169.409Z"
+          />
+        </g>
       </svg>
     );
   }
 
   return (
     <svg {...common}>
-      <rect width="40" height="40" rx="12" fill="#7B61FF" fillOpacity="0.14" />
-      <path
-        d="M10 25.5C13 19.5 17 17 21 20C25 23 28 22 31 15"
-        stroke="#A997FF"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M10 30C14 25 18 24 22 27C26 30 29 29 32 24"
-        stroke="#7B61FF"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.6"
-      />
+      <rect width="40" height="40" rx="12" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="20" cy="20" r="8" stroke="currentColor" strokeWidth="2" opacity="0.5" />
     </svg>
   );
 }

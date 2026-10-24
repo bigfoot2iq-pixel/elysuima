@@ -4,6 +4,7 @@ import { IS_CONFIGURED } from "@/lib/config";
 import { elysium } from "@/lib/chains";
 import { checkEligibility } from "@/lib/server/eligibility";
 import { getClaimState } from "@/lib/server/elysium";
+import { checkLaunchpadAdmin } from "@/lib/server/launchpad-auth";
 import { getSignerAccount, signClaim } from "@/lib/server/signature";
 import { getClientIp, rateLimit } from "@/lib/server/rate-limit";
 
@@ -64,6 +65,31 @@ export async function POST(request: Request) {
     );
   }
 
+  let access;
+  try {
+    access = await checkLaunchpadAdmin(address);
+  } catch (error) {
+    console.error("claim access check failed", error);
+    return NextResponse.json(
+      {
+        error: "ACCESS_CHECK_FAILED",
+        message: "Claim access could not be verified. Please retry.",
+      },
+      { status: 503 },
+    );
+  }
+
+  if (!access.authorized) {
+    return NextResponse.json(
+      {
+        error: "NOT_AUTHORIZED",
+        message:
+          "The daily claim is limited to the collection owner and admins for now.",
+      },
+      { status: 403 },
+    );
+  }
+
   const signer = getSignerAccount();
   if (!signer) {
     return NextResponse.json(
@@ -93,7 +119,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "NOT_ELIGIBLE",
-          message: "This wallet does not hold 0.001 ETH on a supported chain.",
+          message:
+            "This wallet does not hold 0.001 ETH or HYPE on a supported chain.",
           thresholdWei: eligibility.thresholdWei,
           chains: eligibility.chains,
         },

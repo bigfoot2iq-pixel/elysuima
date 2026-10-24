@@ -23,19 +23,19 @@ const FAQS = [
       "It is a separate mint page for the Elyziuma NFT collection on Elysium. The owner configures the collection address, mint price, and wallet limit from the admin console. Minting goes directly to the collection, or through OpenSea SeaDrop when the drop uses it.",
   },
   {
-    question: "Why do I need 0.001 ETH?",
+    question: "Why the 0.001 balance check?",
     answer:
-      "It is a bot-resistance check. Your wallet must hold at least 0.001 native ETH on Ethereum, Abstract, Base, or Ink. The ETH stays in your wallet — we only read the balance.",
+      "It is a bot-resistance check. Your wallet must hold at least 0.001 native ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The balance stays in your wallet — we only read it.",
   },
   {
     question: "Which chains count?",
     answer:
-      "Ethereum mainnet, Abstract mainnet, Base mainnet, and Ink mainnet. The balance must be native ETH on one of those chains. A balance on Elysium itself does not count toward the check.",
+      "Hyperliquid, HyperEVM, Ethereum mainnet, Base mainnet, and Ink mainnet. The balance must be native ETH or HYPE on one of those chains. A balance on Elysium itself does not count toward the check.",
   },
   {
     question: "Is the balance check enforced on-chain?",
     answer:
-      "The Elysium contract cannot read balances on other chains. Instead, our server verifies the four balances and signs a short-lived EIP-712 authorization bound to your wallet. The contract verifies that signature, the amount, a one-time nonce, and the 24-hour cooldown. Without a valid signature, a direct contract call reverts.",
+      "The Elysium contract cannot read balances on other chains. Instead, our server verifies the five balances and signs a short-lived EIP-712 authorization bound to your wallet. The contract verifies that signature, the amount, a one-time nonce, and the 24-hour cooldown. Without a valid signature, a direct contract call reverts.",
   },
   {
     question: "How often can I claim?",
@@ -48,14 +48,14 @@ const FAQS = [
       "Yes. Elysium uses HYPE for gas. The claim itself is a normal transaction, so you need a small amount of HYPE. If you are starting from zero, bridge HYPE from HyperEVM through ElysPump.",
   },
   {
-    question: "I just bridged ETH. Why am I still not eligible?",
+    question: "I just bridged funds. Why am I still not eligible?",
     answer:
       "Balances are cached for about 30 seconds and read from public RPCs. Wait for the bridge transaction to finalize, then press the recheck button in the eligibility panel.",
   },
   {
-    question: "Does 0.001 ETH stop all bots?",
+    question: "Does 0.001 stop all bots?",
     answer:
-      "No. It is a speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH. The signature gate, nonce, and 24-hour cooldown prevent replay and double claims, but they cannot prove a human is behind every wallet.",
+      "No. It is a speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 of a native token. The signature gate, nonce, and 24-hour cooldown prevent replay and double claims, but they cannot prove a human is behind every wallet.",
   },
   {
     question: "Is ELYZ worth anything?",

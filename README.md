@@ -1,6 +1,6 @@
 # Elyziuma
 
-A daily ELYZ claim and an NFT launchpad on **Elysium** (chain ID `99901`). Wallets claim a fixed amount once every 24 hours, gated by a native ETH balance on Ethereum, Abstract, Base, or Ink. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
+A daily ELYZ claim and an NFT launchpad on **Elysium** (chain ID `99901`). Wallets claim a fixed amount once every 24 hours, gated by a native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
 
 The repository contains:
 
@@ -27,7 +27,7 @@ The reference contract was verified on BscScan and its source was retrieved thro
 | $0.20 payable claim in BNB via Chainlink | **Not copied** — ELYZ claims are free apart from Elysium gas |
 | Randomized lottery tiers (50–150, 300–500, 1,000–3,000, 21,000, bonus sweep) | **Not copied** — the owner controls a fixed daily amount instead |
 | Last claim sweeps the remaining pool | **Copied** |
-| Binance Agent ID gate (v4) | **Replaced** with the cross-chain 0.001 ETH eligibility check + EIP-712 signature |
+| Binance Agent ID gate (v4) | **Replaced** with the cross-chain 0.001 native-token eligibility check + EIP-712 signature |
 | Owner renounced / no admin controls | **Changed** — the owner can set the amount, rotate the signer, pause, and withdraw |
 
 The Shaniu code is a single token contract with built-in claim logic. Elyziuma keeps the token and faucet separate so the faucet can be refilled, paused, or replaced without migrating the token. The full source-level comparison is in [`docs/shaniu-analysis.md`](docs/shaniu-analysis.md).
@@ -55,8 +55,8 @@ When the faucet can no longer cover a full daily amount, the next claim receives
 
 ## How a claim works
 
-1. The browser asks `/api/eligibility` to read the wallet's native balance on Ethereum, Abstract, Base, and Ink.
-2. If any chain holds at least `0.001` native ETH, the browser asks `/api/claim` for an authorization.
+1. The browser asks `/api/eligibility` to read the wallet's native balance on Hyperliquid, HyperEVM, Ethereum, Base, and Ink.
+2. If any chain holds at least `0.001` of its native token, the browser asks `/api/claim` for an authorization.
 3. The server re-checks eligibility, reads the on-chain daily amount, nonce, cooldown, signer, and faucet balance, then signs an EIP-712 `Claim` message.
 4. The wallet submits `claim(amount, nonce, deadline, signature)` on Elysium.
 5. `DailyClaim` verifies:
@@ -257,8 +257,8 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | `LAUNCHPAD_CONFIG_KEY` | Optional key inside the KV database; defaults to `elyziuma:launchpad` |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel KV credentials. `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are also supported |
 | `LAUNCHPAD_ADMIN_ADDRESSES` | Optional allowlist of launchpad admins, as comma-separated addresses |
-| `ETH_RPC_URL`, `ABSTRACT_RPC_URL`, `BASE_RPC_URL`, `INK_RPC_URL` | Optional eligibility RPC overrides |
-| `ELIGIBILITY_THRESHOLD_WEI` | Optional threshold override; defaults to `1000000000000000` (0.001 ETH) |
+| `ETH_RPC_URL`, `HYPEREVM_RPC_URL`, `BASE_RPC_URL`, `INK_RPC_URL` | Optional eligibility RPC overrides. Hyperliquid (HyperCore) is read from the official info API |
+| `ELIGIBILITY_THRESHOLD_WEI` | Optional threshold override; defaults to `1000000000000000` (0.001 native token per chain) |
 
 The signer key can only authorize claims. It cannot withdraw faucet tokens or change contract settings.
 
@@ -474,7 +474,7 @@ All actions are ordinary contract transactions and require the connected wallet 
 
 ### Enforced off-chain
 
-- Native ETH balance of at least 0.001 on Ethereum, Abstract, Base, or Ink.
+- Native ETH or HYPE balance of at least 0.001 on Hyperliquid, HyperEVM, Ethereum, Base, or Ink.
 - Per-IP and per-address rate limits.
 - Re-check of the on-chain state before signing.
 - Launchpad admin signatures with a five-minute window and replay guard.
@@ -483,7 +483,7 @@ All actions are ordinary contract transactions and require the connected wallet 
 ### Limitations
 
 - Cross-chain balances cannot be read by an Elysium contract. The signature is the bridge between the off-chain check and the on-chain claim. A compromised signer can authorize claims that did not pass the balance check; protect the signer key.
-- The 0.001 ETH check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH.
+- The 0.001 native-token check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 of a native token.
 - Rate limiting and the launchpad replay guard are in-memory. On a multi-instance deployment, replace them with a shared store such as Redis or Upstash.
 - Public RPCs can be rate-limited or unavailable. The launchpad admin can set a different RPC, but a read-only RPC will still reject mint transactions.
 - On a serverless platform the launchpad settings need the KV backend, because the filesystem is read-only. With the file backend, a chain or RPC change is lost on the next deploy.
@@ -542,7 +542,7 @@ app/
   admin/page.tsx                 Claim owner console
   admin/launchpad/page.tsx       Launchpad settings console
   api/claim/route.ts             Eligibility re-check + EIP-712 signing
-  api/eligibility/route.ts       Four-chain balance check
+  api/eligibility/route.ts       Five-chain balance check
   api/health/route.ts            Signer / contract health
   api/launchpad/config/route.ts  Public launchpad settings
   api/launchpad/contract/route.ts Contract + SeaDrop inspection

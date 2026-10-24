@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -17,6 +18,7 @@ import {
   BaseError,
   getAddress,
   isAddress,
+  parseEventLogs,
   zeroAddress,
   type Hash,
 } from "viem";
@@ -28,6 +30,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import {
+  erc721TransferAbi,
   elyziumaNftReadAbi,
   launchpadReadAbi,
   launchpadMintAbi,
@@ -42,6 +45,7 @@ import {
 } from "@/lib/launchpad/types";
 import { explorerAddressFor, explorerTxFor } from "@/lib/chains";
 import { formatAmount, formatCountdown, shortAddress } from "@/lib/format";
+import { COLLECTION_COVER } from "@/lib/mascots";
 import { cn } from "@/lib/utils";
 
 const TONE_STYLES = {
@@ -62,10 +66,13 @@ export function MintCard({
   config,
   inspection,
   now,
+  onMintConfirmed,
 }: {
   config: PublicLaunchpadConfig;
   inspection?: ContractInspection;
   now: number;
+  /** Lets the page move the shared supply counter the moment a mint lands. */
+  onMintConfirmed?: (quantity: number) => void;
 }) {
   const { address, chainId: walletChainId } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -77,6 +84,14 @@ export function MintCard({
   const [lastQuantity, setLastQuantity] = useState(1);
   const [busy, setBusy] = useState(false);
   const [hash, setHash] = useState<Hash>();
+  // The RPC can lag behind a confirmed mint, so the wallet counter keeps the
+  // fresh total as a floor until the chain catches up. It is keyed by wallet so
+  // switching accounts never carries another wallet's mints over.
+  const [walletMint, setWalletMint] = useState<{
+    wallet: string;
+    minted: number;
+    at: number;
+  } | null>(null);
 
   const collection =
     config.collectionAddress && isAddress(config.collectionAddress)
@@ -131,6 +146,9 @@ export function MintCard({
     query: { enabled: Boolean(hash) },
   });
 
+  // The confirmed mint stays highlighted until the next mint starts.
+  const justMinted = Boolean(hash) && receipt.isSuccess;
+
   const status = getDropStatus(config, inspection, now);
   const { totalSupply, maxSupply, remaining } = getSupplyState(
     config,
@@ -144,10 +162,28 @@ export function MintCard({
     ? publicMinted.data
     : (mintStats.data?.[0] ?? balance.data ?? undefined);
 
-  const walletLeft =
-    mintedByWallet !== undefined
-      ? Math.max(0, perWalletLimit - Number(mintedByWallet))
-      : perWalletLimit;
+  const chainMintedByWallet =
+    mintedByWallet !== undefined ? Number(mintedByWallet) : undefined;
+
+  const walletFloor =
+    walletMint &&
+    address &&
+    walletMint.wallet === address.toLowerCase() &&
+    now - walletMint.at < 180
+      ? walletMint.minted
+      : null;
+
+  const walletMinted = Math.max(
+    chainMintedByWallet ?? 0,
+    walletFloor ?? 0,
+  );
+
+  const walletLeft = Math.max(0, perWalletLimit - walletMinted);
+
+  const walletProgress =
+    perWalletLimit > 0
+      ? Math.min(100, (walletMinted / perWalletLimit) * 100)
+      : 0;
 
   const supplyLeft =
     remaining !== undefined
@@ -196,6 +232,45 @@ export function MintCard({
   const cap = maxSupply ? Number(maxSupply) : 0;
   const progress = cap > 0 ? Math.min(100, (minted / cap) * 100) : null;
 
+  // ERC-721 transfers in the receipt tell us which tokens this wallet received,
+  // so the confirmation can name them instead of only counting them.
+  const mintedTokenIds = useMemo(() => {
+    const logs = receipt.data?.logs;
+    if (!logs || !collection || !address) return [] as bigint[];
+    try {
+      const transfers = parseEventLogs({
+        abi: erc721TransferAbi,
+        logs,
+        eventName: "Transfer",
+        strict: false,
+      });
+      const ids: bigint[] = [];
+      for (const log of transfers) {
+        if (log.address.toLowerCase() !== collection.toLowerCase()) continue;
+        const args = log.args;
+        if (!args) continue;
+        if (args.from !== zeroAddress) continue;
+        if (args.to?.toLowerCase() !== address.toLowerCase()) continue;
+        if (typeof args.tokenId !== "bigint") continue;
+        ids.push(args.tokenId);
+      }
+      return ids;
+    } catch {
+      return [] as bigint[];
+    }
+  }, [receipt.data?.logs, collection, address]);
+
+  const mintedTokenLabel = useMemo(() => {
+    if (mintedTokenIds.length === 0) return undefined;
+    let first = mintedTokenIds[0];
+    let last = mintedTokenIds[0];
+    for (const id of mintedTokenIds) {
+      if (id < first) first = id;
+      if (id > last) last = id;
+    }
+    return first === last ? `#${first}` : `#${first}–#${last}`;
+  }, [mintedTokenIds]);
+
   const isLive = status.label === "Live";
   const canMint =
     Boolean(collection) &&
@@ -219,18 +294,57 @@ export function MintCard({
   const handledError = useRef<Hash | undefined>(undefined);
   const refetchMintStats = mintStats.refetch;
   const refetchBalance = balance.refetch;
+  const refetchPublicMinted = publicMinted.refetch;
 
   useEffect(() => {
     if (!hash || !receipt.isSuccess || handledSuccess.current === hash) return;
     handledSuccess.current = hash;
     setBusy(false);
     setQuantity(1);
+    setWalletMint((current) => {
+      const wallet = address?.toLowerCase();
+      if (!wallet) return current;
+      const base =
+        current &&
+        current.wallet === wallet &&
+        now - current.at < 180
+          ? current.minted
+          : (chainMintedByWallet ?? 0);
+      return {
+        wallet,
+        minted: Math.max(chainMintedByWallet ?? 0, base) + lastQuantity,
+        at: now,
+      };
+    });
+    onMintConfirmed?.(lastQuantity);
     toast.success("Mint confirmed", {
       id: hash,
-      description: `${lastQuantity} NFT${lastQuantity === 1 ? "" : "s"} minted on Elysium.`,
+      description: (
+        <span className="flex items-center gap-2.5">
+          <Image
+            src={COLLECTION_COVER.image}
+            alt=""
+            width={44}
+            height={44}
+            className="size-11 shrink-0 rounded-lg border border-paper/10 object-cover"
+          />
+          <span className="block min-w-0">
+            <span className="block text-[11px] leading-4 text-paper-dim">
+              {lastQuantity} NFT{lastQuantity === 1 ? "" : "s"} minted on
+              Elysium.
+            </span>
+            {mintedTokenLabel ? (
+              <span className="mt-0.5 block font-mono text-[10px] text-mint">
+                Token {mintedTokenLabel}
+              </span>
+            ) : null}
+          </span>
+        </span>
+      ),
     });
     void refetchMintStats();
     void refetchBalance();
+    if (drop) void refetchPublicMinted();
     void queryClient.invalidateQueries({
       predicate: (query) => query.queryKey[0] === "launchpad-contract",
     });
@@ -238,6 +352,13 @@ export function MintCard({
     hash,
     receipt.isSuccess,
     lastQuantity,
+    mintedTokenLabel,
+    chainMintedByWallet,
+    address,
+    now,
+    drop,
+    onMintConfirmed,
+    refetchPublicMinted,
     queryClient,
     refetchBalance,
     refetchMintStats,
@@ -459,7 +580,9 @@ export function MintCard({
             Quantity
           </p>
           <p className="font-mono text-[11px] text-paper-mute">
-            Max {perWalletLimit} / wallet
+            {address
+              ? `${walletLeft} left / wallet`
+              : `Max ${perWalletLimit} / wallet`}
           </p>
         </div>
         <div className="mt-2 flex items-center justify-between rounded-xl border border-paper/[0.08] bg-paper/[0.02] p-1.5">
@@ -547,13 +670,29 @@ export function MintCard({
               href={explorerTxFor(config.chainId, hash)}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-between gap-3 rounded-xl border border-mint/25 bg-mint/[0.07] px-3.5 py-3 text-[10px] text-mint"
+              className="group flex items-center gap-3 rounded-xl border border-mint/25 bg-mint/[0.07] p-2.5 transition hover:border-mint/40 hover:bg-mint/[0.1]"
             >
-              <span className="inline-flex items-center gap-2">
-                <Check className="size-3.5" />
-                Minted {lastQuantity} NFT{lastQuantity === 1 ? "" : "s"}.
+              <span className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-mint/20 bg-ink">
+                <Image
+                  src={COLLECTION_COVER.image}
+                  alt="Elyziuma NFT artwork"
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
               </span>
-              <ArrowUpRight className="size-3 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-mint">
+                  <Check className="size-3.5" />
+                  Mint confirmed
+                </span>
+                <span className="mt-0.5 block text-[10px] leading-4 text-paper-dim">
+                  {lastQuantity} NFT{lastQuantity === 1 ? "" : "s"} added to your
+                  wallet
+                  {mintedTokenLabel ? ` · Token ${mintedTokenLabel}` : ""}.
+                </span>
+              </span>
+              <ArrowUpRight className="size-3.5 shrink-0 text-mint/70 transition group-hover:text-mint" />
             </a>
           ) : null}
 
@@ -565,23 +704,77 @@ export function MintCard({
         </div>
       ) : null}
 
-      {progress !== null ? (
+      {progress !== null || address ? (
         <div className="mt-3.5 rounded-xl border border-paper/[0.08] bg-paper/[0.02] p-3">
-          <div className="flex items-center justify-between font-mono text-[11px] text-paper-mute">
-            <span>Minted</span>
-            <span>
-              <span className="text-paper">{minted.toLocaleString("en-US")}</span>
-              {maxSupply
-                ? ` / ${Number(maxSupply).toLocaleString("en-US")}`
-                : ""}
-            </span>
-          </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-paper/[0.06]">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-brand to-mint"
-              style={{ width: `${Math.max(progress, 1.5)}%` }}
-            />
-          </div>
+          {progress !== null ? (
+            <>
+              <div className="flex items-center justify-between font-mono text-[11px] text-paper-mute">
+                <span className="inline-flex items-center gap-1.5">
+                  Minted
+                  {justMinted ? (
+                    <span className="inline-flex items-center gap-0.5 rounded-full border border-mint/30 bg-mint/10 px-1.5 py-0.5 text-[9px] font-semibold text-mint">
+                      <Plus className="size-2.5" />
+                      {lastQuantity}
+                    </span>
+                  ) : null}
+                </span>
+                <span>
+                  <span className="text-paper">
+                    {minted.toLocaleString("en-US")}
+                  </span>
+                  {maxSupply
+                    ? ` / ${Number(maxSupply).toLocaleString("en-US")}`
+                    : ""}
+                </span>
+              </div>
+              <div
+                role="progressbar"
+                aria-label="Collection mint progress"
+                aria-valuemin={0}
+                aria-valuemax={cap}
+                aria-valuenow={minted}
+                className={cn(
+                  "mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-paper/[0.06]",
+                  justMinted &&
+                    "shadow-[0_0_14px_rgba(125,240,196,0.45)] ring-1 ring-mint/25",
+                )}
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-brand to-mint transition-[width] duration-700 ease-out"
+                  style={{ width: `${Math.max(progress, 1.5)}%` }}
+                />
+              </div>
+            </>
+          ) : null}
+
+          {address ? (
+            <div className={progress !== null ? "mt-2.5" : undefined}>
+              <div className="flex items-center justify-between font-mono text-[10px]">
+                <span className="text-paper-mute">Your mints</span>
+                <span
+                  className={cn(
+                    "tabular",
+                    walletMinted > 0 ? "text-mint" : "text-paper-dim",
+                  )}
+                >
+                  {walletMinted} / {perWalletLimit}
+                </span>
+              </div>
+              <div
+                role="progressbar"
+                aria-label="Your mints"
+                aria-valuemin={0}
+                aria-valuemax={perWalletLimit}
+                aria-valuenow={walletMinted}
+                className="mt-1 h-1 w-full overflow-hidden rounded-full bg-paper/[0.06]"
+              >
+                <div
+                  className="h-full rounded-full bg-mint/80 transition-[width] duration-700 ease-out"
+                  style={{ width: `${walletProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

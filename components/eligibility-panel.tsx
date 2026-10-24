@@ -149,14 +149,14 @@ export function EligibilityPanel() {
       return {
         tone: "muted" as const,
         title: "Connect to check",
-        body: "We'll look up your native ETH balance on all four chains.",
+        body: "We'll look up your native balance on all five chains.",
       };
     }
     if (eligibility.isLoading && !data) {
       return {
         tone: "brand" as const,
         title: "Checking your wallet",
-        body: "Reading balances from Ethereum, Abstract, Base, and Ink.",
+        body: "Reading balances from Hyperliquid, HyperEVM, Ethereum, Base, and Ink.",
       };
     }
     if (eligibility.isError) {
@@ -177,13 +177,13 @@ export function EligibilityPanel() {
       return {
         tone: "mint" as const,
         title: `Eligible via ${data.bestChain}`,
-        body: "Your wallet holds at least 0.001 ETH on a supported chain.",
+        body: "Your wallet holds at least 0.001 ETH or HYPE on a supported chain.",
       };
     }
     return {
       tone: "muted" as const,
       title: "Not eligible yet",
-      body: "Hold at least 0.001 ETH on any one of these four chains.",
+      body: "Hold at least 0.001 ETH or HYPE on any one of these five chains.",
     };
   })();
 
@@ -209,10 +209,10 @@ export function EligibilityPanel() {
             </p>
           </div>
           <h2 className="mt-3 text-xl font-semibold tracking-[-0.02em] text-paper">
-            Your wallet, across four chains.
+            Your wallet, across five chains.
           </h2>
           <p className="mt-1.5 text-xs leading-5 text-paper-mute">
-            Hold 0.001 ETH on any one chain to unlock the daily claim.
+            Hold 0.001 ETH or HYPE on any one chain to unlock the daily claim.
           </p>
         </div>
         <button
@@ -259,7 +259,7 @@ export function EligibilityPanel() {
           href="#faq"
           className="text-[10px] font-medium text-paper-mute underline decoration-paper/20 underline-offset-4 transition hover:text-brand"
         >
-          Why 0.001 ETH?
+          Why a balance check?
         </a>
       </div>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { LINKS } from "@/lib/config";
+import { ClaimAccessOnly } from "./claim/claim-access-only";
 import { TokenMark } from "./token-mark";
 
 const PRODUCT = [
@@ -117,18 +118,26 @@ function FooterColumn({
         {title}
       </p>
       <ul className="mt-4 space-y-2.5">
-        {links.map((link) => (
-          <li key={link.label}>
-            <a
-              href={link.href}
-              target={link.href.startsWith("http") ? "_blank" : undefined}
-              rel={link.href.startsWith("http") ? "noreferrer" : undefined}
-              className="text-[11px] text-paper-dim transition hover:text-brand"
-            >
-              {link.label}
-            </a>
-          </li>
-        ))}
+        {links.map((link) => {
+          const item = (
+            <li key={link.href}>
+              <a
+                href={link.href}
+                target={link.href.startsWith("http") ? "_blank" : undefined}
+                rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+                className="text-[11px] text-paper-dim transition hover:text-brand"
+              >
+                {link.label}
+              </a>
+            </li>
+          );
+
+          return link.href === "/claim" ? (
+            <ClaimAccessOnly key={link.href}>{item}</ClaimAccessOnly>
+          ) : (
+            item
+          );
+        })}
       </ul>
     </div>
   );

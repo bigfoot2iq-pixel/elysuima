@@ -3,6 +3,7 @@ import {
   formatEther,
   http,
   isAddress,
+  parseUnits,
   type Address,
   type PublicClient,
 } from "viem";
@@ -40,9 +41,9 @@ const RPC_FALLBACKS: Record<string, string[]> = {
     "https://cloudflare-eth.com",
     "https://eth.drpc.org",
   ].filter((value): value is string => Boolean(value)),
-  abstract: [
-    process.env.ABSTRACT_RPC_URL,
-    "https://api.mainnet.abs.xyz",
+  hyperevm: [
+    process.env.HYPEREVM_RPC_URL,
+    "https://rpc.hyperliquid.xyz/evm",
   ].filter((value): value is string => Boolean(value)),
   base: [
     process.env.BASE_RPC_URL,
@@ -78,13 +79,43 @@ function thresholdWei() {
     try {
       return BigInt(raw);
     } catch {
-      // Fall through to the documented 0.001 ETH threshold.
+      // Fall through to the documented 0.001 native-token threshold.
     }
   }
   return 10n ** 15n;
 }
 
+/**
+ * HyperCore spot balances are not exposed over JSON-RPC. The official info API
+ * returns the wallet's spot balances, including HYPE, as decimal strings.
+ */
+async function hyperliquidBalance(address: Address): Promise<bigint> {
+  const response = await fetch("https://api.hyperliquid.xyz/info", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ type: "spotClearinghouseState", user: address }),
+    signal: AbortSignal.timeout(4_500),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hyperliquid info API returned ${response.status}`);
+  }
+
+  const payload = (await response.json()) as {
+    balances?: Array<{ coin?: string; total?: string }>;
+  };
+  if (!Array.isArray(payload.balances)) {
+    throw new Error("Unexpected Hyperliquid info response");
+  }
+
+  const total = payload.balances.find((entry) => entry.coin === "HYPE")?.total;
+  return parseUnits(total ?? "0", 18);
+}
+
 async function balanceOnChain(chainKey: string, address: Address) {
+  if (chainKey === "hyperliquid") return hyperliquidBalance(address);
+
   const urls = RPC_FALLBACKS[chainKey] ?? [];
   if (urls.length === 0) throw new Error("No RPC configured");
 
