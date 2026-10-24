@@ -35,9 +35,9 @@ export function Hero() {
             </span>
           </div>
 
-          <h1 className="mt-6 font-display text-[clamp(2.6rem,6.6vw,5.2rem)] font-extrabold leading-[0.9] tracking-[-0.045em] text-paper">
-            Meet the
-            <span className="relative mt-1 block pb-[0.06em]">
+          <h1 className="mt-6 whitespace-nowrap font-display text-[clamp(1.85rem,4.8vw,3.9rem)] font-extrabold leading-[0.9] tracking-[-0.045em] text-paper">
+            Meet the{" "}
+            <span className="relative pb-[0.06em]">
               {/* Inline-block so the underline tracks the word, not the column. */}
               <span className="relative inline-block">
                 <span className="text-gradient">Elyziuma</span>
