@@ -9,9 +9,113 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Check, Copy, ArrowUpRight, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  Copy,
+  ImageOff,
+  Loader2,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { XLogo } from "@/components/x-logo";
 import { collectionImageUrl } from "@/lib/collection/art";
+import { cn } from "@/lib/utils";
+
+type ArtworkStatus = "loading" | "loaded" | "error";
+
+/** Where "go mint yours" points to in the share post. */
+const SHARE_URL = "https://www.elyziuma.xyz/launchpad";
+
+/**
+ * The artwork can take a while to arrive (the hosted PNGs are large), so it
+ * gets its own component: the modal can name the token immediately while the
+ * image loads behind a skeleton, then fade it in. Keyed by URL, so minting
+ * another token starts from a clean loading state.
+ */
+function MintedArtwork({
+  imageUrl,
+  tokenLabel,
+}: {
+  imageUrl: string;
+  tokenLabel: string;
+}) {
+  const [status, setStatus] = useState<ArtworkStatus>("loading");
+  const [attempt, setAttempt] = useState(0);
+
+  // The gateway art is immutable, so a retry only needs a cache-busting query
+  // to make Next.js fetch the image again instead of reusing a failed entry.
+  const src =
+    attempt > 0
+      ? `${imageUrl}${imageUrl.includes("?") ? "&" : "?"}retry=${attempt}`
+      : imageUrl;
+
+  return (
+    <div
+      aria-busy={status === "loading"}
+      className="relative mt-2 aspect-square overflow-hidden rounded-2xl border border-paper/10 bg-ink-2"
+    >
+      <Image
+        key={src}
+        src={src}
+        alt={`${tokenLabel} artwork`}
+        fill
+        loading="eager"
+        fetchPriority="high"
+        sizes="(max-width: 640px) 90vw, 420px"
+        onLoad={() => setStatus("loaded")}
+        onError={() => setStatus("error")}
+        className={cn(
+          "object-cover transition-[opacity,transform] duration-700 ease-out",
+          status === "loaded"
+            ? "scale-100 opacity-100"
+            : "scale-[1.02] opacity-0",
+        )}
+      />
+
+      {status === "loading" ? (
+        <div className="absolute inset-0 grid place-items-center overflow-hidden bg-ink-2">
+          <div
+            aria-hidden
+            className="animate-shimmer absolute inset-0 bg-[linear-gradient(100deg,transparent_25%,rgba(125,240,196,0.07)_45%,rgba(255,255,255,0.06)_50%,rgba(125,240,196,0.07)_55%,transparent_75%)]"
+          />
+          <div
+            role="status"
+            aria-live="polite"
+            className="relative flex flex-col items-center gap-2.5 text-center"
+          >
+            <span className="grid size-10 place-items-center rounded-full border border-brand/25 bg-ink/70 text-brand shadow-[0_0_24px_rgba(124,216,242,0.18)]">
+              <Loader2 className="size-4 animate-spin" />
+            </span>
+            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.22em] text-paper-mute">
+              Loading artwork
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      {status === "error" ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-ink-2/95 p-6 text-center">
+          <ImageOff className="size-5 text-paper-mute" />
+          <p className="text-[11px] leading-5 text-paper-mute">
+            The artwork couldn&apos;t load.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setStatus("loading");
+              setAttempt((current) => current + 1);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-paper/15 bg-paper/[0.03] px-2.5 py-1 font-mono text-[10px] font-semibold text-paper-dim transition hover:border-brand/40 hover:text-brand"
+          >
+            <RefreshCw className="size-3" />
+            Try again
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * Mint confirmation. The image is the actual on-chain artwork for the token
@@ -51,12 +155,12 @@ export function MintSuccessModal({
   const shareText =
     tokenId !== undefined
       ? quantity === 1
-        ? `I just minted ${tokenLabel} on Elysium.`
-        : `I just minted ${quantity} Elyziuma NFTs on Elysium.`
-      : "I just minted Elyziuma on Elysium.";
+        ? `I just minted ${tokenLabel} on Elysium. go mint yours at ${SHARE_URL}`
+        : `I just minted ${quantity} Elyziuma NFTs on Elysium. go mint yours at ${SHARE_URL}`
+      : `I just minted Elyziuma on Elysium. go mint yours at ${SHARE_URL}`;
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(
     shareText,
-  )}${imageUrl ? `&url=${encodeURIComponent(imageUrl)}` : ""}`;
+  )}`;
 
   useEffect(() => {
     if (!open) return;
@@ -202,16 +306,11 @@ export function MintSuccessModal({
                 </div>
               </div>
 
-              <div className="relative mt-2 aspect-square overflow-hidden rounded-2xl border border-paper/10 bg-ink-2">
-                <Image
-                  src={imageUrl}
-                  alt={`${tokenLabel} artwork`}
-                  fill
-                  priority
-                  sizes="(max-width: 640px) 90vw, 420px"
-                  className="object-cover"
-                />
-              </div>
+              <MintedArtwork
+                key={imageUrl}
+                imageUrl={imageUrl}
+                tokenLabel={tokenLabel}
+              />
 
               <p className="mt-2 text-center text-[10px] text-paper-mute">
                 Screenshot this card to share your mint.
