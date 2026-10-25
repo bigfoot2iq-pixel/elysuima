@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, LockKeyhole } from "lucide-react";
+import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { shortAddress } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useClaimData, useCollectionData } from "./admin-data";
 import { type Tone } from "./admin-ui";
@@ -34,20 +38,34 @@ function useMounted() {
   );
 }
 
-export function AdminConsole() {
+export function AdminConsole({ sessionAddress }: { sessionAddress: Address }) {
   const mounted = useMounted();
 
   if (!mounted) return <AdminConsoleSkeleton />;
 
-  return <AdminConsoleContent />;
+  return <AdminConsoleContent sessionAddress={sessionAddress} />;
 }
 
-function AdminConsoleContent() {
+function AdminConsoleContent({ sessionAddress }: { sessionAddress: Address }) {
+  const router = useRouter();
   const { address } = useAccount();
   const claim = useClaimData({ poll: false });
   const collection = useCollectionData({ poll: false });
   const [active, setActive] = useActiveSection();
+  const [locking, setLocking] = useState(false);
   useHashScroll();
+
+  async function lock() {
+    if (locking) return;
+    setLocking(true);
+
+    try {
+      await fetch("/api/admin/session", { method: "DELETE" });
+      router.refresh();
+    } finally {
+      setLocking(false);
+    }
+  }
 
   const isClaimOwner = sameAddress(address, claim.owner);
   const isCollectionOwner = sameAddress(address, collection.owner);
@@ -119,14 +137,29 @@ function AdminConsoleContent() {
           <OwnershipSection address={address} />
           <ClaimSection address={address} />
 
-          <div className="flex flex-col gap-2 border-t border-paper/[0.07] pt-6 text-[10px] leading-5 text-paper-mute sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-paper/[0.07] pt-6 text-[10px] leading-5 text-paper-mute sm:flex-row sm:items-center sm:justify-between">
             <p>
               NFT collection writes are owner transactions. Network changes are
               signed messages.
             </p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em]">
-              Owner console · noindex
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em]">
+                Unlocked · {shortAddress(sessionAddress, 4)}
+              </p>
+              <button
+                type="button"
+                onClick={() => void lock()}
+                disabled={locking}
+                className="inline-flex items-center gap-1.5 rounded-full border border-paper/10 px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-paper-mute transition hover:border-danger/40 hover:text-danger disabled:opacity-50"
+              >
+                {locking ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <LockKeyhole className="size-3" />
+                )}
+                Lock
+              </button>
+            </div>
           </div>
         </div>
       </div>
