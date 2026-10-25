@@ -35,6 +35,7 @@ import {
 import { formatAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useCollectionData } from "./admin-data";
+import { LaunchpadMintPanel } from "./launchpad-mint-panel";
 import { LaunchpadSchedulePanel } from "./launchpad-schedule-panel";
 import { NetworkRuntimePanel } from "./network-runtime-panel";
 import {
@@ -358,6 +359,7 @@ export function CollectionSection({ address }: { address?: Address }) {
       <div className="mt-5 space-y-4">
         <NetworkRuntimePanel address={address} />
         <LaunchpadSchedulePanel address={address} />
+        <LaunchpadMintPanel address={address} />
         {collection.launchpadQuery.isPending ? (
           <ConsoleSkeleton cards={4} />
         ) : !collection.isConfigured ? (

@@ -36,6 +36,7 @@ export function getDefaultLaunchpadConfig(): LaunchpadConfig {
   return {
     enabled: true,
     startAt: 0,
+    mintBalanceCheck: true,
     chainId,
     collectionAddress:
       envCollectionAddress && isAddress(envCollectionAddress)
@@ -222,6 +223,11 @@ export function normalizeLaunchpadConfig(
   const enabled =
     typeof input.enabled === "boolean" ? input.enabled : defaults.enabled;
 
+  const mintBalanceCheck =
+    typeof input.mintBalanceCheck === "boolean"
+      ? input.mintBalanceCheck
+      : defaults.mintBalanceCheck;
+
   const chainIdCandidate =
     typeof input.chainId === "number"
       ? input.chainId
@@ -281,6 +287,7 @@ export function normalizeLaunchpadConfig(
   const config: LaunchpadConfig = {
     enabled,
     startAt: startAtField(input, defaults.startAt, errors),
+    mintBalanceCheck,
     chainId,
     collectionAddress: addressField(
       input,

@@ -52,6 +52,7 @@ export function toLaunchpadConfig(config: LaunchpadConfig): LaunchpadConfig {
   return {
     enabled: config.enabled,
     startAt: config.startAt,
+    mintBalanceCheck: config.mintBalanceCheck,
     chainId: config.chainId,
     collectionAddress: config.collectionAddress,
     rpcUrl: config.rpcUrl,

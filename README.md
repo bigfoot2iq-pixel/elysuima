@@ -84,7 +84,7 @@ type:              Claim(address wallet,uint256 amount,uint256 nonce,uint256 dea
 
 ## Launchpad
 
-`/launchpad` mints an already-deployed NFT collection on Elysium. The collection address, RPC, mint method, launch start time, and interface limits are stored in `data/launchpad.json`. The admin console edits the network/RPC, the launch countdown, and the collection contract. The collection's own on-chain cap always wins.
+`/launchpad` mints an already-deployed NFT collection on Elysium. The collection address, RPC, mint method, launch start time, mint balance check, and interface limits are stored in `data/launchpad.json`. The admin console edits the network/RPC, the launch countdown, mint requirements, and the collection contract. The collection's own on-chain cap always wins.
 
 The mint layer is deliberately flexible:
 
@@ -113,7 +113,7 @@ Token URIs resolve to `{baseURI}{tokenId}.json` and token ids start at `1`.
 
 The launchpad reads this contract directly. The server probe picks up `publicPrice`, `publicMintOpen`, and `maxPerWallet`, and the browser then follows the live phase: it shows the public price and calls `publicMint` while the public phase is open.
 
-Before submitting a mint, the mint panel reads the connected wallet's native balance on the active chain and requires at least `0.06 HYPE` (or `0.0025 ETH` on an ETH-native chain), raised to the mint total when the selected quantity costs more. A failed balance read blocks the button with a retry action. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
+Before submitting a mint, when `mintBalanceCheck` is enabled (the default), the mint panel reads the connected wallet's native balance on the active chain and requires at least `0.06 HYPE` (or `0.0025 ETH` on an ETH-native chain), raised to the mint total when the selected quantity costs more. A failed balance read blocks the button with a retry action. The admin console can turn this guard off from **Mint requirements**; when it is off, the balance panel is hidden and the mint button is not gated. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
 
 ### Launchpad runtime network settings
 
@@ -162,6 +162,7 @@ Because authorization is purely on-chain, both `NEXT_PUBLIC_CLAIM_ADDRESS` and `
 | --- | --- |
 | `enabled` | Public pause switch for the launchpad page |
 | `startAt` | Unix seconds when the mint opens; `0` disables the countdown |
+| `mintBalanceCheck` | Require the minimum HYPE/ETH balance before enabling the mint button; defaults to `true` |
 | `chainId` | Elysium network the launchpad targets: `99801` or `99901` |
 | `collectionAddress` | Already-deployed NFT collection on that network |
 | `rpcUrl` | Runtime Elysium RPC for reads and the browser transport |
@@ -474,7 +475,7 @@ Daily amount, pause/unpause, faucet withdrawal, signer rotation, and health. Thi
 
 `/admin/launchpad` and `/admin/collection` are kept as 307 redirects to `/admin#collection`.
 
-The public launchpad's display settings — collection address, mint method, max supply, SeaDrop, drop copy, and links — still live in `data/launchpad.json` or the configured KV store. The admin console edits the network/RPC, the launch countdown, and the collection contract.
+The public launchpad's display settings - collection address, mint method, max supply, SeaDrop, drop copy, and links - still live in `data/launchpad.json` or the configured KV store. The admin console edits the network/RPC, the launch countdown, mint requirements, and the collection contract.
 
 ---
 

@@ -177,6 +177,46 @@ export function Field({
   );
 }
 
+export function Switch({
+  checked,
+  onCheckedChange,
+  disabled = false,
+  label,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  disabled?: boolean;
+  /** Accessible name for the switch. */
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onCheckedChange(!checked)}
+      className={cn(
+        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:cursor-not-allowed disabled:opacity-50",
+        checked
+          ? "border-mint/40 bg-mint/20"
+          : "border-paper/15 bg-paper/[0.04]",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none block size-4 rounded-full transition-transform duration-200",
+          checked
+            ? "translate-x-[22px] bg-mint shadow-[0_0_10px_rgba(125,240,196,0.45)]"
+            : "translate-x-1 bg-paper-mute",
+        )}
+      />
+    </button>
+  );
+}
+
 export function AddressRow({
   label,
   value,

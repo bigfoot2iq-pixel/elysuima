@@ -107,6 +107,10 @@ export function MintCard({
       ? getAddress(config.collectionAddress)
       : undefined;
 
+  // The admin console can turn the pre-mint balance guard off. Treat a missing
+  // field from an older config as enabled.
+  const balanceCheckEnabled = config.mintBalanceCheck !== false;
+
   const mintStats = useReadContract({
     address: collection,
     abi: launchpadReadAbi,
@@ -140,7 +144,7 @@ export function MintCard({
     address,
     chainId: config.chainId,
     query: {
-      enabled: Boolean(address),
+      enabled: Boolean(address) && balanceCheckEnabled,
       refetchInterval: 20_000,
       refetchOnWindowFocus: true,
       retry: false,
@@ -328,13 +332,23 @@ export function MintCard({
   const nativeBalanceValue = nativeBalance.data?.value;
   const balanceKnown = nativeBalanceValue !== undefined;
   const balanceUnavailable =
-    Boolean(address) && !balanceKnown && nativeBalance.isError;
+    balanceCheckEnabled &&
+    Boolean(address) &&
+    !balanceKnown &&
+    nativeBalance.isError;
   const balanceChecking =
-    Boolean(address) && !balanceKnown && !balanceUnavailable;
+    balanceCheckEnabled &&
+    Boolean(address) &&
+    !balanceKnown &&
+    !balanceUnavailable;
   const insufficientBalance =
-    nativeBalanceValue !== undefined && nativeBalanceValue < requiredBalance;
+    balanceCheckEnabled &&
+    nativeBalanceValue !== undefined &&
+    nativeBalanceValue < requiredBalance;
 
-  const canMint = mintable && balanceKnown && !insufficientBalance;
+  const canMint =
+    mintable &&
+    (!balanceCheckEnabled || (balanceKnown && !insufficientBalance));
 
   const wrongChain = Boolean(address) && walletChainId !== config.chainId;
   const busyOrConfirming = busy || receipt.isLoading;
@@ -381,7 +395,7 @@ export function MintCard({
     setMintSuccessOpen(true);
     void refetchMintStats();
     void refetchBalance();
-    void refetchNativeBalance();
+    if (balanceCheckEnabled) void refetchNativeBalance();
     if (drop) void refetchPublicMinted();
     void queryClient.invalidateQueries({
       predicate: (query) => query.queryKey[0] === "launchpad-contract",
@@ -400,6 +414,7 @@ export function MintCard({
     refetchBalance,
     refetchMintStats,
     refetchNativeBalance,
+    balanceCheckEnabled,
   ]);
 
   useEffect(() => {
@@ -549,19 +564,19 @@ export function MintCard({
       return;
     }
 
-    if (balanceUnavailable) {
+    if (balanceCheckEnabled && balanceUnavailable) {
       void nativeBalance.refetch();
       return;
     }
 
     if (
-      balanceChecking ||
-      insufficientBalance ||
-      !canMint ||
-      busyOrConfirming
+      balanceCheckEnabled &&
+      (balanceChecking || insufficientBalance)
     ) {
       return;
     }
+
+    if (!canMint || busyOrConfirming) return;
     await submitMint();
   }
 
@@ -678,16 +693,18 @@ export function MintCard({
         </span>
       </div>
 
-      <MintBalanceCheck
-        address={address}
-        balance={nativeBalanceValue}
-        required={requiredBalance}
-        symbol={nativeCurrency.symbol}
-        decimals={nativeCurrency.decimals}
-        checking={balanceChecking}
-        unavailable={balanceUnavailable}
-        isTestnet={isTestnet}
-      />
+      {balanceCheckEnabled ? (
+        <MintBalanceCheck
+          address={address}
+          balance={nativeBalanceValue}
+          required={requiredBalance}
+          symbol={nativeCurrency.symbol}
+          decimals={nativeCurrency.decimals}
+          checking={balanceChecking}
+          unavailable={balanceUnavailable}
+          isTestnet={isTestnet}
+        />
+      ) : null}
 
       <button
         type="button"

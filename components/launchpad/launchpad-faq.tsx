@@ -17,6 +17,7 @@ export function LaunchpadFaq({
   const limit = getPerWalletLimit(config, inspection);
   const drop = inspection?.elyziumaDrop;
   const { symbol, decimals } = config.chain.nativeCurrency;
+  const balanceCheckEnabled = config.mintBalanceCheck !== false;
   const minimumBalance = getMintMinimumBalance(symbol, decimals);
   const minimumBalanceLabel = `${formatAmount(minimumBalance, decimals, 4)} ${symbol}`;
 
@@ -29,7 +30,11 @@ export function LaunchpadFaq({
     {
       question: "Which network and currency do I need?",
       answer:
-        `${config.chain.name}, chain ID ${config.chain.id}. Gas and any mint price are paid in ${symbol}, the native currency of ${config.chain.name}. The mint panel checks that your wallet holds at least ${minimumBalanceLabel} before it submits, so the transaction can cover the mint and gas. It also offers to switch your wallet automatically.`,
+        `${config.chain.name}, chain ID ${config.chain.id}. Gas and any mint price are paid in ${symbol}, the native currency of ${config.chain.name}. ${
+          balanceCheckEnabled
+            ? `The mint panel checks that your wallet holds at least ${minimumBalanceLabel} before it submits, so the transaction can cover the mint and gas.`
+            : "The mint panel does not require a minimum wallet balance before submitting."
+        } It also offers to switch your wallet automatically.`,
     },
     {
       question: "What is the maximum per wallet?",

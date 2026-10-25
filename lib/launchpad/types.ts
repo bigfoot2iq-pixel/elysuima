@@ -66,6 +66,12 @@ export type LaunchpadConfig = {
    * launchpad shows a countdown instead of the mint UI. 0 means no schedule.
    */
   startAt: number;
+  /**
+   * Whether the mint panel checks the connected wallet's native balance before
+   * enabling the mint button. This is a launchpad UI guard only; the contract
+   * remains the final authority.
+   */
+  mintBalanceCheck: boolean;
   /** Elysium network the launchpad targets. Switched at runtime. */
   chainId: number;
   collectionAddress: string;
