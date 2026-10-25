@@ -1,9 +1,11 @@
 import { ShieldCheck } from "lucide-react";
+import { getMintMinimumBalance } from "@/lib/launchpad/balance";
 import { getPerWalletLimit } from "@/lib/launchpad/drop";
 import type {
   ContractInspection,
   PublicLaunchpadConfig,
 } from "@/lib/launchpad/types";
+import { formatAmount } from "@/lib/format";
 
 export function LaunchpadFaq({
   config,
@@ -14,6 +16,9 @@ export function LaunchpadFaq({
 }) {
   const limit = getPerWalletLimit(config, inspection);
   const drop = inspection?.elyziumaDrop;
+  const { symbol, decimals } = config.chain.nativeCurrency;
+  const minimumBalance = getMintMinimumBalance(symbol, decimals);
+  const minimumBalanceLabel = `${formatAmount(minimumBalance, decimals, 4)} ${symbol}`;
 
   const faqs = [
     {
@@ -24,7 +29,7 @@ export function LaunchpadFaq({
     {
       question: "Which network and currency do I need?",
       answer:
-        `${config.chain.name}, chain ID ${config.chain.id}. Gas and any mint price are paid in HYPE, the native currency of ${config.chain.name}. The mint panel offers to switch your wallet automatically.`,
+        `${config.chain.name}, chain ID ${config.chain.id}. Gas and any mint price are paid in ${symbol}, the native currency of ${config.chain.name}. The mint panel checks that your wallet holds at least ${minimumBalanceLabel} before it submits, so the transaction can cover the mint and gas. It also offers to switch your wallet automatically.`,
     },
     {
       question: "What is the maximum per wallet?",

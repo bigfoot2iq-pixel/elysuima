@@ -24,6 +24,7 @@ import {
 } from "viem";
 import {
   useAccount,
+  useBalance,
   useReadContract,
   useSwitchChain,
   useWaitForTransactionReceipt,
@@ -36,6 +37,7 @@ import {
   launchpadMintAbi,
   seaDropAbi,
 } from "@/lib/launchpad/abis";
+import { getMintRequiredBalance } from "@/lib/launchpad/balance";
 import { getPerWalletLimit, getUnitPrice } from "@/lib/launchpad/drop";
 import { getDropStatus, getSupplyState } from "@/lib/launchpad/status";
 import {
@@ -43,10 +45,15 @@ import {
   type ContractInspection,
   type PublicLaunchpadConfig,
 } from "@/lib/launchpad/types";
-import { explorerAddressFor, explorerTxFor } from "@/lib/chains";
+import {
+  explorerAddressFor,
+  explorerTxFor,
+  getElysiumChain,
+} from "@/lib/chains";
 import { formatAmount, formatCountdown, shortAddress } from "@/lib/format";
 import { COLLECTION_COVER } from "@/lib/mascots";
 import { cn } from "@/lib/utils";
+import { MintBalanceCheck } from "./mint-balance-check";
 import { MintSuccessModal } from "./mint-success-modal";
 
 const TONE_STYLES = {
@@ -122,6 +129,20 @@ export function MintCard({
     query: {
       enabled: Boolean(address && collection),
       refetchInterval: 20_000,
+      retry: false,
+    },
+  });
+
+  // The mint check reads the native balance on the mint chain, not whichever
+  // chain the wallet happens to be on, so the requirement is accurate before
+  // the wallet switches networks.
+  const nativeBalance = useBalance({
+    address,
+    chainId: config.chainId,
+    query: {
+      enabled: Boolean(address),
+      refetchInterval: 20_000,
+      refetchOnWindowFocus: true,
       retry: false,
     },
   });
@@ -230,6 +251,18 @@ export function MintCard({
   );
   const total = unitPrice * BigInt(effectiveQuantity);
 
+  const nativeCurrency = config.chain.nativeCurrency;
+  const requiredBalance = getMintRequiredBalance(
+    nativeCurrency.symbol,
+    total,
+    nativeCurrency.decimals,
+  );
+  const isTestnet = getElysiumChain(config.chainId).testnet;
+  const totalLabel =
+    total === 0n
+      ? "Free"
+      : `${formatAmount(total, nativeCurrency.decimals, 4)} ${nativeCurrency.symbol}`;
+
   const minted = Number(totalSupply ?? 0n);
   const cap = maxSupply ? Number(maxSupply) : 0;
   const progress = cap > 0 ? Math.min(100, (minted / cap) * 100) : null;
@@ -285,15 +318,28 @@ export function MintCard({
   }, []);
 
   const isLive = status.label === "Live";
-  const canMint =
+  const mintable =
     Boolean(collection) &&
     config.enabled &&
     isLive &&
     methodReady &&
     maxQuantity > 0;
 
+  const nativeBalanceValue = nativeBalance.data?.value;
+  const balanceKnown = nativeBalanceValue !== undefined;
+  const balanceUnavailable =
+    Boolean(address) && !balanceKnown && nativeBalance.isError;
+  const balanceChecking =
+    Boolean(address) && !balanceKnown && !balanceUnavailable;
+  const insufficientBalance =
+    nativeBalanceValue !== undefined && nativeBalanceValue < requiredBalance;
+
+  const canMint = mintable && balanceKnown && !insufficientBalance;
+
   const wrongChain = Boolean(address) && walletChainId !== config.chainId;
   const busyOrConfirming = busy || receipt.isLoading;
+  const retryBalance =
+    Boolean(address) && !wrongChain && mintable && balanceUnavailable;
 
   const emptyDrop = !collection;
   const opensIn = (() => {
@@ -307,6 +353,7 @@ export function MintCard({
   const handledError = useRef<Hash | undefined>(undefined);
   const refetchMintStats = mintStats.refetch;
   const refetchBalance = balance.refetch;
+  const refetchNativeBalance = nativeBalance.refetch;
   const refetchPublicMinted = publicMinted.refetch;
 
   useEffect(() => {
@@ -334,6 +381,7 @@ export function MintCard({
     setMintSuccessOpen(true);
     void refetchMintStats();
     void refetchBalance();
+    void refetchNativeBalance();
     if (drop) void refetchPublicMinted();
     void queryClient.invalidateQueries({
       predicate: (query) => query.queryKey[0] === "launchpad-contract",
@@ -351,6 +399,7 @@ export function MintCard({
     queryClient,
     refetchBalance,
     refetchMintStats,
+    refetchNativeBalance,
   ]);
 
   useEffect(() => {
@@ -500,7 +549,19 @@ export function MintCard({
       return;
     }
 
-    if (!canMint || busyOrConfirming) return;
+    if (balanceUnavailable) {
+      void nativeBalance.refetch();
+      return;
+    }
+
+    if (
+      balanceChecking ||
+      insufficientBalance ||
+      !canMint ||
+      busyOrConfirming
+    ) {
+      return;
+    }
     await submitMint();
   }
 
@@ -518,14 +579,15 @@ export function MintCard({
     if (maxQuantity === 0) return "Wallet limit reached";
     if (receipt.isLoading) return "Confirming on Elysium…";
     if (busy) return "Confirm in wallet…";
-    return `Mint ${effectiveQuantity} · ${
-      total === 0n ? "Free" : `${formatAmount(total, 18, 4)} HYPE`
-    }`;
+    if (balanceChecking) return "Checking wallet…";
+    if (balanceUnavailable) return "Retry wallet check";
+    if (insufficientBalance) return `Insufficient ${nativeCurrency.symbol}`;
+    return `Mint ${effectiveQuantity} · ${totalLabel}`;
   })();
 
   const buttonDisabled =
     busyOrConfirming ||
-    Boolean(address && !wrongChain && !canMint) ||
+    (Boolean(address) && !wrongChain && !canMint && !retryBalance) ||
     (Boolean(address) && !wrongChain && emptyDrop);
 
   return (
@@ -558,7 +620,9 @@ export function MintCard({
             Price
           </p>
           <p className="tabular mt-0.5 font-mono text-lg font-semibold text-paper">
-            {unitPrice === 0n ? "Free" : `${formatAmount(unitPrice, 18, 4)} HYPE`}
+            {unitPrice === 0n
+              ? "Free"
+              : `${formatAmount(unitPrice, nativeCurrency.decimals, 4)} ${nativeCurrency.symbol}`}
           </p>
         </div>
         <p className="font-mono text-[11px] text-paper-mute">per NFT</p>
@@ -603,14 +667,27 @@ export function MintCard({
       <div className="mt-3 flex items-center justify-between rounded-xl border border-paper/[0.08] bg-paper/[0.02] px-3.5 py-2.5 font-mono text-[13px]">
         <span className="text-paper-mute">Total</span>
         <span className="tabular flex items-center gap-2 text-sm font-semibold text-paper">
-          {total === 0n ? "Free" : formatAmount(total, 18, 4)}
+          {total === 0n
+            ? "Free"
+            : formatAmount(total, nativeCurrency.decimals, 4)}
           {total === 0n ? null : (
             <span className="text-[10px] uppercase tracking-[0.12em] text-paper-mute">
-              HYPE
+              {nativeCurrency.symbol}
             </span>
           )}
         </span>
       </div>
+
+      <MintBalanceCheck
+        address={address}
+        balance={nativeBalanceValue}
+        required={requiredBalance}
+        symbol={nativeCurrency.symbol}
+        decimals={nativeCurrency.decimals}
+        checking={balanceChecking}
+        unavailable={balanceUnavailable}
+        isTestnet={isTestnet}
+      />
 
       <button
         type="button"
@@ -621,9 +698,9 @@ export function MintCard({
           wrongChain && "bg-none bg-warn text-ink",
         )}
       >
-        {busyOrConfirming ? (
+        {busyOrConfirming || balanceChecking ? (
           <Loader2 className="size-4 animate-spin" />
-        ) : wrongChain ? (
+        ) : wrongChain || balanceUnavailable || insufficientBalance ? (
           <AlertTriangle className="size-4" />
         ) : (
           <Wallet className="size-4" />

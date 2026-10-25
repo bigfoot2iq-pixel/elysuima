@@ -12,6 +12,7 @@ import {
   useLaunchpadContract,
 } from "@/hooks/use-launchpad-config";
 import type { ContractInspection } from "@/lib/launchpad/types";
+import { LaunchpadCountdown } from "./launchpad-countdown";
 import { LaunchpadFaq } from "./launchpad-faq";
 import { LaunchpadPreview } from "./launchpad-preview";
 import { LaunchpadSummary } from "./launchpad-summary";
@@ -114,6 +115,19 @@ export function LaunchpadContent() {
 
   const refetchContract = contractQuery.refetch;
 
+  // The countdown reports the exact moment it reaches zero, so the mint UI
+  // appears immediately instead of waiting for the coarse page clock. The
+  // reached target is remembered so refreshes of the same schedule do not
+  // bring the countdown back.
+  const startAt = config?.startAt ?? 0;
+  const [reachedStartAt, setReachedStartAt] = useState<number | null>(null);
+
+  const handleScheduleReached = useCallback(() => {
+    if (!startAt) return;
+    setReachedStartAt(startAt);
+    void refetchContract();
+  }, [startAt, refetchContract]);
+
   const handleMintConfirmed = useCallback(
     (quantity: number) => {
       if (!config) return;
@@ -134,7 +148,7 @@ export function LaunchpadContent() {
     [config, inspection?.totalSupply, refetchContract],
   );
 
-  if (!hydrated || configQuery.isPending || waitingForContract) {
+  if (!hydrated || configQuery.isPending) {
     return <LaunchpadSkeleton />;
   }
 
@@ -163,6 +177,29 @@ export function LaunchpadContent() {
         </div>
       </div>
     );
+  }
+
+  const prelaunch =
+    config.startAt > 0 &&
+    reachedStartAt !== config.startAt &&
+    now < config.startAt;
+
+  // The countdown does not need the contract read, so it appears as soon as
+  // the config is available instead of waiting on the RPC.
+  if (prelaunch) {
+    return (
+      <LaunchpadCountdown
+        key={config.startAt}
+        config={config}
+        collectionName={inspection?.name}
+        target={config.startAt}
+        onStart={handleScheduleReached}
+      />
+    );
+  }
+
+  if (waitingForContract) {
+    return <LaunchpadSkeleton />;
   }
 
   return (

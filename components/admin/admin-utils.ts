@@ -51,6 +51,7 @@ export function sameAddress(a?: string | null, b?: string | null) {
 export function toLaunchpadConfig(config: LaunchpadConfig): LaunchpadConfig {
   return {
     enabled: config.enabled,
+    startAt: config.startAt,
     chainId: config.chainId,
     collectionAddress: config.collectionAddress,
     rpcUrl: config.rpcUrl,

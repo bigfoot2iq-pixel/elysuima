@@ -35,6 +35,7 @@ export function getDefaultLaunchpadConfig(): LaunchpadConfig {
 
   return {
     enabled: true,
+    startAt: 0,
     chainId,
     collectionAddress:
       envCollectionAddress && isAddress(envCollectionAddress)
@@ -152,6 +153,32 @@ function addressField(
   return getAddress(value);
 }
 
+/** Unix seconds, or 0 to clear the schedule. */
+function startAtField(
+  input: Record<string, unknown>,
+  fallback: number,
+  errors: string[],
+) {
+  const raw = input.startAt;
+  if (raw === undefined) return fallback;
+
+  const value =
+    typeof raw === "number"
+      ? raw
+      : typeof raw === "string" && raw.trim() !== ""
+        ? Number(raw)
+        : Number.NaN;
+
+  // 0 clears the schedule. The upper bound keeps the value inside a safe
+  // integer and rejects accidental milliseconds-based timestamps.
+  if (!Number.isSafeInteger(value) || value < 0 || value > 4_102_444_800) {
+    errors.push("startAt must be a unix timestamp in seconds.");
+    return fallback;
+  }
+
+  return value;
+}
+
 function integerField(
   input: Record<string, unknown>,
   key: keyof LaunchpadConfig,
@@ -253,6 +280,7 @@ export function normalizeLaunchpadConfig(
 
   const config: LaunchpadConfig = {
     enabled,
+    startAt: startAtField(input, defaults.startAt, errors),
     chainId,
     collectionAddress: addressField(
       input,

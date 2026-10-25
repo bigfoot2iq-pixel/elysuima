@@ -61,6 +61,11 @@ export type MintMethod = (typeof MINT_METHODS)[number]["id"];
 
 export type LaunchpadConfig = {
   enabled: boolean;
+  /**
+   * Unix seconds when the mint opens. While set and in the future the public
+   * launchpad shows a countdown instead of the mint UI. 0 means no schedule.
+   */
+  startAt: number;
   /** Elysium network the launchpad targets. Switched at runtime. */
   chainId: number;
   collectionAddress: string;
