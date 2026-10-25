@@ -63,7 +63,7 @@ export type LaunchpadConfig = {
   enabled: boolean;
   /**
    * Unix seconds when the mint opens. While set and in the future the public
-   * launchpad shows a countdown instead of the mint UI. 0 means no schedule.
+   * launchpad's mint button shows a live countdown. 0 means no schedule.
    */
   startAt: number;
   /**

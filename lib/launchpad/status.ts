@@ -62,6 +62,16 @@ export function getDropStatus(
     };
   }
 
+  // The admin schedule is a UI gate: the page stays visible and only the mint
+  // button counts down, so the status pill should still read as scheduled.
+  if (config.startAt > 0 && nowSeconds < config.startAt) {
+    return {
+      tone: "brand",
+      label: "Scheduled",
+      detail: "The mint has not opened yet.",
+    };
+  }
+
   if (inspection && !inspection.ok) {
     return {
       tone: "warn",

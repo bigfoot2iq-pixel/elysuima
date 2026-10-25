@@ -55,9 +55,14 @@ function fromLocalInput(value: string) {
 }
 
 function formatSchedule(seconds: number) {
+  // `dateStyle`/`timeStyle` cannot be combined with `timeZoneName`; that throws
+  // a TypeError. Spell out the parts so the zone abbreviation is included.
   return new Date(seconds * 1_000).toLocaleString("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
     timeZoneName: "short",
   });
 }
@@ -147,8 +152,8 @@ export function LaunchpadSchedulePanel({ address }: { address?: Address }) {
         {
           description:
             action === "clear"
-              ? "The launchpad shows the mint UI immediately again."
-              : "Visitors see a countdown until the start time, then the mint UI opens automatically.",
+              ? "The mint button is available immediately again."
+              : "Visitors see the countdown on the mint button until the start time, then it becomes mintable automatically.",
         },
       );
     } catch (error) {
@@ -196,7 +201,7 @@ export function LaunchpadSchedulePanel({ address }: { address?: Address }) {
       <CardHeading
         icon={CalendarClock}
         title="Launch schedule"
-        description="Hold the public launchpad behind a countdown until a date and time you choose."
+        description="Show a countdown on the mint button until a date and time you choose. The rest of the launchpad stays visible."
         aside={
           <div className="flex flex-wrap justify-end gap-2">
             {dirty ? <StatusPill tone="warn">Unsaved</StatusPill> : null}
@@ -223,13 +228,13 @@ export function LaunchpadSchedulePanel({ address }: { address?: Address }) {
           <span className="text-right font-mono text-[10px] text-paper-dim">
             {currentStart > 0
               ? formatSchedule(currentStart)
-              : "No start time — the mint UI is shown"}
+              : "No start time — the mint button is live"}
           </span>
         </div>
         {currentStart > 0 ? (
           <p className="mt-2 text-[10px] leading-5 text-paper-mute">
             {scheduled
-              ? "Visitors see the countdown until then. The mint UI opens automatically at the start time."
+              ? "Visitors see the countdown on the mint button until then. It becomes mintable automatically at the start time."
               : "This start time has passed. Remove it to clear the saved schedule."}
           </p>
         ) : null}

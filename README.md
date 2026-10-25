@@ -178,7 +178,7 @@ Because authorization is purely on-chain, both `NEXT_PUBLIC_CLAIM_ADDRESS` and `
 
 Settings are written atomically through the store described above. The file backend writes `data/launchpad.json` (override with `LAUNCHPAD_CONFIG_PATH`), which is gitignored. On a multi-instance deployment, use a shared store or point every instance at the same one.
 
-When `startAt` is set and still in the future, `/launchpad` shows a countdown instead of the mint interface. The mint panel appears automatically once the start time is reached. This is a launchpad UI schedule, not an on-chain mint restriction; the contract's own phase still decides whether a mint succeeds.
+When `startAt` is set and still in the future, `/launchpad` stays fully visible and the mint button shows a live countdown. The button becomes mintable automatically once the start time is reached. This is a launchpad UI schedule, not an on-chain mint restriction; the contract's own phase still decides whether a mint succeeds.
 
 ---
 

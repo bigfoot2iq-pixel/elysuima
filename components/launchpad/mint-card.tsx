@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowUpRight,
+  CalendarClock,
   Check,
   Loader2,
   Minus,
@@ -75,12 +76,15 @@ export function MintCard({
   inspection,
   now,
   onMintConfirmed,
+  onScheduleReached,
 }: {
   config: PublicLaunchpadConfig;
   inspection?: ContractInspection;
   now: number;
   /** Lets the page move the shared supply counter the moment a mint lands. */
   onMintConfirmed?: (quantity: number) => void;
+  /** Fires once when the admin schedule reaches its start time. */
+  onScheduleReached?: () => void;
 }) {
   const { address, chainId: walletChainId } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -101,6 +105,47 @@ export function MintCard({
     minted: number;
     at: number;
   } | null>(null);
+
+  // The launch schedule only gates the mint button. A local one-second clock
+  // keeps the countdown exact while the page keeps its coarse clock.
+  const scheduleTarget = config.startAt > 0 ? config.startAt : null;
+  const [scheduleNow, setScheduleNow] = useState(() =>
+    Math.floor(Date.now() / 1_000),
+  );
+  const scheduleHandled = useRef(false);
+
+  useEffect(() => {
+    if (!scheduleTarget) {
+      scheduleHandled.current = true;
+      return;
+    }
+
+    const tick = () => {
+      const current = Math.floor(Date.now() / 1_000);
+      setScheduleNow(current);
+      if (current >= scheduleTarget && !scheduleHandled.current) {
+        scheduleHandled.current = true;
+        onScheduleReached?.();
+      }
+    };
+
+    // A schedule that already started is not a transition, so it must not
+    // notify the page again, and it does not need a live clock.
+    if (Math.floor(Date.now() / 1_000) >= scheduleTarget) {
+      scheduleHandled.current = true;
+      return;
+    }
+
+    scheduleHandled.current = false;
+    const timer = window.setInterval(tick, 1_000);
+    return () => window.clearInterval(timer);
+  }, [scheduleTarget, onScheduleReached]);
+
+  const scheduleRemaining =
+    scheduleTarget && scheduleNow < scheduleTarget
+      ? scheduleTarget - scheduleNow
+      : 0;
+  const scheduled = scheduleRemaining > 0;
 
   const collection =
     config.collectionAddress && isAddress(config.collectionAddress)
@@ -326,6 +371,7 @@ export function MintCard({
     Boolean(collection) &&
     config.enabled &&
     isLive &&
+    !scheduled &&
     methodReady &&
     maxQuantity > 0;
 
@@ -357,6 +403,7 @@ export function MintCard({
 
   const emptyDrop = !collection;
   const opensIn = (() => {
+    if (scheduled) return formatCountdown(scheduleRemaining);
     if (inspection?.seaDrop?.startTime && inspection.seaDrop.startTime > now) {
       return formatCountdown(inspection.seaDrop.startTime - now);
     }
@@ -550,6 +597,8 @@ export function MintCard({
   }
 
   async function handlePrimary() {
+    if (scheduled) return;
+
     if (!address) {
       openConnectModal?.();
       return;
@@ -581,12 +630,14 @@ export function MintCard({
   }
 
   const buttonLabel = (() => {
+    if (scheduled)
+      return opensIn ? `Mint opens in ${opensIn}` : "Mint scheduled";
     if (!address) return "Connect wallet";
     if (wrongChain) return "Switch to Elysium";
     if (emptyDrop) return "Mint not configured";
     if (!config.enabled) return "Mint paused";
     if (status.label === "Scheduled")
-      return opensIn ? `Opens in ${opensIn}` : "Mint scheduled";
+      return opensIn ? `Mint opens in ${opensIn}` : "Mint scheduled";
     if (status.label === "Ended") return "Mint ended";
     if (status.label === "Sold out") return "Sold out";
     if (status.label === "Closed") return "Mint closed";
@@ -601,6 +652,7 @@ export function MintCard({
   })();
 
   const buttonDisabled =
+    scheduled ||
     busyOrConfirming ||
     (Boolean(address) && !wrongChain && !canMint && !retryBalance) ||
     (Boolean(address) && !wrongChain && emptyDrop);
@@ -713,9 +765,12 @@ export function MintCard({
         className={cn(
           "btn-primary mt-3.5 w-full",
           wrongChain && "bg-none bg-warn text-ink",
+          scheduled && "is-countdown tabular",
         )}
       >
-        {busyOrConfirming || balanceChecking ? (
+        {scheduled ? (
+          <CalendarClock className="size-4" />
+        ) : busyOrConfirming || balanceChecking ? (
           <Loader2 className="size-4 animate-spin" />
         ) : wrongChain || balanceUnavailable || insufficientBalance ? (
           <AlertTriangle className="size-4" />

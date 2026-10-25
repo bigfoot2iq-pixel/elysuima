@@ -12,7 +12,6 @@ import {
   useLaunchpadContract,
 } from "@/hooks/use-launchpad-config";
 import type { ContractInspection } from "@/lib/launchpad/types";
-import { LaunchpadCountdown } from "./launchpad-countdown";
 import { LaunchpadFaq } from "./launchpad-faq";
 import { LaunchpadPreview } from "./launchpad-preview";
 import { LaunchpadSummary } from "./launchpad-summary";
@@ -115,10 +114,10 @@ export function LaunchpadContent() {
 
   const refetchContract = contractQuery.refetch;
 
-  // The countdown reports the exact moment it reaches zero, so the mint UI
-  // appears immediately instead of waiting for the coarse page clock. The
-  // reached target is remembered so refreshes of the same schedule do not
-  // bring the countdown back.
+  // The mint button reports the exact moment the schedule reaches zero, so
+  // the page does not wait for the coarse clock above before it shows the mint
+  // as live. The reached target is remembered so the same schedule is not
+  // treated as pending again on a later render.
   const startAt = config?.startAt ?? 0;
   const [reachedStartAt, setReachedStartAt] = useState<number | null>(null);
 
@@ -127,6 +126,13 @@ export function LaunchpadContent() {
     setReachedStartAt(startAt);
     void refetchContract();
   }, [startAt, refetchContract]);
+
+  // The shared clock ticks every 30 seconds, so once the button reports the
+  // start time, keep the rest of the page from reporting a stale schedule.
+  const pageNow =
+    startAt > 0 && reachedStartAt === startAt
+      ? Math.max(now, startAt)
+      : now;
 
   const handleMintConfirmed = useCallback(
     (quantity: number) => {
@@ -179,25 +185,6 @@ export function LaunchpadContent() {
     );
   }
 
-  const prelaunch =
-    config.startAt > 0 &&
-    reachedStartAt !== config.startAt &&
-    now < config.startAt;
-
-  // The countdown does not need the contract read, so it appears as soon as
-  // the config is available instead of waiting on the RPC.
-  if (prelaunch) {
-    return (
-      <LaunchpadCountdown
-        key={config.startAt}
-        config={config}
-        collectionName={inspection?.name}
-        target={config.startAt}
-        onStart={handleScheduleReached}
-      />
-    );
-  }
-
   if (waitingForContract) {
     return <LaunchpadSkeleton />;
   }
@@ -207,7 +194,7 @@ export function LaunchpadContent() {
       <LaunchpadSummary
         config={config}
         inspection={displayInspection}
-        now={now}
+        now={pageNow}
       />
 
       <section className="section-shell pb-2 pt-6">
@@ -219,8 +206,9 @@ export function LaunchpadContent() {
           <MintCard
             config={config}
             inspection={displayInspection}
-            now={now}
+            now={pageNow}
             onMintConfirmed={handleMintConfirmed}
+            onScheduleReached={handleScheduleReached}
           />
         </div>
       </section>

@@ -503,6 +503,19 @@ body {
   box-shadow: none;
 }
 
+/* The mint button turns into a visible countdown before the scheduled start.
+   It stays disabled, but it should not fade like an unavailable action. */
+.btn-primary.is-countdown {
+  border: 1px solid rgba(52, 183, 221, 0.3);
+  background: rgba(52, 183, 221, 0.08);
+  color: #7cd8f2;
+  box-shadow: none;
+}
+
+.btn-primary.is-countdown:disabled {
+  opacity: 1;
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;
