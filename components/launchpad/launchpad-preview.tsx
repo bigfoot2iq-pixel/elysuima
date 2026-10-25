@@ -3,9 +3,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
-import { COLLECTION_COVER, getMascot, MASCOTS } from "@/lib/mascots";
+import { COLLECTION_COVER, MASCOTS } from "@/lib/mascots";
 import { cn } from "@/lib/utils";
-import { MascotHeroArt } from "../mascot-hero-art";
 import { NetworkBadge } from "../network-badge";
 
 type PreviewItem = {
@@ -20,8 +19,18 @@ type PreviewItem = {
   title: string;
   /** One line about the piece. */
   blurb: string;
-  /** Set for the individual characters. The cover art renders as a plain image. */
-  mascotId?: string;
+};
+
+/**
+ * The launchpad uses its own set art for the five characters. The rest of the
+ * site keeps the mascot portraits from lib/mascots.
+ */
+const LAUNCHPAD_MASCOT_IMAGES: Record<string, string> = {
+  sentinel: "/mascots/launchpad/sentinel.jpg",
+  executive: "/mascots/launchpad/executive.jpg",
+  overclock: "/mascots/launchpad/overclock.jpg",
+  analyst: "/mascots/launchpad/analyst.jpg",
+  prism: "/mascots/launchpad/prism.jpg",
 };
 
 const PREVIEW_ITEMS: PreviewItem[] = [
@@ -38,12 +47,11 @@ const PREVIEW_ITEMS: PreviewItem[] = [
   ...MASCOTS.map((mascot) => ({
     id: mascot.id,
     name: mascot.name,
-    image: mascot.image,
+    image: LAUNCHPAD_MASCOT_IMAGES[mascot.id] ?? mascot.image,
     eyebrow: mascot.rarity,
     role: mascot.role,
     title: mascot.title,
     blurb: mascot.blurb,
-    mascotId: mascot.id,
   })),
 ];
 
@@ -63,7 +71,6 @@ export function LaunchpadPreview() {
 
   const active =
     PREVIEW_ITEMS.find((item) => item.id === activeId) ?? PREVIEW_ITEMS[0];
-  const activeMascot = active.mascotId ? getMascot(active.mascotId) : undefined;
   const activeIndex = Math.max(
     0,
     PREVIEW_ITEMS.findIndex((item) => item.id === active.id),
@@ -108,24 +115,15 @@ export function LaunchpadPreview() {
             the panel on narrow screens and only shares a row with the details
             once there is room for both. */}
         <div className="relative mx-auto aspect-square w-full max-w-[520px] overflow-hidden rounded-2xl border border-paper/[0.08] bg-ink xl:mx-0 xl:max-w-none">
-          {activeMascot ? (
-            <MascotHeroArt
-              key={active.id}
-              mascotId={activeMascot.id}
-              preload
-              zoom={1.25}
-            />
-          ) : (
-            <Image
-              key={active.id}
-              src={active.image}
-              alt={`${active.name} — ${COLLECTION_COVER.title}`}
-              fill
-              preload
-              sizes="(max-width: 1024px) 92vw, 620px"
-              className="object-cover"
-            />
-          )}
+          <Image
+            key={active.id}
+            src={active.image}
+            alt={`${active.name} — ${COLLECTION_COVER.title}`}
+            fill
+            preload
+            sizes="(max-width: 1024px) 92vw, 620px"
+            className="object-cover"
+          />
 
           {/* Name chip, pinned to the top-left of the stage. */}
           <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full border border-paper/10 bg-ink/70 px-2.5 py-1 backdrop-blur">
@@ -220,12 +218,7 @@ export function LaunchpadPreview() {
                         loading="lazy"
                         width={144}
                         height={144}
-                        className={cn(
-                          "size-full object-cover",
-                          item.mascotId
-                            ? "scale-[2] origin-[50%_25%]"
-                            : "object-center",
-                        )}
+                        className="size-full object-cover"
                       />
                     </span>
                     <span className="min-w-0 flex-1">
