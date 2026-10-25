@@ -9,12 +9,12 @@ import { LINKS } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { TokenMark } from "./token-mark";
 import { WalletButton } from "./wallet-button";
-import { XLogo } from "./x-logo";
+import { XLogo, VerifiedBadge } from "./x-logo";
 
 const NAV = [
   { label: "Launchpad", href: "/launchpad" },
   { label: "Claim", href: "/claim" },
-  { label: "Bridge", href: "/bridge" },
+  { label: "Faucet", href: "/faucet" },
   { label: "Roadmap", href: "/#roadmap" },
   { label: "How it works", href: "/#how-it-works" },
   { label: "FAQ", href: "/#faq" },
@@ -78,10 +78,11 @@ export function SiteHeader() {
             target="_blank"
             rel="noreferrer"
             aria-label="Elyziumaa on X"
-            className="hidden h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-paper px-3.5 text-sm font-semibold text-ink transition hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:inline-flex xl:px-5"
+            className="x-pill group/x hidden h-11 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full bg-paper px-3.5 text-sm font-semibold text-ink transition hover:bg-brand-soft hover:shadow-[0_0_26px_-6px_rgba(124,216,242,0.75)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:inline-flex xl:px-5"
           >
             <XLogo className="size-4" />
             <span className="hidden xl:inline">Elyziumaa</span>
+            <VerifiedBadge className="size-[15px] shrink-0 text-[#1d9bf0] drop-shadow-[0_0_5px_rgba(29,155,240,0.55)] transition-transform duration-300 group-hover/x:scale-110" />
           </a>
           <div className="hidden sm:block">
             <WalletButton />
@@ -119,10 +120,11 @@ export function SiteHeader() {
             href={LINKS.x}
             target="_blank"
             rel="noreferrer"
-            className="mt-2 flex h-11 items-center justify-center gap-2 rounded-full border border-paper/15 bg-paper/[0.05] px-4 text-sm font-semibold text-paper transition hover:border-paper/25 hover:bg-paper/[0.09]"
+            className="x-pill mt-2 flex h-11 items-center justify-center gap-2 overflow-hidden rounded-full border border-paper/15 bg-paper/[0.05] px-4 text-sm font-semibold text-paper transition hover:border-paper/25 hover:bg-paper/[0.09]"
           >
             <XLogo className="size-4" />
             Elyziumaa
+            <VerifiedBadge className="size-[15px] shrink-0 text-[#1d9bf0] drop-shadow-[0_0_5px_rgba(29,155,240,0.55)]" />
           </a>
           <div className="pt-3 sm:hidden">
             <WalletButton compact />

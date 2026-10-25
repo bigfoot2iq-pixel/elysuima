@@ -388,6 +388,31 @@ body {
   animation: spin 14s linear infinite;
 }
 
+/* Header X link: a soft light sweep so the account mark catches the eye
+   without turning the pill into a neon sign. */
+.x-pill {
+  position: relative;
+  isolation: isolate;
+}
+
+.x-pill::after {
+  content: "";
+  position: absolute;
+  inset: -60% -35%;
+  z-index: -1;
+  background: linear-gradient(
+    100deg,
+    transparent 34%,
+    rgba(124, 216, 242, 0.85) 46%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(124, 216, 242, 0.85) 54%,
+    transparent 66%
+  );
+  transform: translateX(-130%);
+  animation: sheen 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }
@@ -413,6 +438,33 @@ body {
 }
 
 .input:focus {
+  border-color: rgba(52, 183, 221, 0.55);
+  box-shadow: 0 0 0 3px rgba(52, 183, 221, 0.12);
+}
+
+.input-area {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 12px;
+  border: 1px solid rgba(248, 247, 244, 0.1);
+  background: rgba(4, 24, 28, 0.7);
+  padding: 12px 14px;
+  color: #f8f7f4;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  outline: none;
+  resize: vertical;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.input-area::placeholder {
+  color: rgba(125, 122, 112, 0.8);
+}
+
+.input-area:focus {
   border-color: rgba(52, 183, 221, 0.55);
   box-shadow: 0 0 0 3px rgba(52, 183, 221, 0.12);
 }
@@ -569,6 +621,17 @@ details[open] .accordion-plus {
   }
   to {
     background-position: -200% 0;
+  }
+}
+
+@keyframes sheen {
+  0%,
+  64% {
+    transform: translateX(-130%);
+  }
+  86%,
+  100% {
+    transform: translateX(130%);
   }
 }
 

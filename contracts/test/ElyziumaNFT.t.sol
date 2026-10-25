@@ -36,7 +36,7 @@ contract ElyziumaNFTTest is Test {
         assertEq(nft.symbol(), "ELYZ");
         assertEq(nft.owner(), owner);
         assertEq(nft.MAX_SUPPLY(), 2222);
-        assertEq(nft.MAX_PER_WALLET(), 5);
+        assertEq(nft.maxPerWallet(), 1);
         assertEq(nft.maxSupply(), 2222);
         assertEq(nft.totalMinted(), 0);
         assertEq(nft.totalSupply(), 0);
@@ -63,18 +63,37 @@ contract ElyziumaNFTTest is Test {
         nft.setPublicMintOpen(true);
     }
 
+    function testOwnerCanSetMaxPerWallet() public {
+        vm.prank(owner);
+        nft.setMaxPerWallet(3);
+
+        assertEq(nft.maxPerWallet(), 3);
+    }
+
+    function testOnlyOwnerCanSetMaxPerWallet() public {
+        vm.prank(alice);
+        vm.expectPartialRevert(Ownable.OwnableUnauthorizedAccount.selector);
+        nft.setMaxPerWallet(3);
+    }
+
+    function testSetMaxPerWalletZeroReverts() public {
+        vm.prank(owner);
+        vm.expectRevert(ElyziumaNFT.InvalidMaxPerWallet.selector);
+        nft.setMaxPerWallet(0);
+    }
+
     // ---- Public mint --------------------------------------------------------
 
     function testPublicMint() public {
         _openPublic(UNIT_PRICE);
 
         vm.prank(alice);
-        nft.publicMint{value: UNIT_PRICE * 2}(2);
+        nft.publicMint{value: UNIT_PRICE}(1);
 
-        assertEq(nft.balanceOf(alice), 2);
-        assertEq(nft.minted(alice), 2);
-        assertEq(nft.totalMinted(), 2);
-        assertEq(nft.remainingForWallet(alice), 3);
+        assertEq(nft.balanceOf(alice), 1);
+        assertEq(nft.minted(alice), 1);
+        assertEq(nft.totalMinted(), 1);
+        assertEq(nft.remainingForWallet(alice), 0);
     }
 
     function testPublicMintEmitsEvent() public {
@@ -113,7 +132,7 @@ contract ElyziumaNFTTest is Test {
         _openPublic(UNIT_PRICE);
 
         vm.prank(alice);
-        nft.publicMint{value: UNIT_PRICE * 5}(5);
+        nft.publicMint{value: UNIT_PRICE}(1);
 
         vm.prank(alice);
         vm.expectRevert(ElyziumaNFT.ExceedsWalletCap.selector);
@@ -124,13 +143,49 @@ contract ElyziumaNFTTest is Test {
         _openPublic(UNIT_PRICE);
 
         vm.prank(alice);
-        nft.publicMint{value: UNIT_PRICE * 5}(5);
+        nft.publicMint{value: UNIT_PRICE}(1);
 
         vm.prank(bob);
-        nft.publicMint{value: UNIT_PRICE * 5}(5);
+        nft.publicMint{value: UNIT_PRICE}(1);
 
-        assertEq(nft.totalMinted(), 10);
+        assertEq(nft.totalMinted(), 2);
         assertEq(nft.remainingForWallet(bob), 0);
+    }
+
+    function testPublicMintUsesUpdatedCap() public {
+        _openPublic(UNIT_PRICE);
+
+        vm.prank(owner);
+        nft.setMaxPerWallet(3);
+
+        vm.prank(alice);
+        nft.publicMint{value: UNIT_PRICE * 3}(3);
+
+        assertEq(nft.balanceOf(alice), 3);
+        assertEq(nft.remainingForWallet(alice), 0);
+
+        vm.prank(alice);
+        vm.expectRevert(ElyziumaNFT.ExceedsWalletCap.selector);
+        nft.publicMint{value: UNIT_PRICE}(1);
+    }
+
+    function testLoweringCapBlocksFurtherMints() public {
+        _openPublic(UNIT_PRICE);
+
+        vm.prank(owner);
+        nft.setMaxPerWallet(3);
+
+        vm.prank(alice);
+        nft.publicMint{value: UNIT_PRICE * 2}(2);
+
+        vm.prank(owner);
+        nft.setMaxPerWallet(1);
+
+        vm.prank(alice);
+        vm.expectRevert(ElyziumaNFT.ExceedsWalletCap.selector);
+        nft.publicMint{value: UNIT_PRICE}(1);
+
+        assertEq(nft.balanceOf(alice), 2);
     }
 
     function testPublicMintExceedsSupplyReverts() public {
@@ -216,13 +271,13 @@ contract ElyziumaNFTTest is Test {
         _openPublic(UNIT_PRICE);
 
         vm.prank(alice);
-        nft.publicMint{value: UNIT_PRICE * 2}(2);
+        nft.publicMint{value: UNIT_PRICE}(1);
 
         (uint256 minterNumMinted, uint256 currentTotalSupply, uint256 maxSupply) =
             nft.getMintStats(alice);
 
-        assertEq(minterNumMinted, 2);
-        assertEq(currentTotalSupply, 2);
+        assertEq(minterNumMinted, 1);
+        assertEq(currentTotalSupply, 1);
         assertEq(maxSupply, 2222);
     }
 
@@ -232,10 +287,10 @@ contract ElyziumaNFTTest is Test {
         _openPublic(UNIT_PRICE);
 
         vm.prank(alice);
-        nft.publicMint{value: UNIT_PRICE * 2}(2);
+        nft.publicMint{value: UNIT_PRICE}(1);
 
         uint256 balance = address(nft).balance;
-        assertEq(balance, UNIT_PRICE * 2);
+        assertEq(balance, UNIT_PRICE);
 
         uint256 ownerBefore = owner.balance;
 

@@ -41,6 +41,7 @@ export const elyziumaNftReadAbi = parseAbi([
   "function publicPrice() view returns (uint256)",
   "function publicMintOpen() view returns (bool)",
   "function minted(address wallet) view returns (uint256)",
+  "function maxPerWallet() view returns (uint256)",
   "function MAX_PER_WALLET() view returns (uint256)",
 ]);
 

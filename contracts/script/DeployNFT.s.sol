@@ -7,8 +7,9 @@ import {ElyziumaNFT} from "../src/ElyziumaNFT.sol";
 /// @notice Deploys the Elyziuma NFT collection.
 /// @dev Required env:
 ///      DEPLOYER_PRIVATE_KEY
-///      Optional: NFT_BASE_URI, NFT_OWNER, NFT_PUBLIC_PRICE,
-///      NFT_MAX_SUPPLY is a contract constant and cannot be changed.
+///      Optional: NFT_BASE_URI, NFT_OWNER, NFT_PUBLIC_PRICE.
+///      MAX_SUPPLY is a contract constant; maxPerWallet is owner-controlled and
+///      starts at 1.
 contract DeployNFT is Script {
     function run() external {
         uint256 deployerPk = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -32,7 +33,7 @@ contract DeployNFT is Script {
         console2.log("Name:", nft.name());
         console2.log("Symbol:", nft.symbol());
         console2.log("Max supply:", nft.MAX_SUPPLY());
-        console2.log("Max per wallet:", nft.MAX_PER_WALLET());
+        console2.log("Max per wallet:", nft.maxPerWallet());
         console2.log("Public price:", publicPrice);
     }
 }

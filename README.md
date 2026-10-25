@@ -9,7 +9,7 @@ The repository contains:
 - `ElyziumaNFT` - the 2,222-piece ERC-721A collection on Elysium, with an on-chain public mint phase.
 - A Next.js 16 / React 19 frontend with RainbowKit, wagmi, and viem.
 - Server routes for cross-chain eligibility checks, claim authorizations, contract inspection, and launchpad settings.
-- A claim owner console at `/admin` and a launchpad console at `/admin/launchpad`.
+- A single admin console at `/admin` covering the claim, launchpad, collection, and ownership settings.
 
 > ELYZ is an experimental token with no monetary value. Elysium is pre-launch and the chain may be reset. Nothing here is financial advice.
 
@@ -84,7 +84,7 @@ type:              Claim(address wallet,uint256 amount,uint256 nonce,uint256 dea
 
 ## Launchpad
 
-`/launchpad` mints an already-deployed NFT collection on Elysium. The collection address, RPC, price, mint method, and per-wallet limit are stored in `data/launchpad.json` and edited from `/admin/launchpad`.
+`/launchpad` mints an already-deployed NFT collection on Elysium. The collection address, RPC, mint method, and interface limits are stored in `data/launchpad.json`. The admin console edits the network/RPC and the collection contract; the display settings remain in the store. The collection's own on-chain cap always wins.
 
 The mint layer is deliberately flexible:
 
@@ -95,13 +95,14 @@ The mint layer is deliberately flexible:
 
 ### The Elyziuma collection contract
 
-`contracts/src/ElyziumaNFT.sol` is the collection this repo ships. It is an ERC-721A contract with `name = "Elyziuma"` and `symbol = "ELYZ"`, a hard cap of `MAX_SUPPLY = 2222` tokens, and a public cap of `MAX_PER_WALLET = 5` tokens per wallet.
+`contracts/src/ElyziumaNFT.sol` is the collection this repo ships. It is an ERC-721A contract with `name = "Elyziuma"` and `symbol = "ELYZ"`, a hard cap of `MAX_SUPPLY = 2222` tokens, and an owner-controlled public cap of `maxPerWallet` (starts at 1). `MAX_SUPPLY` is a compile-time constant; the owner can change `maxPerWallet` at any time.
 
 It keeps the mint phase on-chain, so the contract - not the saved settings - decides what is live:
 
 | Phase | Entry point | Rules |
 | --- | --- | --- |
-| Public | `publicMint(uint256 quantity)` | Anyone, while `publicMintOpen` is true. Capped by `MAX_PER_WALLET`. Priced at `publicPrice`. |
+| Public | `publicMint(uint256 quantity)` | Anyone, while `publicMintOpen` is true. Capped by `maxPerWallet`. Priced at `publicPrice`. |
+| Owner | `setMaxPerWallet(uint256 newMax)` | Updates the public per-wallet cap. Must be at least 1. Existing tokens are unaffected. |
 | Owner | `ownerMint(address to, uint256 quantity)` | Free, exempt from the per-wallet cap, still bounded by `MAX_SUPPLY`. |
 
 The public mint rejects a payment that does not match the on-chain price exactly, and the per-wallet counter only counts public mints.
@@ -110,7 +111,7 @@ The owner controls the public phase (`setPublicMintOpen`, `setPublicPrice`), the
 
 Token URIs resolve to `{baseURI}{tokenId}.json` and token ids start at `1`.
 
-The launchpad reads this contract directly. The server probe picks up `publicPrice`, `publicMintOpen`, and `MAX_PER_WALLET`, and the browser then follows the live phase: it shows the public price and calls `publicMint` while the public phase is open.
+The launchpad reads this contract directly. The server probe picks up `publicPrice`, `publicMintOpen`, and `maxPerWallet`, and the browser then follows the live phase: it shows the public price and calls `publicMint` while the public phase is open.
 
 ### Launchpad runtime network settings
 
@@ -161,7 +162,7 @@ Because authorization is purely on-chain, both `NEXT_PUBLIC_CLAIM_ADDRESS` and `
 | `chainId` | Elysium network the launchpad targets: `99901` or `99801` |
 | `collectionAddress` | Already-deployed NFT collection on that network |
 | `rpcUrl` | Runtime Elysium RPC for reads and the browser transport |
-| `maxPerWallet` | App-level wallet limit; on-chain limits still apply |
+| `maxPerWallet` | Interface fallback; the on-chain `maxPerWallet` wins for Elyziuma |
 | `maxSupply` | Fallback supply cap when the contract does not expose one |
 | `mintPrice` | HYPE per NFT for generic mints; SeaDrop price overrides it |
 | `mintMethod` | Auto-detect, SeaDrop, or a specific generic selector |
@@ -318,13 +319,17 @@ Deploy the NFT collection on its own:
 ```bash
 cd contracts
 export DEPLOYER_PRIVATE_KEY=0x...
-export NFT_BASE_URI=ipfs://bafycollection/
-export NFT_PUBLIC_PRICE=0.05ether
+export NFT_OWNER=0x...
+export NFT_BASE_URI=https://your-site.example/api/nft/
+export NFT_PUBLIC_PRICE=0
+export FOUNDRY_PROFILE=nft
 
 forge script script/DeployNFT.s.sol:DeployNFT \
   --rpc-url "$ELYSIUM_RPC_URL" \
   --broadcast
 ```
+
+`MAX_SUPPLY` is a compile-time constant. `maxPerWallet` is owner-controlled and can be changed from the NFT Collection section; lowering it affects future public mints only.
 
 The script logs the `ElyziumaNFT` address, the collection name and symbol, the supply cap, and both prices. Set the returned address as `collectionAddress` in the launchpad console, or as `NEXT_PUBLIC_LAUNCHPAD_COLLECTION_ADDRESS` before building.
 
@@ -334,8 +339,7 @@ After deployment:
 2. Set `FAUCET_SIGNER_PRIVATE_KEY` to the key for `CLAIM_SIGNER_ADDRESS`.
 3. Rebuild the frontend.
 4. Open `/api/health` and confirm `signerMatches: true` and `paused: false`.
-5. Open `/admin` with the owner wallet to manage the faucet.
-6. Open `/admin/launchpad` with the collection owner or the claim owner to configure the mint.
+5. Open `/admin` with the owner wallet. The claim, launchpad, collection, and ownership sections live on one page.
 
 If you do not pass `CLAIM_SIGNER_ADDRESS`, the deployer is used as the signer. For production, use a dedicated signer key.
 
@@ -414,45 +418,27 @@ Signed contract inspection. The payload accepts `rpcUrl`, `collectionAddress`, `
 
 ---
 
-## Owner consoles
+## Admin console
 
-### Claim console — `/admin`
+`/admin` is a focused NFT-collection console. It is `noindex, nofollow`, and every write is gated by on-chain ownership or a signed message.
 
-`/admin` is a client-side owner console. It reads the owner address from the contract and exposes:
+### 01 — NFT Collection
 
-- Update the daily amount.
-- Pause / unpause claims.
-- Withdraw faucet tokens to a treasury wallet.
-- Rotate the EIP-712 signer.
-- View total claimed, claims, unique claimers, and faucet balance.
+- **Network & runtime:** the Elysium network and RPC the app uses for collection reads and writes. Changes are signed messages with no gas and a five-minute window; the server verifies the chain ID and collection bytecode before saving.
+- **Contract owner actions:** open or close the public mint, set the public price, set the base URI, owner-mint to any address, withdraw the HYPE balance, and read the collection name, symbol, owner, supply, hard cap, and treasury.
+- `maxPerWallet` is owner-controlled. The admin console exposes a setter; lowering it blocks further public mints once a wallet reaches the new cap, but existing tokens are unaffected.
 
-All actions are ordinary contract transactions and require the connected wallet to be the owner. Ownership uses OpenZeppelin `Ownable2Step`; transferring ownership requires the new owner to accept.
+### 02 — Ownership & danger zone
 
-### Launchpad console — `/admin/launchpad`
+Transfer ownership to another wallet or renounce it permanently. Both are two-step confirmations and irreversible.
 
-`/admin/launchpad` edits the launchpad settings:
+### 03 — Claim & faucet
 
-- Elysium network (testnet or mainnet) and runtime RPC.
-- Collection address.
-- Mint method, price, max per wallet, and max supply.
-- SeaDrop contract and fee recipient.
-- Public copy, cover image, and social links.
-- Contract inspection with detected selectors, proxy implementation, and SeaDrop drop details.
+Daily amount, pause/unpause, faucet withdrawal, signer rotation, and health. This section is separate from the NFT collection and requires the claim owner.
 
-Every save is a signed message. No gas is spent and no contract ownership is delegated. Switching the network or the RPC takes effect on the next request, with no redeploy.
+`/admin/launchpad` and `/admin/collection` are kept as 307 redirects to `/admin#collection`.
 
-### Collection console — `/admin/collection`
-
-`/admin/collection` manages the `ElyziumaNFT` contract itself. It reads the owner address from the contract and exposes every owner method:
-
-- Open or close the public mint phase.
-- Set the public price.
-- Set the base URI that serves per-token metadata.
-- Owner mint to any address, exempt from the per-wallet cap.
-- Withdraw the HYPE collected by public mints.
-- Transfer or renounce ownership.
-
-All actions are ordinary contract transactions and require the connected wallet to be the owner. The console follows the network and the collection the launchpad is pointed at, so both are changed from `/admin/launchpad`.
+The public launchpad's display settings — collection address, mint method, max supply, SeaDrop, drop copy, and links — still live in `data/launchpad.json` or the configured KV store. They are no longer edited from the admin console, which focuses on the network/RPC and the collection contract.
 
 ---
 
@@ -520,7 +506,7 @@ The suite covers:
 - Final-sweep payout
 - Owner-only controls
 - Collection metadata, token ids, and `tokenURI`
-- Public mint, per-wallet cap, and payment checks
+- Public mint, per-wallet cap, cap updates, and payment checks
 - Owner mint exemptions and the supply cap
 - Withdraw and zero-address guards
 
@@ -539,8 +525,9 @@ npm run build
 app/
   page.tsx                       Landing page
   launchpad/page.tsx             NFT launchpad
-  admin/page.tsx                 Claim owner console
-  admin/launchpad/page.tsx       Launchpad settings console
+  admin/page.tsx                 Unified admin console
+  admin/launchpad/page.tsx       Redirect to /admin#collection
+  admin/collection/page.tsx      Redirect to /admin#collection
   api/claim/route.ts             Eligibility re-check + EIP-712 signing
   api/eligibility/route.ts       Five-chain balance check
   api/health/route.ts            Signer / contract health
@@ -552,9 +539,15 @@ app/
   layout.tsx                     Fonts, metadata, providers
   opengraph-image.tsx            Social card
 components/
+  admin/
+    admin-console.tsx            Shell, access panel, section navigation
+    network-runtime-panel.tsx    Signed network/RPC save
+    claim-section.tsx            Claim + faucet owner controls
+    collection-section.tsx       NFT contract owner controls + network
+    ownership-section.tsx        Transfer / renounce
+    admin-data.ts                Shared reads and admin status
+    admin-ui.tsx                 Console primitives
   launchpad/                     Hero, mint card, details, teaser
-  admin-launchpad.tsx            Launchpad settings console
-  admin-dashboard.tsx            Claim owner console
   ...                            Claim card, eligibility, stats, feed, FAQ
 contracts/
   src/ElyziumaToken.sol          Fixed-supply ERC-20

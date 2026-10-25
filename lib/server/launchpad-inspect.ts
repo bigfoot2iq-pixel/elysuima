@@ -355,18 +355,20 @@ async function detectElyziumaDrop(
       } as never),
     ) as Promise<T | undefined>;
 
-  const [publicPrice, publicMintOpen, maxPerWallet] = await Promise.all([
-    read<bigint>("publicPrice"),
-    read<boolean>("publicMintOpen"),
-    read<bigint>("MAX_PER_WALLET"),
-  ]);
+  const [publicPrice, publicMintOpen, maxPerWallet, legacyMaxPerWallet] =
+    await Promise.all([
+      read<bigint>("publicPrice"),
+      read<boolean>("publicMintOpen"),
+      read<bigint>("maxPerWallet"),
+      read<bigint>("MAX_PER_WALLET"),
+    ]);
 
   if (publicPrice === undefined || publicMintOpen === undefined) return undefined;
 
   return {
     publicPrice: publicPrice.toString(),
     publicMintOpen,
-    maxPerWallet: Number(maxPerWallet ?? 0n),
+    maxPerWallet: Number(maxPerWallet ?? legacyMaxPerWallet ?? 0n),
   };
 }
 

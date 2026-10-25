@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { AdminDashboard } from "@/components/admin-dashboard";
+import { AdminConsole } from "@/components/admin/admin-console";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
-  title: "Owner console",
+  title: "NFT collection",
   description:
-    "Manage the Elyziuma daily claim: update the amount, pause claims, fund the faucet, and rotate the signer.",
+    "Manage the Elyziuma NFT collection contract, its network, ownership, and the claim faucet.",
   robots: {
     index: false,
     follow: false,
@@ -18,7 +18,7 @@ export default function AdminPage() {
     <div className="relative flex min-h-full flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <AdminDashboard />
+        <AdminConsole />
       </main>
       <SiteFooter />
     </div>

@@ -74,12 +74,12 @@ export function Hero() {
               <ArrowRight className="size-4" />
             </Link>
             <a
-              href={LINKS.bridge}
+              href={LINKS.faucet}
               target="_blank"
               rel="noreferrer"
               className="btn-ink-ghost"
             >
-              Bridge HYPE
+              Get Faucet
               <ArrowUpRight className="size-3.5" />
             </a>
           </div>

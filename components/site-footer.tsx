@@ -7,7 +7,7 @@ import { TokenMark } from "./token-mark";
 const PRODUCT = [
   { label: "Launchpad", href: "/launchpad" },
   { label: "Daily claim", href: "/claim" },
-  { label: "Bridge", href: "/bridge" },
+  { label: "Faucet", href: "/faucet" },
   { label: "Roadmap", href: "/#roadmap" },
   { label: "Our vision", href: "/#vision" },
   { label: "How it works", href: "/#how-it-works" },
@@ -63,20 +63,25 @@ export function SiteFooter() {
               href="/admin"
               className="mt-4 flex items-center gap-1.5 text-[11px] text-paper-dim transition hover:text-brand"
             >
-              Claim admin <ArrowUpRight className="size-3" />
+              Admin console <ArrowUpRight className="size-3" />
             </Link>
             <Link
-              href="/admin/launchpad"
+              href="/admin#collection"
               className="mt-2.5 flex items-center gap-1.5 text-[11px] text-paper-dim transition hover:text-brand"
             >
-              Launchpad admin <ArrowUpRight className="size-3" />
+              Collection controls <ArrowUpRight className="size-3" />
+            </Link>
+            <Link
+              href="/admin#claim"
+              className="mt-2.5 flex items-center gap-1.5 text-[11px] text-paper-dim transition hover:text-brand"
+            >
+              Claim controls <ArrowUpRight className="size-3" />
             </Link>
             <p className="mt-6 text-[9px] uppercase tracking-[0.18em] text-paper-mute">
               Network
             </p>
-            <p className="mt-2 font-mono text-[11px] text-paper-dim">Elysium</p>
-            <p className="mt-1 font-mono text-[10px] text-paper-mute">
-              Chain ID 99901
+            <p className="mt-2 font-mono text-[11px] text-paper-dim">
+              Elysium Testnet
             </p>
           </div>
         </div>

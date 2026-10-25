@@ -10,14 +10,14 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
  * @notice 2,222 Elyziuma on Elysium.
  *
  *   - Public — anyone mints for {publicPrice} each while {publicMintOpen},
- *     up to {MAX_PER_WALLET} tokens per wallet.
+ *     up to {maxPerWallet} tokens per wallet.
  *   - Owner — {ownerMint} mints straight to any address for free (team,
  *     treasury, and any manual distributions), exempt from the per-wallet cap.
  *
  * The public phase is held on-chain: the owner opens it, sets the price, and
- * closes it again. A single hard cap, {MAX_PER_WALLET} (5), applies to the
- * public phase. Owner mints are exempt from that cap but still bounded by
- * total supply.
+ * closes it again. A single owner-controlled cap, {maxPerWallet} (default 1),
+ * applies to the public phase. Owner mints are exempt from that cap but still
+ * bounded by total supply.
  *
  * @dev The launchpad reads supply and per-wallet progress through {maxSupply}
  *      and {getMintStats}, so both are exposed as views on top of the ERC721A
@@ -29,7 +29,9 @@ contract ElyziumaNFT is ERC721A, Ownable, ReentrancyGuard {
     uint256 public constant MAX_SUPPLY = 2222;
 
     /// @notice Maximum tokens a single wallet may mint in the public phase.
-    uint256 public constant MAX_PER_WALLET = 5;
+    /// @dev Owner-controlled. Lowering it does not affect tokens already minted,
+    ///      but it blocks further public mints once a wallet reaches the new cap.
+    uint256 public maxPerWallet = 1;
 
     // ---- Phase switch (owner controlled) ------------------------------------
     /// @notice Whether the public mint is open.
@@ -47,6 +49,7 @@ contract ElyziumaNFT is ERC721A, Ownable, ReentrancyGuard {
     mapping(address => uint256) public minted;
 
     event PublicMinted(address indexed wallet, uint256 quantity);
+    event MaxPerWalletUpdated(uint256 maxPerWallet);
 
     error PublicClosed();
     error ZeroQuantity();
@@ -55,6 +58,7 @@ contract ElyziumaNFT is ERC721A, Ownable, ReentrancyGuard {
     error WrongPayment();
     error WithdrawFailed();
     error ZeroAddress();
+    error InvalidMaxPerWallet();
 
     /// @param initialOwner Address that receives the owner role. A zero address
     ///        is rejected by {Ownable} during construction.
@@ -73,7 +77,7 @@ contract ElyziumaNFT is ERC721A, Ownable, ReentrancyGuard {
     function publicMint(uint256 quantity) external payable nonReentrant {
         if (!publicMintOpen) revert PublicClosed();
         if (quantity == 0) revert ZeroQuantity();
-        if (minted[msg.sender] + quantity > MAX_PER_WALLET) revert ExceedsWalletCap();
+        if (minted[msg.sender] + quantity > maxPerWallet) revert ExceedsWalletCap();
         if (_totalMinted() + quantity > MAX_SUPPLY) revert ExceedsSupply();
         if (msg.value != publicPrice * quantity) revert WrongPayment();
 
@@ -95,6 +99,13 @@ contract ElyziumaNFT is ERC721A, Ownable, ReentrancyGuard {
 
     function setPublicMintOpen(bool value) external onlyOwner {
         publicMintOpen = value;
+    }
+
+    /// @notice Update the public-phase per-wallet cap.
+    function setMaxPerWallet(uint256 newMax) external onlyOwner {
+        if (newMax == 0) revert InvalidMaxPerWallet();
+        maxPerWallet = newMax;
+        emit MaxPerWalletUpdated(newMax);
     }
 
     function setPublicPrice(uint256 value) external onlyOwner {
@@ -128,7 +139,7 @@ contract ElyziumaNFT is ERC721A, Ownable, ReentrancyGuard {
     /// @notice Public mints a wallet can still make under the per-wallet cap.
     function remainingForWallet(address wallet) external view returns (uint256) {
         uint256 used = minted[wallet];
-        return used >= MAX_PER_WALLET ? 0 : MAX_PER_WALLET - used;
+        return used >= maxPerWallet ? 0 : maxPerWallet - used;
     }
 
     /// @notice Mint counters for a wallet, plus the collection supply.

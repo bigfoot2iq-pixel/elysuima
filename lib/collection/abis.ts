@@ -58,6 +58,14 @@ export const elyziumaNftAbi = [
   },
   {
     type: "function",
+    name: "maxPerWallet",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    // Legacy read for collections deployed before the cap became mutable.
+    type: "function",
     name: "MAX_PER_WALLET",
     stateMutability: "view",
     inputs: [],
@@ -133,6 +141,13 @@ export const elyziumaNftAbi = [
   },
   {
     type: "function",
+    name: "setMaxPerWallet",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "newMax", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
     name: "setBaseURI",
     stateMutability: "nonpayable",
     inputs: [{ name: "baseURI_", type: "string" }],
@@ -187,6 +202,11 @@ export const elyziumaNftAbi = [
       { name: "quantity", type: "uint256", indexed: false },
     ],
   },
+  {
+    type: "event",
+    name: "MaxPerWalletUpdated",
+    inputs: [{ name: "maxPerWallet", type: "uint256", indexed: false }],
+  },
 
   // ---- Errors --------------------------------------------------------------
   { type: "error", name: "PublicClosed", inputs: [] },
@@ -196,6 +216,7 @@ export const elyziumaNftAbi = [
   { type: "error", name: "WrongPayment", inputs: [] },
   { type: "error", name: "WithdrawFailed", inputs: [] },
   { type: "error", name: "ZeroAddress", inputs: [] },
+  { type: "error", name: "InvalidMaxPerWallet", inputs: [] },
   {
     type: "error",
     name: "OwnableUnauthorizedAccount",

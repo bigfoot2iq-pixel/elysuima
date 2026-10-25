@@ -1,9 +1,10 @@
 import { cn } from "@/lib/utils";
+import { VerifiedBadge } from "./x-logo";
 
 /**
- * Small "verified network" mark. The check sits in a blue coin so the badge
- * reads at a glance on top of artwork, while the pill keeps contrast over
- * bright or dark areas of the image.
+ * Small "verified art" mark that sits on top of the main artwork. The X-style
+ * seal reads instantly as a check of authenticity, while the pill keeps
+ * contrast over bright or dark areas of the image.
  */
 export function NetworkBadge({
   label = "Elysium",
@@ -19,19 +20,11 @@ export function NetworkBadge({
         className,
       )}
     >
-      <span className="flex size-4 items-center justify-center rounded-full bg-gradient-to-r from-brand-soft to-brand text-ink">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="size-2.5"
-          aria-hidden="true"
-        >
-          <path d="m5 13 4 4L19 7" />
-        </svg>
+      <span
+        aria-hidden="true"
+        className="flex size-4 shrink-0 items-center justify-center text-[#1d9bf0] drop-shadow-[0_0_6px_rgba(29,155,240,0.65)]"
+      >
+        <VerifiedBadge className="size-4" />
       </span>
       {label}
     </span>

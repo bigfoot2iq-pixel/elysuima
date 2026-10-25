@@ -46,7 +46,7 @@ export function getDefaultLaunchpadConfig(): LaunchpadConfig {
           process.env.NEXT_PUBLIC_ELYSIUM_RPC_URL ??
           "",
       ) ?? getChainRpcUrl(chainId),
-    maxPerWallet: 5,
+    maxPerWallet: 1,
     maxSupply: 0,
     mintPrice: "0",
     mintMethod: "auto",

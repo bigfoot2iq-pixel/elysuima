@@ -16,6 +16,13 @@ export const CLAIM_ADDRESS = (process.env.NEXT_PUBLIC_CLAIM_ADDRESS ??
 export const TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ??
   ZERO_ADDRESS) as Address;
 
+/**
+ * The chain the daily-claim contracts live on. The launchpad and collection can
+ * point at a different Elysium network, so the claim console pins its reads and
+ * writes to this chain instead of following the wallet.
+ */
+export const CLAIM_CHAIN_ID = getDefaultChainId();
+
 export const IS_CONFIGURED =
   CLAIM_ADDRESS.toLowerCase() !== ZERO_ADDRESS &&
   TOKEN_ADDRESS.toLowerCase() !== ZERO_ADDRESS;
@@ -34,7 +41,9 @@ export const LINKS = {
   bridge: "https://elyspump.com",
   elyspump: "https://elyspump.com/#/",
   boxa: "https://boxa.pro/#/bridge",
+  faucet: "https://testnet.elysium.kinetiq.xyz/faucet/",
   testnetFaucet: "https://elysium.kinetiq.xyz/testnet-faucet",
+  quicknodeFaucet: "https://faucet.quicknode.com/elysium/testnet",
   explorer: getChainExplorerUrl(getDefaultChainId()),
   docs: "https://elysium.kinetiq.xyz/docs",
   x: "https://x.com/Elyziumaa",

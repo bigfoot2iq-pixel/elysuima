@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/bridge",
+        destination: "/faucet",
+        permanent: true,
+      },
+    ];
+  },
   /* config options here */
   experimental: {
     agentFeedback: true,
