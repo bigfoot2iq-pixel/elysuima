@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQueryClient } from "@tanstack/react-query";
@@ -47,6 +47,7 @@ import { explorerAddressFor, explorerTxFor } from "@/lib/chains";
 import { formatAmount, formatCountdown, shortAddress } from "@/lib/format";
 import { COLLECTION_COVER } from "@/lib/mascots";
 import { cn } from "@/lib/utils";
+import { MintSuccessModal } from "./mint-success-modal";
 
 const TONE_STYLES = {
   mint: "border-mint/30 bg-mint/10 text-mint",
@@ -84,6 +85,7 @@ export function MintCard({
   const [lastQuantity, setLastQuantity] = useState(1);
   const [busy, setBusy] = useState(false);
   const [hash, setHash] = useState<Hash>();
+  const [mintSuccessOpen, setMintSuccessOpen] = useState(false);
   // The RPC can lag behind a confirmed mint, so the wallet counter keeps the
   // fresh total as a floor until the chain catches up. It is keyed by wallet so
   // switching accounts never carries another wallet's mints over.
@@ -271,6 +273,17 @@ export function MintCard({
     return first === last ? `#${first}` : `#${first}–#${last}`;
   }, [mintedTokenIds]);
 
+  // The success modal shows one piece of artwork. Multi-mints display the
+  // lowest token id so the image stays stable across re-renders.
+  const firstMintedTokenId = useMemo(() => {
+    if (mintedTokenIds.length === 0) return undefined;
+    return mintedTokenIds.reduce((lowest, id) => (id < lowest ? id : lowest));
+  }, [mintedTokenIds]);
+
+  const closeMintSuccess = useCallback(() => {
+    setMintSuccessOpen(false);
+  }, []);
+
   const isLive = status.label === "Live";
   const canMint =
     Boolean(collection) &&
@@ -317,31 +330,8 @@ export function MintCard({
       };
     });
     onMintConfirmed?.(lastQuantity);
-    toast.success("Mint confirmed", {
-      id: hash,
-      description: (
-        <span className="flex items-center gap-2.5">
-          <Image
-            src={COLLECTION_COVER.image}
-            alt=""
-            width={44}
-            height={44}
-            className="size-11 shrink-0 rounded-lg border border-paper/10 object-cover"
-          />
-          <span className="block min-w-0">
-            <span className="block text-[11px] leading-4 text-paper-dim">
-              {lastQuantity} NFT{lastQuantity === 1 ? "" : "s"} minted on
-              Elysium.
-            </span>
-            {mintedTokenLabel ? (
-              <span className="mt-0.5 block font-mono text-[10px] text-mint">
-                Token {mintedTokenLabel}
-              </span>
-            ) : null}
-          </span>
-        </span>
-      ),
-    });
+    toast.dismiss(hash);
+    setMintSuccessOpen(true);
     void refetchMintStats();
     void refetchBalance();
     if (drop) void refetchPublicMinted();
@@ -352,7 +342,6 @@ export function MintCard({
     hash,
     receipt.isSuccess,
     lastQuantity,
-    mintedTokenLabel,
     chainMintedByWallet,
     address,
     now,
@@ -390,6 +379,7 @@ export function MintCard({
 
     setBusy(true);
     setHash(undefined);
+    setMintSuccessOpen(false);
     setLastQuantity(effectiveQuantity);
 
     try {
@@ -793,6 +783,13 @@ export function MintCard({
           <ArrowUpRight className="size-3" />
         </a>
       ) : null}
+
+      <MintSuccessModal
+        open={mintSuccessOpen}
+        tokenId={firstMintedTokenId}
+        quantity={lastQuantity}
+        onClose={closeMintSuccess}
+      />
     </div>
   );
 }
