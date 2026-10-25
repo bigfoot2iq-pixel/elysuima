@@ -13,6 +13,9 @@ export const ELYSIUM_CHAIN_IDS = [99801, 99901] as const;
 
 export type ElysiumChainId = (typeof ELYSIUM_CHAIN_IDS)[number];
 
+/** Network the app falls back to when `NEXT_PUBLIC_ELYSIUM_CHAIN_ID` is unset. */
+export const DEFAULT_ELYSIUM_CHAIN_ID: ElysiumChainId = 99801;
+
 export type ElysiumChainInfo = {
   id: ElysiumChainId;
   /** Full name, e.g. "Elysium Testnet". */
@@ -75,7 +78,7 @@ export function isElysiumChainId(value: unknown): value is ElysiumChainId {
  */
 export function getDefaultChainId(): ElysiumChainId {
   const configured = Number(process.env.NEXT_PUBLIC_ELYSIUM_CHAIN_ID);
-  return isElysiumChainId(configured) ? configured : 99901;
+  return isElysiumChainId(configured) ? configured : DEFAULT_ELYSIUM_CHAIN_ID;
 }
 
 /** Registry entry for a chain id, falling back to the default chain. */
@@ -152,6 +155,11 @@ export const elysiumTestnet = defineChain({
     },
   },
 });
+
+/** The viem chain object for an Elysium chain id. */
+export function getElysiumViemChain(chainId: number) {
+  return getElysiumChain(chainId).id === 99801 ? elysiumTestnet : elysium;
+}
 
 /**
  * Chains that can satisfy the claim threshold.

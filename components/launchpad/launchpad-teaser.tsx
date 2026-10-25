@@ -8,6 +8,9 @@ import {
   Wallet,
 } from "lucide-react";
 import { COLLECTION_COVER } from "@/lib/mascots";
+import { getDefaultChainId, getElysiumChain } from "@/lib/chains";
+
+const chain = getElysiumChain(getDefaultChainId());
 
 export function LaunchpadTeaser() {
   return (
@@ -25,7 +28,7 @@ export function LaunchpadTeaser() {
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-paper/10 bg-paper/[0.03] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-paper-dim">
                 <span className="size-1.5 rounded-full bg-mint shadow-[0_0_8px_rgba(125,240,196,0.8)]" />
-                Elysium · 99901
+                Elysium · {chain.id}
               </span>
             </div>
 
@@ -85,7 +88,7 @@ export function LaunchpadTeaser() {
               </div>
               <div className="absolute inset-x-5 bottom-5">
                 <p className="font-mono text-[8px] uppercase tracking-[0.18em] text-brand/80">
-                  Elysium mainnet
+                  {chain.name}
                 </p>
                 <p className="mt-1 text-base font-semibold tracking-[-0.02em] text-paper">
                   Elyziuma collection

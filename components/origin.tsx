@@ -1,8 +1,10 @@
 import Image from "next/image";
 import { ArrowUpRight, Quote } from "lucide-react";
+import { getDefaultChainId, getElysiumChain } from "@/lib/chains";
 
 const OMNIA_X = "https://x.com/0xOmnia";
 const OMNIA_POST_X = "https://x.com/0xOmnia/status/2110811924879564876";
+const chain = getElysiumChain(getDefaultChainId());
 
 export function Origin() {
   return (
@@ -36,8 +38,8 @@ export function Origin() {
           <dl className="mt-8 grid max-w-lg grid-cols-2 gap-4 border-t border-paper/[0.07] pt-5 sm:grid-cols-3">
             {[
               { label: "Pieces", value: "2,222" },
-              { label: "Chain", value: "Elysium" },
-              { label: "Chain ID", value: "99901" },
+              { label: "Chain", value: chain.name },
+              { label: "Chain ID", value: String(chain.id) },
             ].map((item) => (
               <div key={item.label}>
                 <dt className="text-[9px] uppercase tracking-[0.16em] text-paper-mute">

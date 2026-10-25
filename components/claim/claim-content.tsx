@@ -9,12 +9,15 @@ import {
 import { ClaimCard } from "@/components/claim-card";
 import { EligibilityPanel } from "@/components/eligibility-panel";
 import { MascotAvatarRow } from "@/components/mascot-avatar";
-import { LINKS } from "@/lib/config";
+import { getElysiumChain } from "@/lib/chains";
+import { CLAIM_CHAIN_ID, LINKS } from "@/lib/config";
+
+const claimChain = getElysiumChain(CLAIM_CHAIN_ID);
 
 const FACTS = [
   { label: "Daily drop", value: "100 ELYZ" },
   { label: "Cooldown", value: "24 hours" },
-  { label: "Network", value: "Elysium · 99901" },
+  { label: "Network", value: `Elysium · ${claimChain.id}` },
 ];
 
 const STEPS = [
@@ -24,7 +27,7 @@ const STEPS = [
   },
   {
     title: "Connect and switch",
-    body: "Connect any EVM wallet. The claim card asks your wallet to switch to Elysium chain 99901 automatically if you are elsewhere.",
+    body: `Connect any EVM wallet. The claim card asks your wallet to switch to ${claimChain.name} (chain ${claimChain.id}) automatically if you are elsewhere.`,
   },
   {
     title: "Authorize the claim",
@@ -87,7 +90,7 @@ export function ClaimContent() {
                 </span>
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-paper/10 bg-paper/[0.03] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-paper-dim">
-                Elysium · 99901
+                Elysium · {claimChain.id}
               </span>
             </div>
 

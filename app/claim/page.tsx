@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClaimGate } from "@/components/claim/claim-gate";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { CLAIM_CHAIN_ID } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Daily Claim",
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
     "claim ELYZ",
     "Elysium claim",
     "0.001 ETH or HYPE eligibility",
-    "Elysium 99901",
+    `Elysium ${CLAIM_CHAIN_ID}`,
   ],
   robots: {
     index: false,

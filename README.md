@@ -1,6 +1,6 @@
 # Elyziuma
 
-A daily ELYZ claim and an NFT launchpad on **Elysium** (chain ID `99901`). Wallets claim a fixed amount once every 24 hours, gated by a native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
+A daily ELYZ claim and an NFT launchpad on **Elysium Testnet** (chain ID `99801`; mainnet is `99901`). Wallets claim a fixed amount once every 24 hours, gated by a native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
 
 The repository contains:
 
@@ -75,7 +75,7 @@ The signature is bound to the wallet, amount, nonce, deadline, chain ID, and ver
 ```text
 name:              ElyziumaDailyClaim
 version:           1
-chainId:           99901
+chainId:           99801
 verifyingContract: NEXT_PUBLIC_CLAIM_ADDRESS
 type:              Claim(address wallet,uint256 amount,uint256 nonce,uint256 deadline)
 ```
@@ -115,7 +115,7 @@ The launchpad reads this contract directly. The server probe picks up `publicPri
 
 ### Launchpad runtime network settings
 
-The app targets one Elysium network at a time. `NEXT_PUBLIC_ELYSIUM_CHAIN_ID` picks the starting network at build time (`99901` mainnet, `99801` testnet), and the admin console can switch the live chain and RPC at runtime:
+The app targets one Elysium network at a time. `NEXT_PUBLIC_ELYSIUM_CHAIN_ID` picks the starting network at build time (`99801` testnet by default, `99901` mainnet), and the admin console can switch the live chain and RPC at runtime:
 
 - The chain, the RPC, and the explorer are stored together and applied as one switch.
 - Both Elysium networks are registered with wagmi at build time, so the wallet can follow the active chain without a rebuild.
@@ -159,7 +159,7 @@ Because authorization is purely on-chain, both `NEXT_PUBLIC_CLAIM_ADDRESS` and `
 | Setting | Purpose |
 | --- | --- |
 | `enabled` | Public pause switch for the launchpad page |
-| `chainId` | Elysium network the launchpad targets: `99901` or `99801` |
+| `chainId` | Elysium network the launchpad targets: `99801` or `99901` |
 | `collectionAddress` | Already-deployed NFT collection on that network |
 | `rpcUrl` | Runtime Elysium RPC for reads and the browser transport |
 | `maxPerWallet` | Interface fallback; the on-chain `maxPerWallet` wins for Elyziuma |
@@ -240,7 +240,7 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | --- | --- |
 | `NEXT_PUBLIC_CLAIM_ADDRESS` | Deployed `DailyClaim` address |
 | `NEXT_PUBLIC_TOKEN_ADDRESS` | Deployed `ElyziumaToken` address |
-| `NEXT_PUBLIC_ELYSIUM_CHAIN_ID` | Elysium network the app starts on: `99901` or `99801` |
+| `NEXT_PUBLIC_ELYSIUM_CHAIN_ID` | Elysium network the app starts on: `99801` (default) or `99901` |
 | `NEXT_PUBLIC_ELYSIUM_RPC_URL` | Default Elysium RPC for the browser transport |
 | `NEXT_PUBLIC_ELYSIUM_EXPLORER_URL` | Optional explorer override for the default chain |
 | `NEXT_PUBLIC_LAUNCHPAD_COLLECTION_ADDRESS` | Optional default NFT collection. The owner console manages the same collection |
@@ -258,6 +258,7 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | `LAUNCHPAD_CONFIG_KEY` | Optional key inside the KV database; defaults to `elyziuma:launchpad` |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel KV credentials. `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are also supported |
 | `LAUNCHPAD_ADMIN_ADDRESSES` | Optional allowlist of launchpad admins, as comma-separated addresses |
+| `ADMIN_OWNER_ADDRESS` | Wallet allowed to unlock `/admin`. Defaults to the Elyziuma collection owner |
 | `ETH_RPC_URL`, `HYPEREVM_RPC_URL`, `BASE_RPC_URL`, `INK_RPC_URL` | Optional eligibility RPC overrides. Hyperliquid (HyperCore) is read from the official info API |
 | `ELIGIBILITY_THRESHOLD_WEI` | Optional threshold override; defaults to `1000000000000000` (0.001 native token per chain) |
 
@@ -301,7 +302,7 @@ Deploy to Elysium:
 cd contracts
 export DEPLOYER_PRIVATE_KEY=0x...
 export CLAIM_SIGNER_ADDRESS=0x...
-export ELYSIUM_RPC_URL=https://rpc.elyspump.com
+export ELYSIUM_RPC_URL=https://testnet-rpc.elysium.kinetiq.xyz # mainnet: https://rpc.elyspump.com
 
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url "$ELYSIUM_RPC_URL" \
@@ -373,7 +374,7 @@ Success response:
   "nonce": "0",
   "deadline": 1760000000,
   "signature": "0x...",
-  "chainId": 99901,
+  "chainId": 99801,
   "claimAddress": "0x...",
   "eligibleChain": "Base"
 }
@@ -416,11 +417,41 @@ The payload hash is included in the signed message. The server validates the sig
 
 Signed contract inspection. The payload accepts `rpcUrl`, `collectionAddress`, `seaDropAddress`, and `feeRecipient`. Useful for checking a collection before saving it.
 
+### `GET /api/admin/session`
+
+Returns whether the current browser has an owner session, plus the configured owner address and session lifetime.
+
+### `POST /api/admin/session`
+
+Exchanges a signed owner login message for an `HttpOnly` session cookie. Body:
+
+```json
+{
+  "address": "0x...",
+  "issuedAt": 1760000000,
+  "expiresAt": 1760043200,
+  "nonce": "random-value",
+  "signature": "0x..."
+}
+```
+
+The signature must cover `address`, both timestamps, and the nonce. Only `ADMIN_OWNER_ADDRESS` is accepted, and the login message must be less than five minutes old. Sessions last 12 hours.
+
+### `DELETE /api/admin/session`
+
+Clears the owner session cookie (the **Lock** button in the console footer).
+
 ---
 
 ## Admin console
 
 `/admin` is a focused NFT-collection console. It is `noindex, nofollow`, and every write is gated by on-chain ownership or a signed message.
+
+### Owner-only access
+
+The console is gated on the server before any console data is rendered. Without a valid session the page only sends the unlock screen. To unlock, the collection owner connects the wallet configured in `ADMIN_OWNER_ADDRESS` — it defaults to `0xb181FDFe71A0a0f56574D88f22B6BaFD142192F6` — and signs a free message. The server verifies the signature, the owner address, and the five-minute login window, then sets a 12-hour `HttpOnly` session cookie. The cookie carries the signed message itself, so it cannot be forged or edited without the owner's key. The footer has a **Lock** action that clears the session immediately.
+
+Writes remain independently protected: contract calls are owner transactions, and launchpad settings changes require their own signed message.
 
 ### 01 — NFT Collection
 
@@ -464,6 +495,7 @@ The public launchpad's display settings — collection address, mint method, max
 - Per-IP and per-address rate limits.
 - Re-check of the on-chain state before signing.
 - Launchpad admin signatures with a five-minute window and replay guard.
+- Owner-console sessions require a fresh owner-wallet signature, are stored in a 12-hour `HttpOnly` cookie, and are verified on the server before the console renders.
 - RPC chain ID and collection bytecode checks before saving settings.
 
 ### Limitations
@@ -525,7 +557,7 @@ npm run build
 app/
   page.tsx                       Landing page
   launchpad/page.tsx             NFT launchpad
-  admin/page.tsx                 Unified admin console
+  admin/page.tsx                 Unified admin console, owner-signature gate
   admin/launchpad/page.tsx       Redirect to /admin#collection
   admin/collection/page.tsx      Redirect to /admin#collection
   api/claim/route.ts             Eligibility re-check + EIP-712 signing
@@ -535,12 +567,14 @@ app/
   api/launchpad/contract/route.ts Contract + SeaDrop inspection
   api/admin/launchpad/route.ts   Signed settings read/save
   api/admin/launchpad/inspect/route.ts Signed inspection
+  api/admin/session/route.ts     Owner unlock, session status, and lock
   globals.css                    Design system and animations
   layout.tsx                     Fonts, metadata, providers
   opengraph-image.tsx            Social card
 components/
   admin/
     admin-console.tsx            Shell, access panel, section navigation
+    admin-access-gate.tsx        Owner connect + sign unlock screen
     network-runtime-panel.tsx    Signed network/RPC save
     claim-section.tsx            Claim + faucet owner controls
     collection-section.tsx       NFT contract owner controls + network
@@ -572,7 +606,7 @@ data/launchpad.json              Runtime settings (gitignored, created on save)
 ## Elysium links
 
 - Bridge: https://elyspump.com
-- Explorer: https://scan.elyspump.com
+- Explorer: https://elysium.kinetiq.xyz/testnet-explorer (mainnet: https://scan.elyspump.com)
 - Docs: https://elysium.kinetiq.xyz/docs
 
 ## License

@@ -21,7 +21,7 @@ import {
   ELYSIUM_CHAIN_IDS,
   getChainRpcUrl,
 } from "@/lib/chains";
-import { getElysiumClient } from "./elysium";
+import { getClaimClient } from "./elysium";
 import { getLaunchpadConfig } from "./launchpad-config";
 
 const MAX_SIGNATURE_AGE_SECONDS = 5 * 60;
@@ -108,7 +108,7 @@ async function readClaimOwner(address: Address | undefined) {
   }
 
   try {
-    const client = await getElysiumClient();
+    const client = await getClaimClient();
     return await client.readContract({
       address,
       abi: claimAbi,

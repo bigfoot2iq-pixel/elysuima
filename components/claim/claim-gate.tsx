@@ -12,8 +12,12 @@ import {
   Wallet,
 } from "lucide-react";
 import { useClaimAccess } from "@/hooks/use-claim-access";
+import { getElysiumChain } from "@/lib/chains";
+import { CLAIM_CHAIN_ID } from "@/lib/config";
 import { shortAddress } from "@/lib/format";
 import { ClaimContent } from "./claim-content";
+
+const claimChain = getElysiumChain(CLAIM_CHAIN_ID);
 
 export function ClaimGate() {
   const { address, authorized, checking, error, refetch } = useClaimAccess();
@@ -38,7 +42,7 @@ export function ClaimGate() {
               Private preview
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-paper/10 bg-paper/[0.03] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-paper-dim">
-              Elysium · 99901
+              Elysium · {claimChain.id}
             </span>
           </div>
 

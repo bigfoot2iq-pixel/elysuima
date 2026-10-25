@@ -643,8 +643,8 @@ export function MintCard({
 
       {wrongChain ? (
         <p className="mt-2.5 text-center text-[10px] leading-5 text-warn/90">
-          Your wallet is on another network. Switch to Elysium (99901) before
-          minting.
+          Your wallet is on another network. Switch to {config.chain.name} (
+          {config.chain.id}) before minting.
         </p>
       ) : null}
 

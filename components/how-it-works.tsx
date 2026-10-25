@@ -5,14 +5,17 @@ import {
   Wallet,
 } from "lucide-react";
 import { LINKS } from "@/lib/config";
+import { getDefaultChainId, getElysiumChain } from "@/lib/chains";
 import { ClaimAccessOnly } from "./claim/claim-access-only";
+
+const chain = getElysiumChain(getDefaultChainId());
 
 const STEPS = [
   {
     number: "01",
     icon: Wallet,
     title: "Connect on Elysium",
-    body: "Switch your wallet to Elysium (chain 99901). Need gas? Bridge HYPE from HyperEVM through ElysPump.",
+    body: `Switch your wallet to ${chain.name} (chain ${chain.id}). Need gas? Bridge HYPE from HyperEVM through ElysPump.`,
     href: LINKS.bridge,
     linkLabel: "Bridge HYPE",
   },

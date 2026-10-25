@@ -1,26 +1,27 @@
 import { createPublicClient, http, type Address } from "viem";
 import { claimAbi, tokenAbi } from "@/lib/abis";
-import { elysium } from "@/lib/chains";
-import { CLAIM_ADDRESS, TOKEN_ADDRESS } from "@/lib/config";
+import { getChainRpcUrl, getElysiumViemChain } from "@/lib/chains";
+import {
+  CLAIM_ADDRESS,
+  CLAIM_CHAIN_ID,
+  TOKEN_ADDRESS,
+} from "@/lib/config";
 import { getLaunchpadConfig } from "./launchpad-config";
 
 type ServerClient = ReturnType<typeof createPublicClient>;
 
-let cached: { rpcUrl: string; client: ServerClient } | undefined;
+let cached: { key: string; client: ServerClient } | undefined;
 
-/**
- * The admin can change the RPC at runtime, so server-side reads use a client
- * keyed by the current launchpad RPC instead of a module-level singleton.
- */
-export async function getElysiumClient(): Promise<ServerClient> {
-  const config = await getLaunchpadConfig();
+/** A public client keyed by chain and RPC, so runtime changes take effect. */
+function getClient(chainId: number, rpcUrl: string): ServerClient {
+  const key = `${chainId}|${rpcUrl}`;
 
-  if (cached?.rpcUrl !== config.rpcUrl) {
+  if (cached?.key !== key) {
     cached = {
-      rpcUrl: config.rpcUrl,
+      key,
       client: createPublicClient({
-        chain: elysium,
-        transport: http(config.rpcUrl, {
+        chain: getElysiumViemChain(chainId),
+        transport: http(rpcUrl, {
           timeout: 8_000,
           retryCount: 1,
         }),
@@ -29,6 +30,29 @@ export async function getElysiumClient(): Promise<ServerClient> {
   }
 
   return cached.client;
+}
+
+/**
+ * The admin can change the launchpad chain and RPC at runtime, so server-side
+ * reads build a client from the current settings instead of a fixed singleton.
+ */
+export async function getElysiumClient(): Promise<ServerClient> {
+  const config = await getLaunchpadConfig();
+  return getClient(config.chainId, config.rpcUrl);
+}
+
+/**
+ * Claims are pinned to `CLAIM_CHAIN_ID`, which can differ from the launchpad's
+ * runtime chain. Follow the launchpad RPC only when it serves the claim chain.
+ */
+export async function getClaimClient(): Promise<ServerClient> {
+  const config = await getLaunchpadConfig();
+  const rpcUrl =
+    config.chainId === CLAIM_CHAIN_ID
+      ? config.rpcUrl
+      : getChainRpcUrl(CLAIM_CHAIN_ID);
+
+  return getClient(CLAIM_CHAIN_ID, rpcUrl);
 }
 
 export type ClaimState = {
@@ -42,7 +66,7 @@ export type ClaimState = {
 };
 
 export async function getClaimState(wallet: Address): Promise<ClaimState> {
-  const client = await getElysiumClient();
+  const client = await getClaimClient();
 
   const [dailyAmount, lastClaim, nonce, paused, signer, faucetBalance, block] =
     await Promise.all([

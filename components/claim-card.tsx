@@ -22,9 +22,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { claimAbi, tokenAbi } from "@/lib/abis";
-import { ELIGIBILITY_CHAINS, elysium } from "@/lib/chains";
+import { ELIGIBILITY_CHAINS, getElysiumChain } from "@/lib/chains";
 import {
   CLAIM_ADDRESS,
+  CLAIM_CHAIN_ID,
   IS_CONFIGURED,
   LINKS,
   SITE_URL,
@@ -78,6 +79,7 @@ export function ClaimCard() {
   const { switchChainAsync } = useSwitchChain();
   const now = useNow();
   const [addedToken, setAddedToken] = useState(false);
+  const claimChain = getElysiumChain(CLAIM_CHAIN_ID);
 
   const eligibility = useEligibility(address);
 
@@ -221,7 +223,7 @@ export function ClaimCard() {
   const buttonLabel = (() => {
     if (!IS_CONFIGURED) return "Claim not live yet";
     if (!address) return "Connect wallet";
-    if (chainId !== elysium.id) return "Switch to Elysium";
+    if (chainId !== CLAIM_CHAIN_ID) return `Switch to ${claimChain.label}`;
     if (busy) {
       if (phase === "authorizing") return "Authorizing claim…";
       if (phase === "submitting") return "Confirm in wallet…";
@@ -250,7 +252,7 @@ export function ClaimCard() {
     !dataReady ||
     faucetEmpty ||
     (Boolean(address) &&
-      chainId === elysium.id &&
+      chainId === CLAIM_CHAIN_ID &&
       eligible &&
       !ready);
 
@@ -262,12 +264,12 @@ export function ClaimCard() {
       return;
     }
 
-    if (chainId !== elysium.id) {
+    if (chainId !== CLAIM_CHAIN_ID) {
       try {
-        await switchChainAsync({ chainId: elysium.id });
+        await switchChainAsync({ chainId: CLAIM_CHAIN_ID });
       } catch {
         toast.error("Could not switch network", {
-          description: "Add Elysium to your wallet and try again.",
+          description: `Add ${claimChain.name} to your wallet and try again.`,
         });
       }
       return;

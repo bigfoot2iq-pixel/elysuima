@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { IS_CONFIGURED } from "@/lib/config";
-import { elysium } from "@/lib/chains";
+import { CLAIM_CHAIN_ID, IS_CONFIGURED } from "@/lib/config";
 import { getClaimState } from "@/lib/server/elysium";
 import { getSignerAccount } from "@/lib/server/signature";
 
@@ -28,7 +27,7 @@ export async function GET() {
     return NextResponse.json({
       ok: signerMatches && !state.paused,
       configured: true,
-      chainId: elysium.id,
+      chainId: CLAIM_CHAIN_ID,
       signerConfigured: signer !== null,
       signerMatches,
       paused: state.paused,

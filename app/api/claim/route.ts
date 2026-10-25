@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAddress } from "viem";
-import { IS_CONFIGURED } from "@/lib/config";
-import { elysium } from "@/lib/chains";
+import { CLAIM_CHAIN_ID, IS_CONFIGURED } from "@/lib/config";
 import { checkEligibility } from "@/lib/server/eligibility";
 import { getClaimState } from "@/lib/server/elysium";
 import { checkLaunchpadAdmin } from "@/lib/server/launchpad-auth";
@@ -187,7 +186,7 @@ export async function POST(request: Request) {
         nonce: state.nonce.toString(),
         deadline,
         signature,
-        chainId: elysium.id,
+        chainId: CLAIM_CHAIN_ID,
         claimAddress: process.env.NEXT_PUBLIC_CLAIM_ADDRESS,
         eligibleChain: eligibility.bestChain,
       },

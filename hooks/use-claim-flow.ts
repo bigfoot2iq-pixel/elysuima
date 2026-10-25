@@ -15,8 +15,7 @@ import {
 } from "wagmi";
 import { toast } from "sonner";
 import { claimAbi } from "@/lib/abis";
-import { CLAIM_ADDRESS, IS_CONFIGURED } from "@/lib/config";
-import { elysium } from "@/lib/chains";
+import { CLAIM_ADDRESS, CLAIM_CHAIN_ID, IS_CONFIGURED } from "@/lib/config";
 
 export type ClaimPhase =
   | "idle"
@@ -171,8 +170,8 @@ export function useClaimFlow(options: { onSuccess?: () => void } = {}) {
     setHash(undefined);
 
     try {
-      if (chainId !== elysium.id) {
-        await switchChainAsync({ chainId: elysium.id });
+      if (chainId !== CLAIM_CHAIN_ID) {
+        await switchChainAsync({ chainId: CLAIM_CHAIN_ID });
       }
 
       setPhase("authorizing");

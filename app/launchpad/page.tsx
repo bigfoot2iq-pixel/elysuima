@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { LaunchpadContent } from "@/components/launchpad/launchpad-content";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { getDefaultChainId } from "@/lib/chains";
+
+const chainId = getDefaultChainId();
 
 export const metadata: Metadata = {
   title: "Launchpad",
@@ -12,7 +15,7 @@ export const metadata: Metadata = {
     "Elysium NFT",
     "mint NFT",
     "SeaDrop",
-    "Elysium 99901",
+    `Elysium ${chainId}`,
   ],
   openGraph: {
     title: "Elyziuma Launchpad",

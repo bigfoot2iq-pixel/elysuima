@@ -11,11 +11,11 @@ import type { Address, Hash } from "viem";
 import { claimAbi, claimedEvent, tokenAbi } from "@/lib/abis";
 import {
   CLAIM_ADDRESS,
+  CLAIM_CHAIN_ID,
   IS_CONFIGURED,
   TOKEN_ADDRESS,
   explorerTx,
 } from "@/lib/config";
-import { elysium } from "@/lib/chains";
 import { formatAmount, formatRelative, shortAddress } from "@/lib/format";
 import { useNow } from "@/hooks/use-now";
 import { TokenMark } from "./token-mark";
@@ -31,7 +31,7 @@ const MAX_ITEMS = 8;
 const LOOKBACK_BLOCKS = 20_000n;
 
 export function ClaimsFeed() {
-  const publicClient = usePublicClient({ chainId: elysium.id });
+  const publicClient = usePublicClient({ chainId: CLAIM_CHAIN_ID });
   const now = useNow(30_000);
   const [claims, setClaims] = useState<ClaimItem[]>([]);
   const [loading, setLoading] = useState(true);

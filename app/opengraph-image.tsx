@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
+import { getDefaultChainId, getElysiumChain } from "@/lib/chains";
+
+const chain = getElysiumChain(getDefaultChainId());
 
 export const alt =
   "Elyziuma — daily ELYZ and NFT mints on Elysium";
@@ -126,7 +129,7 @@ export default async function OpengraphImage() {
                   boxShadow: "0 0 18px rgba(125,240,196,0.8)",
                 }}
               />
-              LIVE ON ELYSIUM · 99901
+              LIVE ON {chain.name.toUpperCase()} · {chain.id}
             </div>
             <div
               style={{

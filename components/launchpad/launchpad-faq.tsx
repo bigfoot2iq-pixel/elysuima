@@ -24,7 +24,7 @@ export function LaunchpadFaq({
     {
       question: "Which network and currency do I need?",
       answer:
-        "Elysium mainnet, chain ID 99901. Gas and any mint price are paid in HYPE, the native currency of Elysium. The mint panel offers to switch your wallet automatically.",
+        `${config.chain.name}, chain ID ${config.chain.id}. Gas and any mint price are paid in HYPE, the native currency of ${config.chain.name}. The mint panel offers to switch your wallet automatically.`,
     },
     {
       question: "What is the maximum per wallet?",
