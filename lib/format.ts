@@ -44,6 +44,27 @@ export function formatCountdown(seconds: number) {
   return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
 }
 
+/**
+ * Like formatCountdown, but spells out the unit of every visible part so a
+ * compact timer does not look like an ambiguous "00:41:28". Zero-leading
+ * units are omitted, except that the largest visible unit is always shown.
+ */
+export function formatCountdownUnits(seconds: number) {
+  const total = Math.max(0, Math.floor(seconds));
+  const days = Math.floor(total / 86_400);
+  const hours = Math.floor((total % 86_400) / 3_600);
+  const minutes = Math.floor((total % 3_600) / 60);
+  const secs = total % 60;
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (days > 0 || hours > 0) parts.push(`${hours}h`);
+  if (days > 0 || hours > 0 || minutes > 0) parts.push(`${minutes}m`);
+  parts.push(`${secs}s`);
+
+  return parts.join(" ");
+}
+
 export function formatRelative(timestampSeconds: number, nowSeconds?: number) {
   const now = nowSeconds ?? Math.floor(Date.now() / 1000);
   const diff = Math.max(0, now - timestampSeconds);

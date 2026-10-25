@@ -51,7 +51,11 @@ import {
   explorerTxFor,
   getElysiumChain,
 } from "@/lib/chains";
-import { formatAmount, formatCountdown, shortAddress } from "@/lib/format";
+import {
+  formatAmount,
+  formatCountdownUnits,
+  shortAddress,
+} from "@/lib/format";
 import { COLLECTION_COVER } from "@/lib/mascots";
 import { cn } from "@/lib/utils";
 import { MintBalanceCheck } from "./mint-balance-check";
@@ -403,9 +407,9 @@ export function MintCard({
 
   const emptyDrop = !collection;
   const opensIn = (() => {
-    if (scheduled) return formatCountdown(scheduleRemaining);
+    if (scheduled) return formatCountdownUnits(scheduleRemaining);
     if (inspection?.seaDrop?.startTime && inspection.seaDrop.startTime > now) {
-      return formatCountdown(inspection.seaDrop.startTime - now);
+      return formatCountdownUnits(inspection.seaDrop.startTime - now);
     }
     return undefined;
   })();
