@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 export const metadata: Metadata = {
   title: "Faucet",
   description:
-    "Get free testnet HYPE on Elysium to cover gas. Open the official faucet, connect your wallet, and start claiming and minting on chain 99801.",
+    "Claim 0.01 testnet HYPE on Elysium straight to the wallet already connected to Elyziuma, or use an official faucet. One claim per wallet every 24 hours on chain 99801.",
   keywords: [
     "Elysium faucet",
     "Elysium testnet faucet",
@@ -17,14 +17,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Elysium Faucet",
     description:
-      "Get free testnet HYPE for gas on Elysium, then claim ELYZ and mint the collection.",
+      "Claim testnet HYPE for gas inside Elyziuma, then claim ELYZ and mint the collection.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Elysium Faucet",
     description:
-      "Get free testnet HYPE for gas on Elysium, then claim ELYZ and mint the collection.",
+      "Claim testnet HYPE for gas inside Elyziuma, then claim ELYZ and mint the collection.",
   },
 };
 

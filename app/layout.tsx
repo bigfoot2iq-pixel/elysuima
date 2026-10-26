@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s · Elyziuma",
   },
   description:
-    "Elyziuma is a 2,222-piece NFT collection built on Elysium. Claim 100 ELYZ every 24 hours, mint the collection, and follow the roadmap to the first raffle platform on Elysium.",
+    "Elyziuma is a 2,222-piece NFT collection built on Elysium. NFT holders claim 10,000 ELYZ per NFT, every wallet can claim 1,000 ELYZ once, and the roadmap leads to the first raffle platform on Elysium.",
   applicationName: "Elyziuma",
   keywords: [
     "Elyziuma",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     "Elysium",
     "NFT collection",
     "raffle platform",
-    "daily claim",
+    "claim rewards",
     "NFT launchpad",
     "mint",
     "OpenSea SeaDrop",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     siteName: "Elyziuma",
     title: "Elyziuma — 2,222 NFTs on Elysium",
     description:
-      "A 2,222-piece NFT collection on Elysium, with a daily ELYZ claim and a roadmap to the first raffle platform on the chain.",
+      "A 2,222-piece NFT collection on Elysium, with 10,000 ELYZ per NFT and a 1,000 ELYZ community claim, plus a roadmap to the first raffle platform on the chain.",
     url: SITE_URL,
     locale: "en_US",
     images: ["/brand/elyziuma-logo.png"],
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     creator: "@Elyziumaa",
     title: "Elyziuma — 2,222 NFTs on Elysium",
     description:
-      "A 2,222-piece NFT collection on Elysium, with a daily ELYZ claim and a roadmap to the first raffle platform on the chain.",
+      "A 2,222-piece NFT collection on Elysium, with 10,000 ELYZ per NFT and a 1,000 ELYZ community claim, plus a roadmap to the first raffle platform on the chain.",
   },
   robots: {
     index: true,

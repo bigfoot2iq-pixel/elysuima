@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
-import { LINKS } from "@/lib/config";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { MASCOTS, getMascot, HERO_MASCOT_ID, MASCOT_GLOWS } from "@/lib/mascots";
 import { NetworkBadge } from "./network-badge";
 
@@ -73,15 +72,10 @@ export function Hero() {
               Mint the collection
               <ArrowRight className="size-4" />
             </Link>
-            <a
-              href={LINKS.faucet}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-ink-ghost"
-            >
-              Get Faucet
-              <ArrowUpRight className="size-3.5" />
-            </a>
+            <Link href="/faucet" className="btn-ink-ghost">
+              Get testnet HYPE
+              <ArrowRight className="size-3.5" />
+            </Link>
           </div>
 
           <dl className="mt-8 grid grid-cols-3 gap-4 border-t border-paper/[0.07] pt-5">

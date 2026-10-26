@@ -5,8 +5,7 @@ import { getDefaultChainId, getElysiumChain } from "@/lib/chains";
 
 const chain = getElysiumChain(getDefaultChainId());
 
-export const alt =
-  "Elyziuma — daily ELYZ and NFT mints on Elysium";
+export const alt = "Elyziuma — ELYZ rewards and NFT mints on Elysium";
 export const size = {
   width: 1200,
   height: 630,
@@ -104,7 +103,7 @@ export default async function OpengraphImage() {
                   color: "#34b7dd",
                 }}
               >
-                DAILY CLAIM · NFT LAUNCHPAD
+                REWARDS · NFT LAUNCHPAD
               </div>
             </div>
           </div>
@@ -142,7 +141,7 @@ export default async function OpengraphImage() {
                 letterSpacing: "-0.055em",
               }}
             >
-              <span>Your daily drop,</span>
+              <span>Your ELYZ rewards,</span>
               <span style={{ color: "#7cd8f2" }}>on Elysium.</span>
             </div>
             <div
@@ -154,9 +153,9 @@ export default async function OpengraphImage() {
                 fontSize: 22,
               }}
             >
-              <span>100 ELYZ</span>
+              <span>10K PER NFT</span>
               <span style={{ color: "#2d7388" }}>·</span>
-              <span>every 24 hours</span>
+              <span>1K PER WALLET</span>
               <span style={{ color: "#2d7388" }}>·</span>
               <span>0.001 ETH / HYPE · 5 CHAINS</span>
             </div>

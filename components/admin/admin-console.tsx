@@ -17,7 +17,7 @@ import { OwnershipSection } from "./ownership-section";
 const SECTIONS = [
   { id: "collection", index: "01", label: "NFT Collection" },
   { id: "ownership", index: "02", label: "Ownership" },
-  { id: "claim", index: "03", label: "Claim & faucet" },
+  { id: "claim", index: "03", label: "Claim & rewards" },
 ] as const;
 
 const dotStyles: Record<Tone, string> = {

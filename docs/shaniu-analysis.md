@@ -63,22 +63,24 @@ The successor keeps the same supply, fee, pool, and lottery, then adds:
 
 The live successor had `airdropTotal = 214,823e18` and `airdropRemaining = 0` at the time of analysis.
 
-## What Elyziuma copies
+## What Elyziuma v2 keeps
 
-- 21M fixed supply.
-- 90% claim pool / 10% deployer-treasury share.
-- The final-claim sweep: when the pool cannot cover a full payout, the claimant receives the remainder and the pool empties.
-- The general shape of a permissionless claim with on-chain accounting (`totalClaims`, `uniqueClaimers`, `totalClaimed`).
+- A fixed-supply token with the claim logic in a separate contract.
+- Permissionless claims with on-chain accounting (`totalClaimed`, `totalClaims`, per-pool totals).
+- A funded pool that pays a fixed amount per claim.
 
-## What Elyziuma deliberately changes
+## What Elyziuma v2 changes
 
-| Shaniu | Elyziuma | Reason |
+| Shaniu | Elyziuma v2 | Reason |
 | --- | --- | --- |
-| One claim per address, ever | One claim per wallet every 24 hours | Explicit product requirement |
-| Random lottery amount | Owner-set fixed daily amount | Explicit product requirement |
-| $0.20 payable claim | Free claim; gas only | No fee was requested |
-| Binance Agent ID gate | Cross-chain 0.001 native-token check + EIP-712 signature | Elysium cannot read the source chains on-chain |
-| Single contract, owner renounced | Separate token + faucet, owner controls | Allows refilling, pausing, signer rotation, and emergency withdrawal |
+| 21M fixed supply | 50M: 22.22M NFT pool + 22.22M community pool + 5.56M owner allocation | Product tokenomics |
+| 90% claim pool / 10% owner | 44.44% NFT / 44.44% community / 11.12% owner | Product tokenomics |
+| One claim per address, ever | One 1,000 ELYZ community claim per wallet + one 10,000 ELYZ claim per NFT | Explicit product requirement |
+| Random lottery amount | Fixed 10,000 per NFT / 1,000 per wallet | Explicit product requirement |
+| $0.20 payable claim | Owner-set HYPE fee on the community claim; NFT claims are free | Product requirement |
+| Binance Agent ID gate | UI-only 0.001 native-token threshold | The contract does not read other chains |
+| Single contract, owner renounced | Separate token + claim contract, owner controls | Allows a community fee, pause, fee withdrawal, and surplus withdrawal |
+| Final-claim sweep | No sweep; underfunded claims revert | Keeps the per-NFT and per-wallet amounts exact |
 | `block.prevrandao` randomness | No randomness | Avoids validator-influenced payouts |
 
-The result is a Shaniu-shaped claim pool with the daily-claim behavior requested for Elyziuma, rather than a literal copy that would have contradicted the earlier requirements.
+The result is a two-pool claim model built for Elyziuma rather than a literal Shaniu copy. The threshold remains a UI anti-bot check only.

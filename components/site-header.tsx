@@ -4,12 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { useClaimAccess } from "@/hooks/use-claim-access";
-import { LINKS } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { TokenMark } from "./token-mark";
 import { WalletButton } from "./wallet-button";
-import { XLogo, VerifiedBadge } from "./x-logo";
+import { XAccountLink } from "./x-account-link";
 
 const NAV = [
   { label: "Launchpad", href: "/launchpad" },
@@ -23,10 +21,6 @@ const NAV = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { authorized } = useClaimAccess();
-  const nav = authorized
-    ? NAV
-    : NAV.filter((item) => item.href !== "/claim");
 
   return (
     <header className="sticky top-0 z-50 border-b border-paper/[0.07] bg-ink/70 backdrop-blur-xl">
@@ -48,7 +42,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {nav.map((item) => {
+          {NAV.map((item) => {
             const active =
               item.href === pathname ||
               (item.href.startsWith("/") &&
@@ -73,17 +67,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <a
-            href={LINKS.x}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Elyziumaa on X"
-            className="x-pill group/x hidden h-11 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full bg-paper px-3.5 text-sm font-semibold text-ink transition hover:bg-brand-soft hover:shadow-[0_0_26px_-6px_rgba(124,216,242,0.75)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:inline-flex xl:px-5"
-          >
-            <XLogo className="size-4" />
-            <span className="hidden xl:inline">Elyziumaa</span>
-            <VerifiedBadge className="size-[15px] shrink-0 text-[#1d9bf0] drop-shadow-[0_0_5px_rgba(29,155,240,0.55)] transition-transform duration-300 group-hover/x:scale-110" />
-          </a>
+          <XAccountLink className="hidden sm:inline-flex" />
           <div className="hidden sm:block">
             <WalletButton />
           </div>
@@ -106,7 +90,7 @@ export function SiteHeader() {
         )}
       >
         <div className="space-y-1 px-5 py-5">
-          {nav.map((item) => (
+          {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -116,16 +100,10 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
-          <a
-            href={LINKS.x}
-            target="_blank"
-            rel="noreferrer"
-            className="x-pill mt-2 flex h-11 items-center justify-center gap-2 overflow-hidden rounded-full border border-paper/15 bg-paper/[0.05] px-4 text-sm font-semibold text-paper transition hover:border-paper/25 hover:bg-paper/[0.09]"
-          >
-            <XLogo className="size-4" />
-            Elyziumaa
-            <VerifiedBadge className="size-[15px] shrink-0 text-[#1d9bf0] drop-shadow-[0_0_5px_rgba(29,155,240,0.55)]" />
-          </a>
+          <XAccountLink
+            showLabel
+            className="mt-2 flex w-full justify-center pl-3 pr-3"
+          />
           <div className="pt-3 sm:hidden">
             <WalletButton compact />
           </div>

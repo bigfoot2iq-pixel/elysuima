@@ -24,11 +24,17 @@ import { deriveBaseUri, PROBE_TOKEN_ID } from "./admin-utils";
 export type Health = {
   ok: boolean;
   configured?: boolean;
-  signerConfigured?: boolean;
-  signerMatches?: boolean;
   paused?: boolean;
-  dailyAmount?: string;
-  faucetBalance?: string;
+  nftAddress?: string;
+  communityClaimFee?: string;
+  feeRecipient?: string;
+  accruedFees?: string;
+  nftClaimedTotal?: string;
+  communityClaimedTotal?: string;
+  nftPoolRemaining?: string;
+  communityPoolRemaining?: string;
+  tokenBalance?: string;
+  funded?: boolean;
   message?: string;
 };
 
@@ -70,19 +76,67 @@ export function useClaimData(options: PollOptions = {}) {
       {
         address: CLAIM_ADDRESS,
         abi: claimAbi,
-        functionName: "dailyAmount",
-        chainId: CLAIM_CHAIN_ID,
-      },
-      {
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
         functionName: "paused",
         chainId: CLAIM_CHAIN_ID,
       },
       {
         address: CLAIM_ADDRESS,
         abi: claimAbi,
-        functionName: "signer",
+        functionName: "nft",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityClaimFee",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "feeRecipient",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "accruedFees",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "nftClaimedTotal",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityClaimedTotal",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "nftClaimCount",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityClaimCount",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "nftPoolRemaining",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityPoolRemaining",
         chainId: CLAIM_CHAIN_ID,
       },
       {
@@ -90,24 +144,6 @@ export function useClaimData(options: PollOptions = {}) {
         abi: tokenAbi,
         functionName: "balanceOf",
         args: [CLAIM_ADDRESS],
-        chainId: CLAIM_CHAIN_ID,
-      },
-      {
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "totalClaimed",
-        chainId: CLAIM_CHAIN_ID,
-      },
-      {
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "totalClaims",
-        chainId: CLAIM_CHAIN_ID,
-      },
-      {
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "uniqueClaimers",
         chainId: CLAIM_CHAIN_ID,
       },
       {
@@ -132,13 +168,18 @@ export function useClaimData(options: PollOptions = {}) {
 
   const [
     ownerResult,
-    dailyAmountResult,
     pausedResult,
-    signerResult,
-    faucetBalanceResult,
-    totalClaimedResult,
-    totalClaimsResult,
-    uniqueClaimersResult,
+    nftResult,
+    communityClaimFeeResult,
+    feeRecipientResult,
+    accruedFeesResult,
+    nftClaimedTotalResult,
+    communityClaimedTotalResult,
+    nftClaimCountResult,
+    communityClaimCountResult,
+    nftPoolRemainingResult,
+    communityPoolRemainingResult,
+    tokenBalanceResult,
     decimalsResult,
     symbolResult,
   ] = query.data ?? [];
@@ -151,33 +192,53 @@ export function useClaimData(options: PollOptions = {}) {
       ownerResult?.status === "success"
         ? (ownerResult.result as Address)
         : undefined,
-    dailyAmount:
-      dailyAmountResult?.status === "success"
-        ? (dailyAmountResult.result as bigint)
-        : undefined,
     paused:
       pausedResult?.status === "success"
         ? (pausedResult.result as boolean)
         : false,
-    signer:
-      signerResult?.status === "success"
-        ? (signerResult.result as Address)
+    nftAddress:
+      nftResult?.status === "success"
+        ? (nftResult.result as Address)
         : undefined,
-    faucetBalance:
-      faucetBalanceResult?.status === "success"
-        ? (faucetBalanceResult.result as bigint)
+    communityClaimFee:
+      communityClaimFeeResult?.status === "success"
+        ? (communityClaimFeeResult.result as bigint)
         : undefined,
-    totalClaimed:
-      totalClaimedResult?.status === "success"
-        ? (totalClaimedResult.result as bigint)
+    feeRecipient:
+      feeRecipientResult?.status === "success"
+        ? (feeRecipientResult.result as Address)
         : undefined,
-    totalClaims:
-      totalClaimsResult?.status === "success"
-        ? (totalClaimsResult.result as bigint)
+    accruedFees:
+      accruedFeesResult?.status === "success"
+        ? (accruedFeesResult.result as bigint)
         : undefined,
-    uniqueClaimers:
-      uniqueClaimersResult?.status === "success"
-        ? (uniqueClaimersResult.result as bigint)
+    nftClaimedTotal:
+      nftClaimedTotalResult?.status === "success"
+        ? (nftClaimedTotalResult.result as bigint)
+        : undefined,
+    communityClaimedTotal:
+      communityClaimedTotalResult?.status === "success"
+        ? (communityClaimedTotalResult.result as bigint)
+        : undefined,
+    nftClaimCount:
+      nftClaimCountResult?.status === "success"
+        ? (nftClaimCountResult.result as bigint)
+        : undefined,
+    communityClaimCount:
+      communityClaimCountResult?.status === "success"
+        ? (communityClaimCountResult.result as bigint)
+        : undefined,
+    nftPoolRemaining:
+      nftPoolRemainingResult?.status === "success"
+        ? (nftPoolRemainingResult.result as bigint)
+        : undefined,
+    communityPoolRemaining:
+      communityPoolRemainingResult?.status === "success"
+        ? (communityPoolRemainingResult.result as bigint)
+        : undefined,
+    tokenBalance:
+      tokenBalanceResult?.status === "success"
+        ? (tokenBalanceResult.result as bigint)
         : undefined,
     decimals:
       decimalsResult?.status === "success"

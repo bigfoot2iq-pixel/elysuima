@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { CLAIM_CHAIN_ID, IS_CONFIGURED } from "@/lib/config";
 import { getClaimState } from "@/lib/server/elysium";
-import { getSignerAccount } from "@/lib/server/signature";
-
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export async function GET() {
   if (!IS_CONFIGURED) {
@@ -17,23 +14,29 @@ export async function GET() {
     );
   }
 
-  const signer = getSignerAccount();
-
   try {
-    const state = await getClaimState(ZERO_ADDRESS);
-    const signerMatches =
-      signer !== null && signer.address.toLowerCase() === state.signer.toLowerCase();
+    const state = await getClaimState();
+    const outstanding =
+      state.nftPoolRemaining + state.communityPoolRemaining;
+    const funded = state.tokenBalance >= outstanding;
 
     return NextResponse.json({
-      ok: signerMatches && !state.paused,
+      ok: !state.paused && funded,
       configured: true,
       chainId: CLAIM_CHAIN_ID,
-      signerConfigured: signer !== null,
-      signerMatches,
       paused: state.paused,
-      dailyAmount: state.dailyAmount.toString(),
-      faucetBalance: state.faucetBalance.toString(),
+      nftAddress: state.nftAddress,
+      communityClaimFee: state.communityClaimFee.toString(),
+      feeRecipient: state.feeRecipient,
+      accruedFees: state.accruedFees.toString(),
+      nftClaimedTotal: state.nftClaimedTotal.toString(),
+      communityClaimedTotal: state.communityClaimedTotal.toString(),
+      nftPoolRemaining: state.nftPoolRemaining.toString(),
+      communityPoolRemaining: state.communityPoolRemaining.toString(),
+      tokenBalance: state.tokenBalance.toString(),
+      funded,
       chainTime: state.chainTime,
+      blockNumber: state.blockNumber,
     });
   } catch (error) {
     console.error("health check failed", error);

@@ -1,12 +1,11 @@
 import {
   ArrowUpRight,
   ShieldCheck,
-  Timer,
+  Sparkles,
   Wallet,
 } from "lucide-react";
 import { LINKS } from "@/lib/config";
 import { getDefaultChainId, getElysiumChain } from "@/lib/chains";
-import { ClaimAccessOnly } from "./claim/claim-access-only";
 
 const chain = getElysiumChain(getDefaultChainId());
 
@@ -22,16 +21,16 @@ const STEPS = [
   {
     number: "02",
     icon: ShieldCheck,
-    title: "Verify your wallet",
-    body: "We read your native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, and Ink. Holding 0.001 on any one chain is enough.",
+    title: "Hold the threshold",
+    body: "Hold at least 0.001 ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The check is read from your address and gates the claim buttons in the UI.",
     href: "/claim#eligibility",
     linkLabel: "See the check",
   },
   {
     number: "03",
-    icon: Timer,
-    title: "Claim every 24 hours",
-    body: "The faucet contract enforces a per-wallet cooldown. A short-lived signature authorizes each claim and cannot be replayed.",
+    icon: Sparkles,
+    title: "Claim your rewards",
+    body: "NFT holders claim 10,000 ELYZ per NFT. Every wallet can claim 1,000 ELYZ once from the community pool. The contract enforces NFT ownership and one-time community claims.",
     href: "/claim#faq",
     linkLabel: "Read the rules",
   },
@@ -45,14 +44,15 @@ export function HowItWorks() {
     >
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="eyebrow">Daily claim</p>
+          <p className="eyebrow">Claim rewards</p>
           <h2 className="mt-4 max-w-xl font-display text-3xl font-extrabold tracking-[-0.04em] text-paper sm:text-4xl">
-            Three steps. One claim a day.
+            Three steps. Two ways to claim.
           </h2>
         </div>
         <p className="max-w-sm text-xs leading-6 text-paper-mute">
-          No account, no email, no custody. Eligibility is checked across five
-          chains and enforced by the claim contract.
+          No account, no email, no custody. The threshold is checked across five
+          chains in the UI; the claim contract enforces NFT ownership and
+          one-time community claims.
         </p>
       </div>
 
@@ -76,27 +76,15 @@ export function HowItWorks() {
             <p className="mt-2 text-[12px] leading-6 text-paper-dim">
               {step.body}
             </p>
-            {step.href.startsWith("/claim") ? (
-              <ClaimAccessOnly>
-                <a
-                  href={step.href}
-                  className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-paper-mute transition hover:text-brand"
-                >
-                  {step.linkLabel}
-                  <ArrowUpRight className="size-3" />
-                </a>
-              </ClaimAccessOnly>
-            ) : (
-              <a
-                href={step.href}
-                target={step.href.startsWith("http") ? "_blank" : undefined}
-                rel={step.href.startsWith("http") ? "noreferrer" : undefined}
-                className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-paper-mute transition hover:text-brand"
-              >
-                {step.linkLabel}
-                <ArrowUpRight className="size-3" />
-              </a>
-            )}
+            <a
+              href={step.href}
+              target={step.href.startsWith("http") ? "_blank" : undefined}
+              rel={step.href.startsWith("http") ? "noreferrer" : undefined}
+              className="mt-5 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-paper-mute transition hover:text-brand"
+            >
+              {step.linkLabel}
+              <ArrowUpRight className="size-3" />
+            </a>
           </article>
         ))}
       </div>

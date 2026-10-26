@@ -25,33 +25,11 @@ export type ClaimPhase =
   | "success"
   | "error";
 
-type ClaimAuthorization = {
-  amount: string;
-  nonce: string;
-  deadline: number;
-  signature: `0x${string}`;
-  chainId: number;
-  claimAddress: string;
-  eligibleChain?: string | null;
-};
-
-export class ClaimRequestError extends Error {
-  code: string;
-  nextClaimAt?: number;
-
-  constructor(code: string, message: string, nextClaimAt?: number) {
-    super(message);
-    this.name = "ClaimRequestError";
-    this.code = code;
-    this.nextClaimAt = nextClaimAt;
-  }
-}
-
 function readableError(error: unknown): string {
-  if (error instanceof ClaimRequestError) return error.message;
-
   if (error instanceof BaseError) {
-    const rejected = error.walk((cause) => cause instanceof UserRejectedRequestError);
+    const rejected = error.walk(
+      (cause) => cause instanceof UserRejectedRequestError,
+    );
     if (rejected) return "You rejected the request in your wallet.";
 
     const reverted = error.walk(
@@ -61,21 +39,24 @@ function readableError(error: unknown): string {
     const name = reverted?.data?.errorName;
 
     switch (name) {
-      case "ClaimTooSoon":
-        return "You already claimed. Come back when the countdown ends.";
-      case "InvalidNonce":
-        return "Your claim session expired. Request a fresh authorization.";
-      case "InvalidAmount":
-        return "The daily amount changed. Refresh and try again.";
-      case "SignatureExpired":
-        return "The authorization expired. Request a fresh one.";
-      case "InvalidSignature":
-        return "That authorization was invalid. Refresh and try again.";
-      case "FaucetEmpty":
-      case "ERC20InsufficientBalance":
-        return "The faucet is empty right now. Try again soon.";
+      case "CommunityAlreadyClaimed":
+        return "This wallet already claimed the community reward.";
+      case "NftAlreadyClaimed":
+        return "One of these NFTs already claimed its reward.";
+      case "NotNftOwner":
+        return "You no longer own one of these NFTs. Refresh and try again.";
+      case "BatchTooLarge":
+        return "Too many NFTs in one claim. Try a smaller batch.";
+      case "IncorrectFee":
+        return "The community claim fee changed. Refresh and try again.";
+      case "PoolExhausted":
+        return "This claim pool is empty.";
       case "EnforcedPause":
         return "Claims are paused by the owner.";
+      case "ERC20InsufficientBalance":
+        return "The claim pool is underfunded right now. Try again later.";
+      case "OwnerQueryForNonexistentToken":
+        return "One of these NFTs does not exist.";
       default:
         break;
     }
@@ -128,6 +109,7 @@ export function useClaimFlow(options: { onSuccess?: () => void } = {}) {
 
   const receipt = useWaitForTransactionReceipt({
     hash,
+    chainId: CLAIM_CHAIN_ID,
     query: { enabled: Boolean(hash) },
   });
 
@@ -143,8 +125,7 @@ export function useClaimFlow(options: { onSuccess?: () => void } = {}) {
     });
     onSuccessRef.current?.();
 
-    // Let the confirmation panel breathe, then return the card to the
-    // cooldown state without requiring a page reload.
+    // Let the confirmation panel breathe, then return to the ready state.
     const timer = window.setTimeout(reset, 8_000);
     return () => window.clearTimeout(timer);
   }, [hash, receipt.isSuccess, reset]);
@@ -162,74 +143,76 @@ export function useClaimFlow(options: { onSuccess?: () => void } = {}) {
     });
   }, [hash, receiptError]);
 
-  const claim = useCallback(async () => {
-    if (!IS_CONFIGURED || !address) return;
+  const submit = useCallback(
+    async (label: string, action: () => Promise<Hash>) => {
+      if (!IS_CONFIGURED || !address) return;
 
-    setError(null);
-    // Clear a previous failed receipt so the new attempt shows its own state.
-    setHash(undefined);
+      setError(null);
+      setHash(undefined);
+      handledHash.current = undefined;
 
-    try {
-      if (chainId !== CLAIM_CHAIN_ID) {
-        await switchChainAsync({ chainId: CLAIM_CHAIN_ID });
+      try {
+        if (chainId !== CLAIM_CHAIN_ID) {
+          setPhase("authorizing");
+          await switchChainAsync({ chainId: CLAIM_CHAIN_ID });
+        }
+
+        setPhase("submitting");
+        const txHash = await action();
+        setHash(txHash);
+        setPhase("pending");
+        toast.loading(`${label} submitted`, {
+          id: txHash,
+          description: "Waiting for Elysium to confirm…",
+        });
+      } catch (cause) {
+        const message = readableError(cause);
+        setPhase("error");
+        setError(message);
+        toast.error("Claim failed", { description: message });
       }
+    },
+    [address, chainId, switchChainAsync],
+  );
 
-      setPhase("authorizing");
+  const claimNft = useCallback(
+    async (tokenIds: bigint[]) => {
+      if (tokenIds.length === 0) return;
 
-      const response = await fetch("/api/claim", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ address }),
-        cache: "no-store",
-      });
+      await submit("NFT claim", () =>
+        writeContractAsync({
+          address: CLAIM_ADDRESS,
+          abi: claimAbi,
+          functionName: "claimNft",
+          args: [tokenIds],
+          chainId: CLAIM_CHAIN_ID,
+        }),
+      );
+    },
+    [submit, writeContractAsync],
+  );
 
-      const payload = (await response.json()) as ClaimAuthorization & {
-        error?: string;
-        message?: string;
-        nextClaimAt?: number;
-      };
-
-      if (!response.ok) {
-        throw new ClaimRequestError(
-          payload.error ?? "CLAIM_FAILED",
-          payload.message ?? "Unable to authorize the claim.",
-          payload.nextClaimAt,
-        );
-      }
-
-      setPhase("submitting");
-
-      const txHash = await writeContractAsync({
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "claim",
-        args: [
-          BigInt(payload.amount),
-          BigInt(payload.nonce),
-          BigInt(payload.deadline),
-          payload.signature,
-        ],
-      });
-
-      setHash(txHash);
-      setPhase("pending");
-      toast.loading("Claim submitted", {
-        id: txHash,
-        description: "Waiting for Elysium to confirm…",
-      });
-    } catch (cause) {
-      const message = readableError(cause);
-      setPhase("error");
-      setError(message);
-      toast.error("Claim failed", { description: message });
-    }
-  }, [address, chainId, switchChainAsync, writeContractAsync]);
+  const claimCommunity = useCallback(
+    async (fee: bigint) => {
+      await submit("Community claim", () =>
+        writeContractAsync({
+          address: CLAIM_ADDRESS,
+          abi: claimAbi,
+          functionName: "claimCommunity",
+          value: fee,
+          chainId: CLAIM_CHAIN_ID,
+        }),
+      );
+    },
+    [submit, writeContractAsync],
+  );
 
   return {
     phase: receiptError ? ("error" as const) : phase,
     hash,
     error: receiptError ?? error,
-    claim,
+    claimNft,
+    claimCommunity,
     reset,
     receipt,
   };

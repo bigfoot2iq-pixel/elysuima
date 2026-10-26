@@ -33,6 +33,8 @@
 /contracts/cache/
 /contracts/out-nft/
 /contracts/cache-nft/
+/contracts/out-claim/
+/contracts/cache-claim/
 /contracts/broadcast/
 /contracts/lib/forge-std/
 
@@ -56,3 +58,6 @@ next-env.d.ts
 # runtime launchpad settings written by the admin console
 /data/launchpad.json
 /data/launchpad.json.*.tmp
+# runtime faucet cooldown records
+/data/faucet-claims.json
+/data/faucet-claims.json.*.tmp

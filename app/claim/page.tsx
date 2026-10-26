@@ -1,35 +1,31 @@
 import type { Metadata } from "next";
-import { ClaimGate } from "@/components/claim/claim-gate";
+import { ClaimContent } from "@/components/claim/claim-content";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { CLAIM_CHAIN_ID } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: "Daily Claim",
+  title: "Claim Rewards",
   description:
-    "Claim 100 ELYZ every 24 hours on Elysium. Hold at least 0.001 ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink to unlock the daily claim.",
+    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. Hold at least 0.001 ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink to unlock the claim.",
   keywords: [
-    "Elyziuma daily claim",
+    "Elyziuma claim",
     "claim ELYZ",
-    "Elysium claim",
+    "Elysium NFT rewards",
     "0.001 ETH or HYPE eligibility",
     `Elysium ${CLAIM_CHAIN_ID}`,
   ],
-  robots: {
-    index: false,
-    follow: false,
-  },
   openGraph: {
-    title: "Elyziuma Daily Claim",
+    title: "Elyziuma Claim Rewards",
     description:
-      "Claim 100 ELYZ every 24 hours on Elysium. No sign-up, just your wallet.",
+      "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. No sign-up, just your wallet.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Elyziuma Daily Claim",
+    title: "Elyziuma Claim Rewards",
     description:
-      "Claim 100 ELYZ every 24 hours on Elysium. No sign-up, just your wallet.",
+      "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. No sign-up, just your wallet.",
   },
 };
 
@@ -38,7 +34,7 @@ export default function ClaimPage() {
     <div className="relative flex min-h-full flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <ClaimGate />
+        <ClaimContent />
       </main>
       <SiteFooter />
     </div>

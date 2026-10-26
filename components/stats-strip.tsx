@@ -8,7 +8,7 @@ import {
   TOKEN_ADDRESS,
   TOKEN_FALLBACK,
 } from "@/lib/config";
-import { formatAmount, formatCompact } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
 
 export function StatsStrip() {
   const { data } = useReadContracts({
@@ -21,23 +21,22 @@ export function StatsStrip() {
       {
         address: CLAIM_ADDRESS,
         abi: claimAbi,
-        functionName: "totalClaims",
+        functionName: "nftClaimedTotal",
       },
       {
         address: CLAIM_ADDRESS,
         abi: claimAbi,
-        functionName: "uniqueClaimers",
-      },
-      {
-        address: TOKEN_ADDRESS,
-        abi: tokenAbi,
-        functionName: "balanceOf",
-        args: [CLAIM_ADDRESS],
+        functionName: "communityClaimedTotal",
       },
       {
         address: CLAIM_ADDRESS,
         abi: claimAbi,
-        functionName: "dailyAmount",
+        functionName: "nftPoolRemaining",
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityPoolRemaining",
       },
       {
         address: TOKEN_ADDRESS,
@@ -54,10 +53,10 @@ export function StatsStrip() {
 
   const [
     totalClaimedResult,
-    totalClaimsResult,
-    uniqueClaimersResult,
-    faucetBalanceResult,
-    dailyAmountResult,
+    nftClaimedResult,
+    communityClaimedResult,
+    nftPoolResult,
+    communityPoolResult,
     decimalsResult,
   ] = data ?? [];
 
@@ -65,21 +64,21 @@ export function StatsStrip() {
     totalClaimedResult?.status === "success"
       ? (totalClaimedResult.result as bigint)
       : undefined;
-  const totalClaims =
-    totalClaimsResult?.status === "success"
-      ? (totalClaimsResult.result as bigint)
+  const nftClaimed =
+    nftClaimedResult?.status === "success"
+      ? (nftClaimedResult.result as bigint)
       : undefined;
-  const uniqueClaimers =
-    uniqueClaimersResult?.status === "success"
-      ? (uniqueClaimersResult.result as bigint)
+  const communityClaimed =
+    communityClaimedResult?.status === "success"
+      ? (communityClaimedResult.result as bigint)
       : undefined;
-  const faucetBalance =
-    faucetBalanceResult?.status === "success"
-      ? (faucetBalanceResult.result as bigint)
+  const nftPool =
+    nftPoolResult?.status === "success"
+      ? (nftPoolResult.result as bigint)
       : undefined;
-  const dailyAmount =
-    dailyAmountResult?.status === "success"
-      ? (dailyAmountResult.result as bigint)
+  const communityPool =
+    communityPoolResult?.status === "success"
+      ? (communityPoolResult.result as bigint)
       : undefined;
   const decimals =
     decimalsResult?.status === "success"
@@ -93,24 +92,23 @@ export function StatsStrip() {
       suffix: TOKEN_FALLBACK.symbol,
     },
     {
-      label: "Claims",
-      value: totalClaims !== undefined ? totalClaims.toString() : "—",
-      suffix: "all time",
-    },
-    {
-      label: "Unique wallets",
-      value:
-        uniqueClaimers !== undefined ? uniqueClaimers.toString() : "—",
-      suffix: "claimers",
-    },
-    {
-      label: "Faucet remaining",
-      value: formatCompact(faucetBalance, decimals),
+      label: "NFT claimed",
+      value: formatCompact(nftClaimed, decimals),
       suffix: TOKEN_FALLBACK.symbol,
     },
     {
-      label: "Daily amount",
-      value: formatAmount(dailyAmount, decimals, 0),
+      label: "Community claimed",
+      value: formatCompact(communityClaimed, decimals),
+      suffix: TOKEN_FALLBACK.symbol,
+    },
+    {
+      label: "NFT pool left",
+      value: formatCompact(nftPool, decimals),
+      suffix: TOKEN_FALLBACK.symbol,
+    },
+    {
+      label: "Community pool left",
+      value: formatCompact(communityPool, decimals),
       suffix: TOKEN_FALLBACK.symbol,
     },
   ];

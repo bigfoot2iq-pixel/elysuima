@@ -8,11 +8,12 @@ import type { Address } from "viem";
 import { useSignMessage } from "wagmi";
 import { LAUNCHPAD_CONFIG_QUERY_KEY } from "@/hooks/use-launchpad-config";
 import { buildAdminMessage } from "@/lib/launchpad/auth-message";
-import { getMintMinimumBalance } from "@/lib/launchpad/balance";
+import {
+  MINT_MAINNET_CHAINS_LABEL,
+  MINT_MAINNET_REQUIREMENT_LABEL,
+} from "@/lib/launchpad/balance";
 import { hashLaunchpadPayload } from "@/lib/launchpad/stable";
 import type { LaunchpadConfig } from "@/lib/launchpad/types";
-import { getElysiumChain } from "@/lib/chains";
-import { formatAmount } from "@/lib/format";
 import {
   type AdminResponse,
   launchpadAdminKey,
@@ -43,17 +44,7 @@ export function LaunchpadMintPanel({ address }: { address?: Address }) {
   const dirty = draft !== null && draft !== saved;
   const disabled = !isAdmin || saving;
 
-  const chain = current ? getElysiumChain(current.chainId) : undefined;
-  const minimum = chain
-    ? getMintMinimumBalance(
-        chain.nativeCurrency.symbol,
-        chain.nativeCurrency.decimals,
-      )
-    : undefined;
-  const minimumLabel =
-    chain && minimum !== undefined
-      ? `${formatAmount(minimum, chain.nativeCurrency.decimals, 4)} ${chain.nativeCurrency.symbol}`
-      : "the configured minimum";
+  const minimumLabel = MINT_MAINNET_REQUIREMENT_LABEL;
 
   async function save() {
     if (!address || saving || !isAdmin || !dirty) return;
@@ -91,11 +82,13 @@ export function LaunchpadMintPanel({ address }: { address?: Address }) {
       void adminQuery.refetch();
 
       toast.success(
-        enabled ? "Minimum balance required" : "Minimum balance check disabled",
+        enabled
+          ? "Mainnet balance required"
+          : "Mainnet balance check disabled",
         {
           description: enabled
-            ? `The mint button now requires at least ${minimumLabel} on ${chain?.name ?? "the active chain"}.`
-            : "Visitors can mint without the launchpad checking their wallet balance.",
+            ? `The mint button now requires at least ${minimumLabel} on ${MINT_MAINNET_CHAINS_LABEL}.`
+            : "Visitors can mint without the launchpad checking their mainnet balance.",
         },
       );
     } catch (error) {
@@ -138,7 +131,7 @@ export function LaunchpadMintPanel({ address }: { address?: Address }) {
       <CardHeading
         icon={ShieldCheck}
         title="Mint requirements"
-        description="Require a minimum native-token balance before the launchpad enables the mint button."
+        description="Require a mainnet ETH/HYPE balance before the launchpad enables the mint button."
         aside={
           <div className="flex flex-wrap justify-end gap-2">
             {dirty ? <StatusPill tone="warn">Unsaved</StatusPill> : null}
@@ -154,16 +147,16 @@ export function LaunchpadMintPanel({ address }: { address?: Address }) {
           checked={enabled}
           onCheckedChange={setDraft}
           disabled={disabled}
-          label="Require a minimum wallet balance before minting"
+          label="Require a mainnet ETH/HYPE balance before minting"
         />
         <div className="min-w-0">
           <p className="text-xs font-semibold text-paper">
-            Require minimum wallet balance
+            Require mainnet ETH/HYPE balance
           </p>
           <p className="mt-1 max-w-xl text-[11px] leading-5 text-paper-mute">
             {enabled
-              ? `The mint button stays disabled until the wallet holds at least ${minimumLabel} on ${chain?.name ?? "the active chain"}, or the mint total when that is higher.`
-              : "The mint button no longer checks the wallet balance. A wallet with insufficient funds can still submit and let the wallet or contract reject the transaction."}
+              ? `The mint button stays disabled until the wallet holds at least ${minimumLabel} on ${MINT_MAINNET_CHAINS_LABEL}. Testnet balances are ignored.`
+              : "The mint button no longer checks the mainnet balance. A wallet with an insufficient balance can still submit and let the wallet or contract reject the transaction."}
           </p>
         </div>
       </div>

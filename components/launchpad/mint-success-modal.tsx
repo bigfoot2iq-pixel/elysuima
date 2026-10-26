@@ -9,15 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import {
-  ArrowUpRight,
-  Check,
-  Copy,
-  ImageOff,
-  Loader2,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { Check, ImageOff, Loader2, RefreshCw, X } from "lucide-react";
 import { XLogo } from "@/components/x-logo";
 import { collectionImageUrl } from "@/lib/collection/art";
 import { cn } from "@/lib/utils";
@@ -26,6 +18,16 @@ type ArtworkStatus = "loading" | "loaded" | "error";
 
 /** Where "go mint yours" points to in the share post. */
 const SHARE_URL = "https://www.elyziuma.xyz/launchpad";
+
+/** Prefilled post for the "Share on X" button. */
+const SHARE_TEXT = [
+  "Just minted Elyziuma NFT on @Enter_Elysium Testnet",
+  "",
+  "Go mint yours 👇",
+  SHARE_URL,
+  "",
+  "Elyziuma is live.",
+].join("\n");
 
 /**
  * The artwork can take a while to arrive (the hosted PNGs are large), so it
@@ -134,11 +136,7 @@ export function MintSuccessModal({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [copied, setCopied] = useState(false);
-
   const handleClose = useCallback(() => {
-    setCopied(false);
     onClose();
   }, [onClose]);
 
@@ -152,14 +150,8 @@ export function MintSuccessModal({
         ? `${tokenLabel} is yours`
         : `${quantity} Elyziuma NFTs are yours`
       : "Mint confirmed";
-  const shareText =
-    tokenId !== undefined
-      ? quantity === 1
-        ? `I just minted ${tokenLabel} on Elysium. go mint yours at ${SHARE_URL}`
-        : `I just minted ${quantity} Elyziuma NFTs on Elysium. go mint yours at ${SHARE_URL}`
-      : `I just minted Elyziuma on Elysium. go mint yours at ${SHARE_URL}`;
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(
-    shareText,
+    SHARE_TEXT,
   )}`;
 
   useEffect(() => {
@@ -181,28 +173,8 @@ export function MintSuccessModal({
     };
   }, [open, handleClose]);
 
-  useEffect(
-    () => () => {
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-    },
-    [],
-  );
-
   if (!open) return null;
   if (typeof document === "undefined") return null;
-
-  async function copyImageLink() {
-    if (!imageUrl) return;
-
-    try {
-      await navigator.clipboard.writeText(imageUrl);
-      setCopied(true);
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-      copyTimer.current = setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard access can be denied; the link stays visible for manual copy.
-    }
-  }
 
   function trapFocus(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key !== "Tab") return;
@@ -276,35 +248,9 @@ export function MintSuccessModal({
 
           {imageUrl ? (
             <div className="mt-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="rounded-full border border-paper/15 bg-ink/60 px-2.5 py-1 font-mono text-[10px] font-semibold text-paper">
-                  {tokenLabel}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <a
-                    href={imageUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-paper/15 bg-paper/[0.03] px-2.5 py-1 font-mono text-[10px] font-semibold text-paper-dim transition hover:border-brand/40 hover:text-brand"
-                  >
-                    Open image
-                    <ArrowUpRight className="size-3" />
-                  </a>
-                  <button
-                    type="button"
-                    onClick={copyImageLink}
-                    aria-label="Copy NFT image link"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-paper/15 bg-paper/[0.03] px-2.5 py-1 font-mono text-[10px] font-semibold text-paper-dim transition hover:border-brand/40 hover:text-brand"
-                  >
-                    {copied ? (
-                      <Check className="size-3 text-mint" />
-                    ) : (
-                      <Copy className="size-3" />
-                    )}
-                    {copied ? "Copied" : "Copy"}
-                  </button>
-                </div>
-              </div>
+              <span className="inline-flex rounded-full border border-paper/15 bg-ink/60 px-2.5 py-1 font-mono text-[10px] font-semibold text-paper">
+                {tokenLabel}
+              </span>
 
               <MintedArtwork
                 key={imageUrl}

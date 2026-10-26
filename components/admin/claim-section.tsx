@@ -3,20 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
-  Check,
   Coins,
   ExternalLink,
-  KeyRound,
   Loader2,
   Pause,
   Play,
+  Send,
   ShieldCheck,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  formatUnits,
   isAddress,
+  parseEther,
   parseUnits,
   type Address,
   type Hash,
@@ -31,6 +30,7 @@ import { claimAbi } from "@/lib/abis";
 import {
   CLAIM_ADDRESS,
   CLAIM_CHAIN_ID,
+  TOKEN_ADDRESS,
   explorerAddress,
   explorerTx,
 } from "@/lib/config";
@@ -49,7 +49,7 @@ import {
   TxBar,
   type Tone,
 } from "./admin-ui";
-import { sameAddress, txError } from "./admin-utils";
+import { formatHype, sameAddress, txError } from "./admin-utils";
 
 export function ClaimSection({ address }: { address?: Address }) {
   const { chainId } = useAccount();
@@ -61,10 +61,14 @@ export function ClaimSection({ address }: { address?: Address }) {
 
   const [hash, setHash] = useState<Hash>();
   const [pending, setPending] = useState<string | null>(null);
-  const [amountInput, setAmountInput] = useState<string | null>(null);
-  const [withdrawInput, setWithdrawInput] = useState("");
-  const [withdrawTo, setWithdrawTo] = useState<string | null>(null);
-  const [signerInput, setSignerInput] = useState<string | null>(null);
+  const [communityFeeInput, setCommunityFeeInput] = useState<string | null>(
+    null,
+  );
+  const [feeRecipientInput, setFeeRecipientInput] = useState<string | null>(
+    null,
+  );
+  const [surplusAmountInput, setSurplusAmountInput] = useState("");
+  const [surplusTo, setSurplusTo] = useState<string | null>(null);
 
   const claimChain = getElysiumChain(CLAIM_CHAIN_ID);
   const onWrongChain = chainId !== undefined && chainId !== CLAIM_CHAIN_ID;
@@ -76,18 +80,25 @@ export function ClaimSection({ address }: { address?: Address }) {
     query: { enabled: Boolean(hash) },
   });
 
-  const amountValue =
-    amountInput ??
-    (claim.dailyAmount !== undefined
-      ? formatUnits(claim.dailyAmount, claim.decimals)
+  const communityFeeValue =
+    communityFeeInput ??
+    (claim.communityClaimFee !== undefined
+      ? formatHype(claim.communityClaimFee)
       : "");
-  const withdrawToValue = withdrawTo ?? address ?? "";
-  const signerValue = signerInput ?? claim.signer ?? "";
+  const feeRecipientValue = feeRecipientInput ?? claim.feeRecipient ?? "";
+  const surplusToValue = surplusTo ?? address ?? "";
   const settled = Boolean(hash) && (receipt.isSuccess || receipt.isError);
   const busy = Boolean(pending) && !settled;
   const handledSuccess = useRef<Hash | undefined>(undefined);
   const handledError = useRef<Hash | undefined>(undefined);
   const refetchHealth = health.refetch;
+
+  const outstanding =
+    (claim.nftPoolRemaining ?? 0n) + (claim.communityPoolRemaining ?? 0n);
+  const surplusAvailable =
+    claim.tokenBalance !== undefined && claim.tokenBalance > outstanding
+      ? claim.tokenBalance - outstanding
+      : 0n;
 
   useEffect(() => {
     if (!hash || !receipt.isSuccess || handledSuccess.current === hash) return;
@@ -133,21 +144,39 @@ export function ClaimSection({ address }: { address?: Address }) {
     }
   }
 
-  async function updateDailyAmount() {
+  async function updateCommunityFee() {
     try {
-      const parsed = parseUnits(amountValue, claim.decimals);
-      if (parsed <= 0n) throw new Error("Amount must be greater than zero.");
-      await run("Update daily amount", () =>
+      const parsed = parseEther(communityFeeValue);
+      await run("Update community fee", () =>
         writeContractAsync({
           address: CLAIM_ADDRESS,
           abi: claimAbi,
-          functionName: "setDailyAmount",
+          functionName: "setCommunityClaimFee",
           args: [parsed],
           chainId: CLAIM_CHAIN_ID,
         }),
       );
     } catch (error) {
-      toast.error("Invalid amount", { description: txError(error) });
+      toast.error("Invalid community fee", { description: txError(error) });
+    }
+  }
+
+  async function updateFeeRecipient() {
+    try {
+      if (!isAddress(feeRecipientValue)) {
+        throw new Error("Enter a valid fee recipient.");
+      }
+      await run("Update fee recipient", () =>
+        writeContractAsync({
+          address: CLAIM_ADDRESS,
+          abi: claimAbi,
+          functionName: "setFeeRecipient",
+          args: [feeRecipientValue],
+          chainId: CLAIM_CHAIN_ID,
+        }),
+      );
+    } catch (error) {
+      toast.error("Invalid fee recipient", { description: txError(error) });
     }
   }
 
@@ -162,43 +191,38 @@ export function ClaimSection({ address }: { address?: Address }) {
     );
   }
 
-  async function withdraw() {
+  async function withdrawFees() {
+    await run("Withdraw fees", () =>
+      writeContractAsync({
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "withdrawFees",
+        chainId: CLAIM_CHAIN_ID,
+      }),
+    );
+  }
+
+  async function withdrawSurplus() {
     try {
-      if (!isAddress(withdrawToValue)) {
+      if (!isAddress(surplusToValue)) {
         throw new Error("Enter a valid recipient.");
       }
-      const parsed = parseUnits(withdrawInput, claim.decimals);
+      const parsed = parseUnits(surplusAmountInput, claim.decimals);
       if (parsed <= 0n) throw new Error("Amount must be greater than zero.");
-      await run("Withdraw tokens", () =>
+      if (parsed > surplusAvailable) {
+        throw new Error("Amount exceeds the available token surplus.");
+      }
+      await run("Withdraw surplus", () =>
         writeContractAsync({
           address: CLAIM_ADDRESS,
           abi: claimAbi,
-          functionName: "withdraw",
-          args: [withdrawToValue, parsed],
+          functionName: "withdrawSurplus",
+          args: [surplusToValue, parsed],
           chainId: CLAIM_CHAIN_ID,
         }),
       );
     } catch (error) {
       toast.error("Invalid withdrawal", { description: txError(error) });
-    }
-  }
-
-  async function updateSigner() {
-    try {
-      if (!isAddress(signerValue)) {
-        throw new Error("Enter a valid signer address.");
-      }
-      await run("Rotate signer", () =>
-        writeContractAsync({
-          address: CLAIM_ADDRESS,
-          abi: claimAbi,
-          functionName: "setSigner",
-          args: [signerValue],
-          chainId: CLAIM_CHAIN_ID,
-        }),
-      );
-    } catch (error) {
-      toast.error("Invalid signer", { description: txError(error) });
     }
   }
 
@@ -234,8 +258,8 @@ export function ClaimSection({ address }: { address?: Address }) {
     <section id="claim" className="scroll-mt-[150px] lg:scroll-mt-24">
       <SectionHeader
         index="03"
-        title="Claim & faucet"
-        description="The daily ELYZ claim contract. Every action here is an on-chain transaction signed by the claim owner."
+        title="Claim & rewards"
+        description="The two-pool ELYZ claim contract. NFT rewards pay 10,000 ELYZ per NFT; the community reward pays 1,000 ELYZ once per wallet. Every action here is an on-chain transaction signed by the claim owner."
         status={<StatusPill tone={accessTone}>{accessLabel}</StatusPill>}
       />
 
@@ -243,31 +267,56 @@ export function ClaimSection({ address }: { address?: Address }) {
         {claim.configured ? (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <MiniStat
-              label="Daily amount"
+              label="NFT claimed"
               value={`${formatAmount(
-                claim.dailyAmount,
-                claim.decimals,
-                4,
-              )} ${claim.symbol}`}
-            />
-            <MiniStat
-              label="Faucet"
-              value={`${formatAmount(
-                claim.faucetBalance,
+                claim.nftClaimedTotal,
                 claim.decimals,
                 2,
               )} ${claim.symbol}`}
               tone="mint"
             />
             <MiniStat
-              label="Claims"
-              value={claim.totalClaims?.toString() ?? "—"}
+              label="Community claimed"
+              value={`${formatAmount(
+                claim.communityClaimedTotal,
+                claim.decimals,
+                2,
+              )} ${claim.symbol}`}
             />
             <MiniStat
-              label="Unique wallets"
-              value={claim.uniqueClaimers?.toString() ?? "—"}
+              label="NFT pool left"
+              value={`${formatAmount(
+                claim.nftPoolRemaining,
+                claim.decimals,
+                2,
+              )} ${claim.symbol}`}
+            />
+            <MiniStat
+              label="Community pool left"
+              value={`${formatAmount(
+                claim.communityPoolRemaining,
+                claim.decimals,
+                2,
+              )} ${claim.symbol}`}
+              tone="warn"
             />
           </div>
+        ) : null}
+
+        {claim.configured && health.data?.funded === false ? (
+          <Notice
+            tone="danger"
+            title="Claim pools are underfunded"
+            body={`The contract holds ${formatAmount(
+              claim.tokenBalance,
+              claim.decimals,
+              2,
+            )} ${claim.symbol}, but ${formatAmount(
+              outstanding,
+              claim.decimals,
+              2,
+            )} ${claim.symbol} is still owed to unclaimed rewards. Refill the contract before users claim.`}
+          />
         ) : null}
 
         {!claim.configured ? (
@@ -317,47 +366,84 @@ export function ClaimSection({ address }: { address?: Address }) {
             <Panel>
               <CardHeading
                 icon={Coins}
-                title="Daily amount"
-                description="The amount every eligible wallet can claim once per 24 hours."
+                title="Community claim fee"
+                description="HYPE charged for the one-time community claim. NFT holder claims are free apart from gas. Set the fee to 0 to make the community claim free."
               />
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <div className="relative flex-1">
-                  <input
-                    value={amountValue}
-                    onChange={(event) => setAmountInput(event.target.value)}
-                    inputMode="decimal"
-                    className="input pr-16"
-                    aria-label="Daily claim amount"
-                    placeholder="100"
-                  />
-                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[10px] text-paper-mute">
-                    {claim.symbol}
-                  </span>
-                </div>
+              <div className="mt-5">
+                <label
+                  htmlFor="community-claim-fee"
+                  className="mb-1.5 block text-[9px] uppercase tracking-[0.14em] text-paper-mute"
+                >
+                  Community claim fee (HYPE)
+                </label>
+                <input
+                  id="community-claim-fee"
+                  value={communityFeeValue}
+                  onChange={(event) =>
+                    setCommunityFeeInput(event.target.value)
+                  }
+                  inputMode="decimal"
+                  className="input"
+                  placeholder="0"
+                />
                 <button
                   type="button"
-                  onClick={() => void updateDailyAmount()}
+                  onClick={() => void updateCommunityFee()}
                   disabled={busy}
-                  className="btn-primary h-12 shrink-0 px-5 text-xs"
+                  className="btn-ghost mt-2 w-full"
                 >
-                  {pending === "Update daily amount" && busy ? (
-                    <Loader2 className="size-4 animate-spin" />
+                  {pending === "Update community fee" && busy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
                   ) : null}
-                  Update amount
+                  Update community fee
                 </button>
               </div>
               <p className="mt-3 font-mono text-[10px] text-paper-mute">
                 Current:{" "}
-                {formatAmount(claim.dailyAmount, claim.decimals, 4)}{" "}
-                {claim.symbol}
+                {claim.communityClaimFee !== undefined
+                  ? formatHype(claim.communityClaimFee)
+                  : "—"}{" "}
+                HYPE community · NFT claims free
               </p>
+            </Panel>
+
+            <Panel>
+              <CardHeading
+                icon={Wallet}
+                title="Fee recipient"
+                description="Withdrawn community claim fees are sent to this address."
+              />
+              <div className="mt-5 space-y-3">
+                <input
+                  value={feeRecipientValue}
+                  onChange={(event) => setFeeRecipientInput(event.target.value)}
+                  className="input"
+                  placeholder="Fee recipient address"
+                  aria-label="Fee recipient address"
+                  spellCheck={false}
+                />
+                <button
+                  type="button"
+                  onClick={() => void updateFeeRecipient()}
+                  disabled={busy}
+                  className="btn-ghost w-full"
+                >
+                  {pending === "Update fee recipient" && busy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : null}
+                  Update fee recipient
+                </button>
+                <p className="font-mono text-[10px] text-paper-mute">
+                  Current: {shortAddress(claim.feeRecipient, 6)}
+                </p>
+              </div>
             </Panel>
 
             <Panel>
               <CardHeading
                 icon={claim.paused ? Play : Pause}
                 title={claim.paused ? "Claims are paused" : "Claims are live"}
-                description="Pausing blocks new claims. Existing balances and history stay intact."
+                description="Pausing blocks new NFT and community claims. Existing balances and history stay intact."
               />
               <button
                 type="button"
@@ -384,118 +470,114 @@ export function ClaimSection({ address }: { address?: Address }) {
               <p className="mt-3 text-[10px] leading-5 text-paper-mute">
                 {claim.paused
                   ? "New claim transactions revert until the contract is unpaused."
-                  : "Use this if the signer is compromised or the faucet needs maintenance."}
+                  : "Use this if the claim contract needs maintenance or a fee change."}
               </p>
             </Panel>
 
             <Panel>
               <CardHeading
-                icon={Wallet}
-                title="Faucet withdrawal"
-                description="Send ELYZ to a treasury wallet. Refill the faucet by transferring ELYZ to the claim contract."
+                icon={Coins}
+                title="Withdraw fees"
+                description="Send the community claim fees accrued in the contract to the fee recipient."
               />
               <div className="mt-5 space-y-3">
                 <div className="flex items-center justify-between rounded-xl border border-paper/[0.07] bg-ink/40 px-3.5 py-3">
                   <span className="text-[10px] uppercase tracking-[0.14em] text-paper-mute">
-                    Balance
+                    Accrued
                   </span>
                   <span className="tabular font-mono text-xs text-paper">
-                    {formatAmount(claim.faucetBalance, claim.decimals, 2)}{" "}
-                    {claim.symbol}
+                    {claim.accruedFees !== undefined
+                      ? formatHype(claim.accruedFees)
+                      : "—"}{" "}
+                    HYPE
                   </span>
                 </div>
-                <input
-                  value={withdrawInput}
-                  onChange={(event) => setWithdrawInput(event.target.value)}
-                  inputMode="decimal"
-                  className="input"
-                  placeholder={`Amount in ${claim.symbol}`}
-                  aria-label="Withdraw amount"
-                />
-                <input
-                  value={withdrawToValue}
-                  onChange={(event) => setWithdrawTo(event.target.value)}
-                  className="input"
-                  placeholder="Recipient address"
-                  aria-label="Withdraw recipient"
-                  spellCheck={false}
-                />
                 <button
                   type="button"
-                  onClick={() => void withdraw()}
-                  disabled={busy}
+                  onClick={() => void withdrawFees()}
+                  disabled={busy || (claim.accruedFees ?? 0n) === 0n}
                   className="btn-ghost w-full"
                 >
-                  {pending === "Withdraw tokens" && busy ? (
-                    <Loader2 className="size-4 animate-spin" />
+                  {pending === "Withdraw fees" && busy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
                   ) : (
                     <ExternalLink className="size-3.5" />
                   )}
-                  Withdraw tokens
+                  Withdraw fees
                 </button>
+                <p className="text-[9px] leading-5 text-paper-mute">
+                  Recipient: {shortAddress(claim.feeRecipient, 6)}
+                </p>
               </div>
             </Panel>
 
-            <Panel>
+            <Panel className="lg:col-span-2">
               <CardHeading
-                icon={ShieldCheck}
-                title="Claim signer"
-                description="The server signs EIP-712 authorizations with this address. It must match FAUCET_SIGNER_PRIVATE_KEY."
+                icon={Send}
+                title="Withdraw token surplus"
+                description="Only ELYZ above the outstanding NFT + community pools can be withdrawn. The reward pools themselves are locked in the contract."
               />
-              <div className="mt-5 space-y-3">
-                <div
-                  className={cn(
-                    "flex items-start gap-2 rounded-xl border px-3.5 py-3 text-[10px]",
-                    health.data?.signerMatches
-                      ? "border-mint/20 bg-mint/[0.05] text-mint"
-                      : "border-warn/20 bg-warn/[0.05] text-warn",
-                  )}
-                >
-                  {health.data?.signerMatches ? (
-                    <Check className="mt-0.5 size-3.5 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                  )}
-                  <div>
-                    <p className="font-semibold">
-                      {health.data?.signerMatches
-                        ? "Server signer matches the contract."
-                        : "Signer needs attention."}
-                    </p>
-                    <p className="mt-1 leading-5 opacity-80">
-                      {health.data?.signerMatches
-                        ? "Claims can be signed by the server."
-                        : health.data?.message ??
-                          "Signer status unavailable. Check FAUCET_SIGNER_PRIVATE_KEY on the server."}
-                    </p>
-                  </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-paper/[0.07] bg-ink/40 px-3.5 py-3">
+                  <p className="text-[8px] uppercase tracking-[0.16em] text-paper-mute">
+                    Contract balance
+                  </p>
+                  <p className="tabular mt-1.5 font-mono text-xs text-paper">
+                    {formatAmount(claim.tokenBalance, claim.decimals, 2)}{" "}
+                    {claim.symbol}
+                  </p>
                 </div>
+                <div className="rounded-xl border border-paper/[0.07] bg-ink/40 px-3.5 py-3">
+                  <p className="text-[8px] uppercase tracking-[0.16em] text-paper-mute">
+                    Still owed
+                  </p>
+                  <p className="tabular mt-1.5 font-mono text-xs text-paper">
+                    {formatAmount(outstanding, claim.decimals, 2)}{" "}
+                    {claim.symbol}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-mint/20 bg-mint/[0.04] px-3.5 py-3">
+                  <p className="text-[8px] uppercase tracking-[0.16em] text-mint/80">
+                    Withdrawable surplus
+                  </p>
+                  <p className="tabular mt-1.5 font-mono text-xs text-mint">
+                    {formatAmount(surplusAvailable, claim.decimals, 2)}{" "}
+                    {claim.symbol}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <input
-                  value={signerValue}
-                  onChange={(event) => setSignerInput(event.target.value)}
-                  className="input"
-                  placeholder="Signer address"
-                  aria-label="Claim signer address"
+                  value={surplusAmountInput}
+                  onChange={(event) =>
+                    setSurplusAmountInput(event.target.value)
+                  }
+                  inputMode="decimal"
+                  className="input flex-1"
+                  placeholder={`Amount in ${claim.symbol}`}
+                  aria-label="Surplus amount"
+                />
+                <input
+                  value={surplusToValue}
+                  onChange={(event) => setSurplusTo(event.target.value)}
+                  className="input flex-1"
+                  placeholder="Recipient address"
+                  aria-label="Surplus recipient"
                   spellCheck={false}
                 />
                 <button
                   type="button"
-                  onClick={() => void updateSigner()}
-                  disabled={busy}
-                  className="btn-ghost w-full"
+                  onClick={() => void withdrawSurplus()}
+                  disabled={busy || surplusAvailable === 0n}
+                  className="btn-ghost shrink-0"
                 >
-                  {pending === "Rotate signer" && busy ? (
-                    <Loader2 className="size-4 animate-spin" />
+                  {pending === "Withdraw surplus" && busy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
                   ) : (
-                    <KeyRound className="size-3.5" />
+                    <Send className="size-3.5" />
                   )}
-                  Rotate signer
+                  Withdraw
                 </button>
-                <p className="text-[9px] leading-5 text-paper-mute">
-                  Rotating the signer requires updating{" "}
-                  <span className="font-mono">FAUCET_SIGNER_PRIVATE_KEY</span> on
-                  the server. Claims fail until the two match again.
-                </p>
               </div>
             </Panel>
           </div>
@@ -522,12 +604,35 @@ export function ClaimSection({ address }: { address?: Address }) {
                     Owner {shortAddress(claim.owner, 5)}
                   </span>
                   <span className="text-paper-mute">
-                    Signer {shortAddress(claim.signer, 5)}
+                    NFT {shortAddress(claim.nftAddress, 5)}
                   </span>
+                  <a
+                    href={explorerAddress(TOKEN_ADDRESS)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-paper-mute transition hover:text-brand"
+                  >
+                    Token {shortAddress(TOKEN_ADDRESS, 5)}
+                    <ExternalLink className="size-3" />
+                  </a>
                 </div>
               </div>
               <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-paper-mute">
                 {claimChain.name} · {CLAIM_CHAIN_ID}
+              </span>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] text-paper-mute">
+              <span className="inline-flex items-center gap-1 rounded-full border border-paper/[0.08] px-2.5 py-1">
+                <ShieldCheck className="size-3 text-mint" />
+                NFT pool locked
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-paper/[0.08] px-2.5 py-1">
+                <ShieldCheck className="size-3 text-mint" />
+                Community pool locked
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-paper/[0.08] px-2.5 py-1">
+                <AlertTriangle className="size-3 text-warn" />
+                Threshold is UI-only
               </span>
             </div>
           </Panel>

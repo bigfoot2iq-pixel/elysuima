@@ -16,26 +16,27 @@ remappings = [
   "forge-std/=lib/forge-std/src/",
 ]
 
-# Profile for the Elysium testnet (chain 99801) deploy of ElyziumaNFT.
-#
-# Elysium runs stock ArbOS, so the deployed bytecode must not rely on Cancun
-# opcodes. "paris" removes PUSH0, MCOPY, TSTORE and TLOAD from the output.
-#
-# OpenZeppelin v5.6.1's utils/Bytes.sol uses `mcopy` in inline assembly, which
-# only compiles for Cancun. Bytes.sol is reached from ElyziumaNFT.sol only via
-# EIP712 -> Strings -> Bytes, i.e. through DailyClaim.sol. ElyziumaNFT.sol
-# itself only needs Ownable, ReentrancyGuard and ERC721A, so it compiles
-# cleanly for paris.
+# Elysium runs stock ArbOS, so deployed bytecode must not rely on Cancun
+# opcodes. The nft and claim profiles compile with "paris" to remove PUSH0,
+# MCOPY, TSTORE and TLOAD from the output.
 #
 # Usage:
 #   FOUNDRY_PROFILE=nft forge build
-#   FOUNDRY_PROFILE=nft forge create src/ElyziumaNFT.sol:ElyziumaNFT ...
-#   FOUNDRY_PROFILE=nft forge verify-contract ...
+#   FOUNDRY_PROFILE=claim forge build
+#   FOUNDRY_PROFILE=claim forge script script/Deploy.s.sol ...
 [profile.nft]
 evm_version = "paris"
 out = "out-nft"
 cache_path = "cache-nft"
-skip = ["src/DailyClaim.sol", "test/DailyClaim.t.sol", "script/Deploy.s.sol"]
+skip = ["src/ElyziumaClaim.sol", "test/ElyziumaClaim.t.sol", "script/Deploy.s.sol"]
+
+# Claim contracts use Ownable, Pausable, ReentrancyGuard and SafeERC20 only.
+# They compile cleanly for Paris, which is what Elysium needs.
+[profile.claim]
+evm_version = "paris"
+out = "out-claim"
+cache_path = "cache-claim"
+skip = ["test/ElyziumaNFT.t.sol", "script/DeployNFT.s.sol"]
 
 [fuzz]
 runs = 256

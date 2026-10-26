@@ -388,29 +388,89 @@ body {
   animation: spin 14s linear infinite;
 }
 
-/* Header X link: a soft light sweep so the account mark catches the eye
-   without turning the pill into a neon sign. */
-.x-pill {
+/* ---------------------------------------------------------------------------
+   X account link
+   The one place the site borrows another brand's colour. The pill is painted
+   in X's own blue and lit from the top-left by the same cyan the mascot art
+   glows with, so it reads as blue without pulling the header away from the
+   collection's palette. The body of the gradient stays deep enough for white
+   type to clear WCAG AA.
+   --------------------------------------------------------------------------- */
+.x-account {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      38% 140% at -6% -50%,
+      rgba(96, 190, 235, 0.6),
+      transparent 68%
+    ),
+    linear-gradient(155deg, #1884cd 0%, #0f6cba 45%, #08386b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(4, 24, 40, 0.45),
+    0 10px 26px -14px rgba(29, 155, 240, 0.95);
+  transition:
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.24s ease;
 }
 
-.x-pill::after {
+.x-account:hover {
+  filter: brightness(1.09) saturate(1.06);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.44),
+    inset 0 -1px 0 rgba(3, 22, 45, 0.28),
+    0 16px 34px -14px rgba(29, 155, 240, 1);
+}
+
+.x-account:active {
+  transform: translateY(0);
+}
+
+/* A narrow specular streak that crosses the pill every few seconds. */
+.x-account::after {
   content: "";
   position: absolute;
-  inset: -60% -35%;
+  inset: -30% -45%;
   z-index: -1;
   background: linear-gradient(
     100deg,
-    transparent 34%,
-    rgba(124, 216, 242, 0.85) 46%,
-    rgba(255, 255, 255, 0.95) 50%,
-    rgba(124, 216, 242, 0.85) 54%,
-    transparent 66%
+    transparent 41%,
+    rgba(255, 255, 255, 0.2) 47%,
+    rgba(255, 255, 255, 0.52) 50%,
+    rgba(255, 255, 255, 0.2) 53%,
+    transparent 59%
   );
-  transform: translateX(-130%);
-  animation: sheen 6s ease-in-out infinite;
+  transform: translateX(-120%);
+  animation: sheen 7s ease-in-out infinite;
   pointer-events: none;
+}
+
+.x-account-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(3, 22, 45, 0.5);
+}
+
+/* The verified badge keeps its official blue and rides on the avatar's white
+   border, the way X shows it on a profile. It carries no border of its own:
+   the white frame around the profile image is what separates the blue mark
+   from the blue button, so the badge never needs one of its own. */
+.x-account-badge {
+  color: #1d9bf0;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(3, 22, 45, 0.6);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.x-account:hover .x-account-badge {
+  transform: scale(1.15);
 }
 
 .tabular {

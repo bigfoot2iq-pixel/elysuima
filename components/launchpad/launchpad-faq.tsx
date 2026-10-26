@@ -1,11 +1,13 @@
 import { ShieldCheck } from "lucide-react";
-import { getMintMinimumBalance } from "@/lib/launchpad/balance";
+import {
+  MINT_MAINNET_CHAINS_LABEL,
+  MINT_MAINNET_REQUIREMENT_LABEL,
+} from "@/lib/launchpad/balance";
 import { getPerWalletLimit } from "@/lib/launchpad/drop";
 import type {
   ContractInspection,
   PublicLaunchpadConfig,
 } from "@/lib/launchpad/types";
-import { formatAmount } from "@/lib/format";
 
 export function LaunchpadFaq({
   config,
@@ -16,10 +18,11 @@ export function LaunchpadFaq({
 }) {
   const limit = getPerWalletLimit(config, inspection);
   const drop = inspection?.elyziumaDrop;
-  const { symbol, decimals } = config.chain.nativeCurrency;
+  const { symbol } = config.chain.nativeCurrency;
   const balanceCheckEnabled = config.mintBalanceCheck !== false;
-  const minimumBalance = getMintMinimumBalance(symbol, decimals);
-  const minimumBalanceLabel = `${formatAmount(minimumBalance, decimals, 4)} ${symbol}`;
+  const eligibilityCopy = balanceCheckEnabled
+    ? `Before submitting, the mint panel also checks mainnet eligibility: your wallet must hold at least ${MINT_MAINNET_REQUIREMENT_LABEL} on one of ${MINT_MAINNET_CHAINS_LABEL}. Testnet balances do not count toward this check.`
+    : "The mint panel does not require a mainnet balance before submitting.";
 
   const faqs = [
     {
@@ -30,11 +33,12 @@ export function LaunchpadFaq({
     {
       question: "Which network and currency do I need?",
       answer:
-        `${config.chain.name}, chain ID ${config.chain.id}. Gas and any mint price are paid in ${symbol}, the native currency of ${config.chain.name}. ${
-          balanceCheckEnabled
-            ? `The mint panel checks that your wallet holds at least ${minimumBalanceLabel} before it submits, so the transaction can cover the mint and gas.`
-            : "The mint panel does not require a minimum wallet balance before submitting."
-        } It also offers to switch your wallet automatically.`,
+        `${config.chain.name}, chain ID ${config.chain.id}. Gas and any mint price are paid in ${symbol}, the native currency of ${config.chain.name}. ${eligibilityCopy} It also offers to switch your wallet automatically.`,
+    },
+    {
+      question: "Why does the mint panel check another network?",
+      answer:
+        "The mainnet ETH/HYPE balance is a bot-resistance check. Testnet tokens are free, so a testnet balance would not prove anything. The check only reads your wallet on Hyperliquid, HyperEVM, Ethereum, Base, and Ink. It does not move funds or require a transaction.",
     },
     {
       question: "What is the maximum per wallet?",

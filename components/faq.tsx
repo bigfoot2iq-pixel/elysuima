@@ -5,7 +5,7 @@ const FAQS = [
   {
     question: "What is Elyziuma?",
     answer:
-      "Elyziuma is a 2,222-piece NFT collection built on Elysium. On top of the mint, each wallet can claim 100 ELYZ once every 24 hours. The owner sets the amount; the contract enforces the cooldown.",
+      "Elyziuma is a 2,222-piece NFT collection built on Elysium. NFT holders can claim 10,000 ELYZ per NFT, and every wallet can claim 1,000 ELYZ once from the community pool. The claim contract enforces NFT ownership and one-time community claims.",
   },
   {
     question: "How many pieces are in the collection?",
@@ -35,17 +35,17 @@ const FAQS = [
   {
     question: "Is the balance check enforced on-chain?",
     answer:
-      "The Elysium contract cannot read balances on other chains. Instead, our server verifies the five balances and signs a short-lived EIP-712 authorization bound to your wallet. The contract verifies that signature, the amount, a one-time nonce, and the 24-hour cooldown. Without a valid signature, a direct contract call reverts.",
+      "No. The five-chain threshold runs in the UI and gates the claim buttons. The claim contract does not read balances on other chains, so a direct contract call can bypass the threshold. The contract itself enforces NFT ownership and one-time community claims.",
   },
   {
-    question: "How often can I claim?",
+    question: "How many claims can I make?",
     answer:
-      "Once every 24 hours per wallet. The countdown starts when your claim transaction is confirmed. The timer in the claim card reads your last claim directly from the contract.",
+      "Each NFT can claim 10,000 ELYZ once. A wallet can claim 1,000 ELYZ from the community pool once. If you hold several NFTs, you can claim them in batches of up to 50 per transaction.",
   },
   {
     question: "Do I need HYPE for gas?",
     answer:
-      "Yes. Elysium uses HYPE for gas. The claim itself is a normal transaction, so you need a small amount of HYPE. If you are starting from zero, bridge HYPE from HyperEVM through ElysPump.",
+      "Yes. Elysium uses HYPE for gas. NFT holder claims have no protocol fee. The community claim has an admin-set HYPE fee, shown on its card before you submit. If you are starting from zero, bridge HYPE from HyperEVM through ElysPump.",
   },
   {
     question: "I just bridged funds. Why am I still not eligible?",
@@ -55,7 +55,7 @@ const FAQS = [
   {
     question: "Does 0.001 stop all bots?",
     answer:
-      "No. It is a speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 of a native token. The signature gate, nonce, and 24-hour cooldown prevent replay and double claims, but they cannot prove a human is behind every wallet.",
+      "No. It is a speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 of a native token. The claim contract prevents replay and double claims, but it cannot prove a human is behind every wallet.",
   },
   {
     question: "Is ELYZ worth anything?",
@@ -63,9 +63,9 @@ const FAQS = [
       "No. ELYZ is an experimental token with no monetary value, no presale, and no expectation of future value. Elysium is still pre-launch, and the chain may be reset.",
   },
   {
-    question: "What happens if the faucet is empty?",
+    question: "What happens if a claim pool is empty?",
     answer:
-      "When the pool can no longer cover a full daily amount, the next claim sweeps whatever remains — a Shaniu-style final claim. After that, claims pause until the owner refills the faucet.",
+      "The NFT and community pools are capped and funded separately. If a pool cannot cover a claim, that claim reverts; there is no automatic final sweep. The owner can refill the contract with ELYZ, and the admin console shows each pool’s remaining balance.",
   },
 ];
 
@@ -80,8 +80,8 @@ export function Faq() {
             <span className="block text-paper-dim">without the fine print.</span>
           </h2>
           <p className="mt-4 max-w-sm text-xs leading-6 text-paper-mute">
-            Everything you need to know about the collection, the daily claim,
-            the cross-chain check, and the trust model behind the signature.
+            Everything you need to know about the collection, the two claim
+            types, the cross-chain check, and the community fee.
           </p>
           <a
             href={LINKS.x}

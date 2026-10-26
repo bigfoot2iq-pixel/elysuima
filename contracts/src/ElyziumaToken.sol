@@ -5,7 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 
 /// @title Elyziuma
-/// @notice Fixed-supply ERC-20 for the Elyziuma testnet daily claim.
+/// @notice Fixed-supply ERC-20 for the Elyziuma claim pools.
 /// @dev The entire supply is minted once at deployment. There is no post-deploy mint function.
 contract ElyziumaToken is ERC20Capped {
     /// @param cap_ Total supply, in token base units (18 decimals).

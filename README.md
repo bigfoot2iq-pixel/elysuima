@@ -1,11 +1,11 @@
 # Elyziuma
 
-A daily ELYZ claim and an NFT launchpad on **Elysium Testnet** (chain ID `99801`; mainnet is `99901`). Wallets claim a fixed amount once every 24 hours, gated by a native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
+A two-pool ELYZ claim and an NFT launchpad on **Elysium Testnet** (chain ID `99801`; mainnet is `99901`). NFT holders claim 10,000 ELYZ per NFT, every wallet can claim 1,000 ELYZ once, and the claim buttons are gated by a native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
 
 The repository contains:
 
-- `ElyziumaToken` - fixed-supply ERC-20 (`ELYZ`, 18 decimals).
-- `DailyClaim` - EIP-712-authorized faucet with a 24-hour cooldown, owner controls, and a final-sweep mechanic.
+- `ElyziumaToken` - fixed-supply ERC-20 (`ELYZ`, 18 decimals, 50M cap).
+- `ElyziumaClaim` - two-pool claim contract: 10,000 ELYZ per NFT (free) and 1,000 ELYZ once per wallet with an owner-set HYPE fee.
 - `ElyziumaNFT` - the 2,222-piece ERC-721A collection on Elysium, with an on-chain public mint phase.
 - A Next.js 16 / React 19 frontend with RainbowKit, wagmi, and viem.
 - Server routes for cross-chain eligibility checks, claim authorizations, contract inspection, and launchpad settings.
@@ -21,16 +21,16 @@ The reference contract was verified on BscScan and its source was retrieved thro
 
 | Shaniu mechanic | Elyziuma decision |
 | --- | --- |
-| 21,000,000 fixed supply | **Copied** |
-| 90% claim pool / 10% owner share | **Copied** |
-| One claim per address, ever | **Changed** to one claim per wallet every 24 hours, as requested |
-| $0.20 payable claim in BNB via Chainlink | **Not copied** — ELYZ claims are free apart from Elysium gas |
-| Randomized lottery tiers (50–150, 300–500, 1,000–3,000, 21,000, bonus sweep) | **Not copied** — the owner controls a fixed daily amount instead |
-| Last claim sweeps the remaining pool | **Copied** |
-| Binance Agent ID gate (v4) | **Replaced** with the cross-chain 0.001 native-token eligibility check + EIP-712 signature |
-| Owner renounced / no admin controls | **Changed** — the owner can set the amount, rotate the signer, pause, and withdraw |
+| 21,000,000 fixed supply | **Changed** to 50,000,000: 22.22M NFT pool + 22.22M community pool + 5.56M owner allocation |
+| 90% claim pool / 10% owner share | **Changed** to 44.44% NFT pool / 44.44% community pool / 11.12% owner |
+| One claim per address, ever | **Changed** to one 1,000 ELYZ community claim per wallet and one 10,000 ELYZ claim per NFT |
+| $0.20 payable claim in BNB via Chainlink | **Changed** to an owner-set HYPE fee on the community claim; NFT claims are free |
+| Randomized lottery tiers (50–150, 300–500, 1,000–3,000, 21,000, bonus sweep) | **Not copied** — both pools pay fixed amounts |
+| Last claim sweeps the remaining pool | **Not copied** — each pool has an exact cap; underfunded claims revert |
+| Binance Agent ID gate (v4) | **Replaced** with the UI-only 0.001 native-token threshold |
+| Owner renounced / no admin controls | **Changed** — the owner sets the community fee and fee recipient, pauses, and withdraws fees/surplus; the reward pools cannot be withdrawn |
 
-The Shaniu code is a single token contract with built-in claim logic. Elyziuma keeps the token and faucet separate so the faucet can be refilled, paused, or replaced without migrating the token. The full source-level comparison is in [`docs/shaniu-analysis.md`](docs/shaniu-analysis.md).
+The Shaniu code is a single token contract with built-in claim logic. Elyziuma keeps the token and claim contract separate so the claim can be paused, refilled, or replaced without migrating the token. The full source-level comparison is in [`docs/shaniu-analysis.md`](docs/shaniu-analysis.md).
 
 ---
 
@@ -40,45 +40,38 @@ The Shaniu code is a single token contract with built-in claim logic. Elyziuma k
 | --- | --- |
 | Name / symbol | Elyziuma / ELYZ |
 | Decimals | 18 |
-| Total supply | 21,000,000 ELYZ |
-| Claim pool | 18,900,000 ELYZ (90%) |
-| Deployer / treasury | 2,100,000 ELYZ (10%) |
-| Default daily amount | 100 ELYZ |
-| Cooldown | 24 hours per wallet |
-| Claim fee | None (gas only, paid in HYPE) |
+| Total supply | 50,000,000 ELYZ |
+| NFT holder pool | 22,220,000 ELYZ (44.44%) — 10,000 per NFT |
+| Community pool | 22,220,000 ELYZ (44.44%) — 1,000 per wallet |
+| Owner allocation | 5,560,000 ELYZ (11.12%) |
+| Claim fee | Community claim only — owner-set HYPE fee (default `0`); NFT claims are free |
 
-The deploy script transfers the claim-pool allocation to `DailyClaim` and leaves the remaining 10% with the deployer. Both values are configurable at deploy time.
+The deploy script transfers 22,220,000 ELYZ to `ElyziumaClaim` for the NFT pool, another 22,220,000 for the community pool, and 5,560,000 to the owner allocation recipient. The pool caps are constants in the claim contract, so the script enforces the fixed 50M split instead of accepting allocation overrides.
 
-When the faucet can no longer cover a full daily amount, the next claim receives the remaining balance and empties the pool. This mirrors Shaniu's final "bonus egg" sweep.
+The owner allocation is transferred at deployment, so the owner receives it before any claim is opened. The claim contract cannot pay a partial reward: if a pool is underfunded or exhausted, the claim reverts.
 
 ---
 
 ## How a claim works
 
-1. The browser asks `/api/eligibility` to read the wallet's native balance on Hyperliquid, HyperEVM, Ethereum, Base, and Ink.
-2. If any chain holds at least `0.001` of its native token, the browser asks `/api/claim` for an authorization.
-3. The server re-checks eligibility, reads the on-chain daily amount, nonce, cooldown, signer, and faucet balance, then signs an EIP-712 `Claim` message.
-4. The wallet submits `claim(amount, nonce, deadline, signature)` on Elysium.
-5. `DailyClaim` verifies:
-   - `amount == dailyAmount`
-   - the deadline has not passed
-   - the nonce matches the wallet's current nonce
-   - the 24-hour cooldown has elapsed
-   - the signature recovers to the contract signer
-   - the faucet has a non-zero balance
-6. The faucet transfers `min(dailyAmount, faucetBalance)` and increments the wallet's nonce and last-claim timestamp.
+### NFT holder claim
 
-The signature is bound to the wallet, amount, nonce, deadline, chain ID, and verifying contract. It expires after 10 minutes and cannot be replayed.
+1. The browser asks `/api/claim/eligibility` for the wallet's NFT ids and claim status.
+2. The server reads the collection's `totalMinted`, checks `ownerOf` for each minted id, and filters out ids already marked `nftClaimed`.
+3. The wallet submits `claimNft(tokenIds)` on Elysium. The contract verifies that the caller owns every id, that no id has claimed, and that the batch is at most 50. NFT claims are free.
+4. The contract marks each id claimed and transfers `tokenIds.length * 10,000 ELYZ`.
 
-### EIP-712 domain
+Each NFT can claim once. If an unclaimed NFT is transferred, the new owner can claim it; if it was already claimed, the new owner cannot claim it again.
 
-```text
-name:              ElyziumaDailyClaim
-version:           1
-chainId:           99801
-verifyingContract: NEXT_PUBLIC_CLAIM_ADDRESS
-type:              Claim(address wallet,uint256 amount,uint256 nonce,uint256 deadline)
-```
+### Community claim
+
+1. The browser reads the wallet's `communityClaimed` flag from the claim contract.
+2. The wallet submits `claimCommunity()` on Elysium. The contract verifies that the wallet has not claimed, that the community pool can cover 1,000 ELYZ, and that the exact HYPE fee was sent.
+3. The contract marks the wallet claimed and transfers 1,000 ELYZ.
+
+### The threshold
+
+The 0.001 ETH/HYPE check on Hyperliquid, HyperEVM, Ethereum, Base, and Ink is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the threshold, but it still has to satisfy NFT ownership, one-time community eligibility, the pool cap, and the community fee (if one is set).
 
 ---
 
@@ -113,7 +106,7 @@ Token URIs resolve to `{baseURI}{tokenId}.json` and token ids start at `1`.
 
 The launchpad reads this contract directly. The server probe picks up `publicPrice`, `publicMintOpen`, and `maxPerWallet`, and the browser then follows the live phase: it shows the public price and calls `publicMint` while the public phase is open.
 
-Before submitting a mint, when `mintBalanceCheck` is enabled (the default), the mint panel reads the connected wallet's native balance on the active chain and requires at least `0.06 HYPE` (or `0.0025 ETH` on an ETH-native chain), raised to the mint total when the selected quantity costs more. A failed balance read blocks the button with a retry action. The admin console can turn this guard off from **Mint requirements**; when it is off, the balance panel is hidden and the mint button is not gated. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
+Before submitting a mint, when `mintBalanceCheck` is enabled (the default), the mint panel checks the connected wallet's mainnet ETH/HYPE balance through the same five-chain eligibility service used by the claim flow. The wallet must hold at least `0.06 HYPE` or `0.0025 ETH` on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The mint chain's testnet HYPE balance is deliberately not used, because testnet tokens are free and cannot deter bots. A failed balance read blocks the button with a retry action. The admin console can turn this guard off from **Mint requirements**; when it is off, the balance panel is hidden and the mint button is not gated. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
 
 ### Launchpad runtime network settings
 
@@ -162,7 +155,7 @@ Because authorization is purely on-chain, both `NEXT_PUBLIC_CLAIM_ADDRESS` and `
 | --- | --- |
 | `enabled` | Public pause switch for the launchpad page |
 | `startAt` | Unix seconds when the mint opens; `0` disables the countdown |
-| `mintBalanceCheck` | Require the minimum HYPE/ETH balance before enabling the mint button; defaults to `true` |
+| `mintBalanceCheck` | Require at least `0.06 HYPE` or `0.0025 ETH` on a supported mainnet chain before enabling the mint button; defaults to `true` |
 | `chainId` | Elysium network the launchpad targets: `99801` or `99901` |
 | `collectionAddress` | Already-deployed NFT collection on that network |
 | `rpcUrl` | Runtime Elysium RPC for reads and the browser transport |
@@ -188,7 +181,7 @@ Requirements:
 
 - Node.js 20+ and npm
 - Foundry (for contracts)
-- A funded Elysium deployer key and a claim-signer key
+- A funded Elysium deployer key
 
 ```bash
 npm install
@@ -196,7 +189,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. With zero addresses in `.env.local`, the UI runs in preview mode and the claim button is disabled. The launchpad can still show its setup state until a collection is configured.
+Open `http://localhost:3000`. With zero addresses in `.env.local`, the UI runs in preview mode and the claim buttons are disabled. The launchpad can still show its setup state until a collection is configured.
 
 > `NEXT_PUBLIC_*` values are inlined at build time. Set them before `npm run build`, not only before `npm start`.
 
@@ -244,7 +237,7 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 
 | Variable | Purpose |
 | --- | --- |
-| `NEXT_PUBLIC_CLAIM_ADDRESS` | Deployed `DailyClaim` address |
+| `NEXT_PUBLIC_CLAIM_ADDRESS` | Deployed `ElyziumaClaim` address |
 | `NEXT_PUBLIC_TOKEN_ADDRESS` | Deployed `ElyziumaToken` address |
 | `NEXT_PUBLIC_ELYSIUM_CHAIN_ID` | Elysium network the app starts on: `99801` (default) or `99901` |
 | `NEXT_PUBLIC_ELYSIUM_RPC_URL` | Default Elysium RPC for the browser transport |
@@ -257,7 +250,11 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 
 | Variable | Purpose |
 | --- | --- |
-| `FAUCET_SIGNER_PRIVATE_KEY` | EIP-712 signer private key. Must match the contract `signer` |
+| `FAUCET_DRIP_PRIVATE_KEY` | Optional. Funded Elysium testnet wallet that sends the in-app HYPE drip. Without it, `/faucet` links to Kinetiq's official faucet |
+| `FAUCET_RPC_URL` | Optional. Transaction-capable Elysium testnet RPC for the drip; defaults to the testnet endpoint |
+| `FAUCET_DRIP_AMOUNT` | Optional. HYPE per in-app claim; defaults to `0.01` (max `1`) |
+| `FAUCET_COOLDOWN_HOURS` | Optional. Per-wallet cooldown for the drip; defaults to `24` |
+| `FAUCET_CLAIMS_KEY` | Optional KV key for the drip cooldowns; defaults to `elyziuma:faucet:claims` |
 | `ELYSIUM_RPC_URL` | Initial server-side Elysium RPC |
 | `LAUNCHPAD_CONFIG_STORE` | `file` or `kv`; auto-detects a KV database when its credentials are present |
 | `LAUNCHPAD_CONFIG_PATH` | Optional settings file path for the file backend; defaults to `data/launchpad.json` |
@@ -266,19 +263,18 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | `LAUNCHPAD_ADMIN_ADDRESSES` | Optional allowlist of launchpad admins, as comma-separated addresses |
 | `ADMIN_OWNER_ADDRESS` | Wallet allowed to unlock `/admin`. Defaults to the Elyziuma collection owner |
 | `ETH_RPC_URL`, `HYPEREVM_RPC_URL`, `BASE_RPC_URL`, `INK_RPC_URL` | Optional eligibility RPC overrides. Hyperliquid (HyperCore) is read from the official info API |
-| `ELIGIBILITY_THRESHOLD_WEI` | Optional threshold override; defaults to `1000000000000000` (0.001 native token per chain) |
-
-The signer key can only authorize claims. It cannot withdraw faucet tokens or change contract settings.
+| `ELIGIBILITY_THRESHOLD_WEI` | Optional UI threshold override; defaults to `1000000000000000` (0.001 native token per chain). The claim contract does not read it |
 
 ### Deploy variables
 
 | Variable | Default |
 | --- | --- |
 | `DEPLOYER_PRIVATE_KEY` | Required |
-| `CLAIM_SIGNER_ADDRESS` | Deployer address |
-| `TOKEN_SUPPLY` | `21000000000000000000000000` (21M) |
-| `FAUCET_ALLOCATION` | `18900000000000000000000000` (18.9M) |
-| `DAILY_AMOUNT` | `100000000000000000000` (100 ELYZ) |
+| `NFT_ADDRESS` | Required; the `ElyziumaNFT` collection on the claim chain |
+| `OWNER_ALLOCATION_RECIPIENT` | Deployer address (receives the fixed 5.56M owner allocation) |
+| `CLAIM_OWNER` | Deployer address |
+| `FEE_RECIPIENT` | Deployer address |
+| `COMMUNITY_CLAIM_FEE` | `0` (wei) |
 | `NFT_OWNER` | Deployer address |
 | `NFT_BASE_URI` | `ipfs://bafycollection/` |
 | `NFT_PUBLIC_PRICE` | `0` (wei) |
@@ -307,8 +303,10 @@ Deploy to Elysium:
 ```bash
 cd contracts
 export DEPLOYER_PRIVATE_KEY=0x...
-export CLAIM_SIGNER_ADDRESS=0x...
+export NFT_ADDRESS=0x...                         # ElyziumaNFT on the same chain
+export FEE_RECIPIENT=0x...                       # receives withdrawn HYPE fees
 export ELYSIUM_RPC_URL=https://testnet-rpc.elysium.kinetiq.xyz # mainnet: https://rpc.elyspump.com
+export FOUNDRY_PROFILE=claim                     # compile for Elysium's Paris EVM
 
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url "$ELYSIUM_RPC_URL" \
@@ -318,8 +316,13 @@ forge script script/Deploy.s.sol:Deploy \
 The script logs:
 
 - `ElyziumaToken` address
-- `DailyClaim` address
-- token supply, faucet allocation, and daily amount
+- `ElyziumaClaim` address
+- NFT collection and fee recipient
+- token supply, NFT pool, community pool, and owner allocation
+- the community claim fee (NFT claims are free)
+- the claim contract's ELYZ balance
+
+Set `CLAIM_OWNER` to the wallet that should administer the claim. It must match the `/admin` session owner (`ADMIN_OWNER_ADDRESS`, which defaults to the collection owner) or that wallet must be updated too; otherwise the claim owner cannot open the owner console.
 
 Deploy the NFT collection on its own:
 
@@ -343,12 +346,12 @@ The script logs the `ElyziumaNFT` address, the collection name and symbol, the s
 After deployment:
 
 1. Set `NEXT_PUBLIC_TOKEN_ADDRESS` and `NEXT_PUBLIC_CLAIM_ADDRESS` in `.env.local`.
-2. Set `FAUCET_SIGNER_PRIVATE_KEY` to the key for `CLAIM_SIGNER_ADDRESS`.
-3. Rebuild the frontend.
-4. Open `/api/health` and confirm `signerMatches: true` and `paused: false`.
-5. Open `/admin` with the owner wallet. The claim, launchpad, collection, and ownership sections live on one page.
+2. Rebuild the frontend; `NEXT_PUBLIC_*` values are inlined at build time.
+3. Open `/api/health` and confirm `funded: true` and `paused: false`.
+4. Open `/admin` with the owner wallet. Set the community claim fee and the fee recipient. NFT claims are always free.
+5. Confirm the claim contract holds `44,440,000 ELYZ` and the owner allocation recipient holds `5,560,000 ELYZ`.
 
-If you do not pass `CLAIM_SIGNER_ADDRESS`, the deployer is used as the signer. For production, use a dedicated signer key.
+The claim contract's NFT address is immutable. If you change `NEXT_PUBLIC_LAUNCHPAD_COLLECTION_ADDRESS` later, the claim contract still points at the collection it was deployed with.
 
 ---
 
@@ -364,7 +367,7 @@ Request:
 
 Response includes the balance and status for each supported chain, the threshold, the best qualifying chain, and `checkedAt`. Results are cached for 30 seconds per address.
 
-### `POST /api/claim`
+### `POST /api/claim/eligibility`
 
 Request:
 
@@ -376,21 +379,66 @@ Success response:
 
 ```json
 {
-  "amount": "100000000000000000000",
-  "nonce": "0",
-  "deadline": 1760000000,
-  "signature": "0x...",
-  "chainId": 99801,
-  "claimAddress": "0x...",
-  "eligibleChain": "Base"
+  "nft": {
+    "address": "0x...",
+    "balance": "2",
+    "rewardPerNft": "10000000000000000000000",
+    "claimFee": "0",
+    "maxBatch": 50,
+    "tokenIds": ["1", "2"],
+    "claimedTokenIds": [],
+    "claimableTokenIds": ["1", "2"],
+    "claimableAmount": "20000000000000000000000"
+  },
+  "community": {
+    "claimed": false,
+    "claimableAmount": "1000000000000000000000",
+    "claimFee": "0"
+  },
+  "pools": {
+    "nftRemaining": "22220000000000000000000000",
+    "communityRemaining": "22220000000000000000000000"
+  },
+  "paused": false,
+  "chainTime": 1760000000,
+  "blockNumber": 123456
 }
 ```
 
-Errors include `NOT_ELIGIBLE`, `COOLDOWN`, `PAUSED`, `FAUCET_EMPTY`, `SIGNER_MISCONFIGURED`, `VERIFICATION_UNAVAILABLE`, and `RATE_LIMITED`.
+The endpoint scans the collection's minted token ids with `ownerOf`, then reads `nftClaimed` for the ids owned by the wallet. It is cached for a few seconds per block. It does not enforce the 0.001 threshold; the browser combines it with `/api/eligibility`.
+
+Errors include `NOT_CONFIGURED`, `ELIGIBILITY_FAILED`, and `RATE_LIMITED`.
+
+### `GET /api/faucet?address=0x...`
+
+Returns the in-app faucet state: whether a drip wallet is configured, the amount per claim, the cooldown, the faucet's remaining balance, and the next claim time for the address. When the drip wallet is not configured, `configured` is `false` and the page falls back to Kinetiq's official faucet.
+
+### `POST /api/faucet`
+
+Sends the testnet HYPE drip to the connected wallet.
+
+Request:
+
+```json
+{ "address": "0x..." }
+```
+
+Success response:
+
+```json
+{
+  "transactionHash": "0x...",
+  "amount": "10000000000000000",
+  "chainId": 99801,
+  "explorerUrl": "https://elysium.kinetiq.xyz/testnet-explorer/transaction/0x..."
+}
+```
+
+Errors include `NOT_CONFIGURED`, `COOLDOWN`, `FAUCET_EMPTY`, `FAUCET_UNAVAILABLE`, `RATE_LIMITED`, and `SEND_FAILED`. Cooldowns are persisted in the configured KV database, or in `data/faucet-claims.json` for the file backend.
 
 ### `GET /api/health`
 
-Reads the claim contract and checks that the server signer matches the contract signer. Useful after deployment or signer rotation.
+Reads the claim contract and reports whether claims are paused, whether the contract is funded for the outstanding NFT + community pools, the current community fee, the fee recipient, and accrued fees. Useful after deployment or a refill.
 
 ### `GET /api/launchpad/config`
 
@@ -469,9 +517,9 @@ Writes remain independently protected: contract calls are owner transactions, an
 
 Transfer ownership to another wallet or renounce it permanently. Both are two-step confirmations and irreversible.
 
-### 03 — Claim & faucet
+### 03 — Claim & rewards
 
-Daily amount, pause/unpause, faucet withdrawal, signer rotation, and health. This section is separate from the NFT collection and requires the claim owner.
+Community claim fee, fee recipient, pause/unpause, fee withdrawal, token-surplus withdrawal, pool balances, and health. NFT claims are free. This section is separate from the NFT collection and requires the claim owner. The claim owner can never withdraw the outstanding reward pools; `withdrawSurplus` only releases ELYZ above the NFT + community liabilities.
 
 `/admin/launchpad` and `/admin/collection` are kept as 307 redirects to `/admin#collection`.
 
@@ -483,37 +531,42 @@ The public launchpad's display settings - collection address, mint method, max s
 
 ### Enforced on-chain
 
-- Fixed supply; no post-deploy mint.
-- EIP-712 signature verification.
-- Amount must equal the current daily amount.
-- Per-wallet nonce prevents replay.
-- 10-minute signature deadline.
-- 24-hour cooldown.
+- Fixed 50M supply; no post-deploy mint.
+- NFT ownership is checked per token id; each NFT can claim 10,000 ELYZ once.
+- The community reward is claimable once per wallet.
+- Exact NFT and community pool caps; underfunded claims revert instead of sweeping a partial amount.
 - Pausable claims.
-- Owner-only amount, signer, pause, and withdraw controls.
+- Exact HYPE fee per community claim; NFT claims are free. Fees accrue in the contract.
+- Owner-only community-fee, fee-recipient, pause, fee-withdrawal, and surplus-withdrawal controls.
+- The owner cannot withdraw tokens that back unclaimed rewards.
 - Reentrancy protection.
-- Final sweep pays at most the faucet balance.
+- Batch limit of 50 NFT ids per transaction.
 - The NFT collection's own mint rules, supply caps, and wallet limits.
 
 ### Enforced off-chain
 
-- Native ETH or HYPE balance of at least 0.001 on Hyperliquid, HyperEVM, Ethereum, Base, or Ink.
-- Per-IP and per-address rate limits.
-- Re-check of the on-chain state before signing.
+- Native ETH or HYPE balance of at least 0.001 on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. This is a UI gate, not a contract check.
+- Per-IP rate limits on `/api/eligibility` and `/api/claim/eligibility`.
+- Short-lived claim-eligibility caching keyed by block number.
 - Launchpad admin signatures with a five-minute window and replay guard.
 - Owner-console sessions require a fresh owner-wallet signature, are stored in a 12-hour `HttpOnly` cookie, and are verified on the server before the console renders.
 - RPC chain ID and collection bytecode checks before saving settings.
 
 ### Limitations
 
-- Cross-chain balances cannot be read by an Elysium contract. The signature is the bridge between the off-chain check and the on-chain claim. A compromised signer can authorize claims that did not pass the balance check; protect the signer key.
-- The 0.001 native-token check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 of a native token.
+- The 0.001 native-token threshold is a UI gate only. A user calling the claim contract directly bypasses it; the contract still enforces NFT ownership, one-time community eligibility, pool caps, and the community fee.
+- The 0.001 check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 of a native token.
+- The owner can set the community claim fee, including a fee high enough to make community claims unattractive, and can pause claims. NFT claims are free. The owner cannot withdraw the reward pools, but community fees are a trust assumption.
+- The NFT pool is sized for all 2,222 NFTs. If the collection does not sell out, the unclaimed portion stays in the claim contract; the owner cannot withdraw it through `withdrawSurplus`.
+- The community pool is sized for 22,220 wallets. If fewer wallets claim, the remainder stays in the claim contract.
 - Rate limiting and the launchpad replay guard are in-memory. On a multi-instance deployment, replace them with a shared store such as Redis or Upstash.
+- The in-app faucet sends from a hot wallet configured with `FAUCET_DRIP_PRIVATE_KEY`. Treat that key as spendable testnet funds only, keep a small balance in it, and never reuse the deployer or claim-owner key. Cooldowns persist in KV or `data/faucet-claims.json`; on a multi-instance serverless deployment, use the KV backend.
+- The in-app faucet is rate-limited by IP and wallet and uses a per-wallet cooldown, but it does not include a captcha. Keep the drip wallet's balance modest, or add a captcha before promoting the faucet widely.
 - Public RPCs can be rate-limited or unavailable. The launchpad admin can set a different RPC, but a read-only RPC will still reject mint transactions.
 - On a serverless platform the launchpad settings need the KV backend, because the filesystem is read-only. With the file backend, a chain or RPC change is lost on the next deploy.
 - Switching the launchpad to a chain where the collection has not been deployed yet fails the save, because the contract address is checked for bytecode on the selected chain.
+- The claim contract's NFT address is immutable. Changing the active collection in the launchpad settings does not repoint the claim contract.
 - The launchpad is a generic interface. It cannot guarantee that a collection's metadata, royalties, or mint rules are correct. Verify the collection address and SeaDrop fee recipient before minting.
-- The owner can withdraw the faucet and change the daily amount. This is intentional, but it is a trust assumption.
 - Elysium is pre-launch and may reset. Do not treat ELYZ or the NFT collection as an investment.
 
 ---
@@ -527,21 +580,15 @@ forge test -vv
 
 The suite covers:
 
-- Fixed supply and faucet funding
-- Successful claim and accounting
-- 24-hour cooldown
-- Signature expiry
-- Nonce replay
-- Wrong amount
-- Wrong signer
-- Signature bound to wallet
-- Pause
-- Withdraw
-- Daily amount updates
-- Signer rotation
-- Empty faucet
-- Unique claimers
-- Final-sweep payout
+- 50M supply and the 22.22M / 22.22M / 5.56M allocation split
+- NFT claim single and batch, exact amount, free claim, and accounting
+- Duplicate ids, non-owner calls, already-claimed ids, and batch limits
+- Claimed NFTs cannot be re-claimed after a transfer; unclaimed NFTs can be claimed by the new owner
+- Community claim once per wallet and once per distinct wallet
+- Community fee handling, fee updates, zero-fee claims, and fee recipient changes
+- Pause/unpause
+- Fee withdrawal and native / token surplus withdrawal
+- The owner cannot withdraw tokens that back unclaimed reward pools
 - Owner-only controls
 - Collection metadata, token ids, and `tokenURI`
 - Public mint, per-wallet cap, cap updates, and payment checks
@@ -563,12 +610,14 @@ npm run build
 app/
   page.tsx                       Landing page
   launchpad/page.tsx             NFT launchpad
+  faucet/page.tsx                Testnet HYPE faucet (in-app claim + official links)
   admin/page.tsx                 Unified admin console, owner-signature gate
   admin/launchpad/page.tsx       Redirect to /admin#collection
   admin/collection/page.tsx      Redirect to /admin#collection
-  api/claim/route.ts             Eligibility re-check + EIP-712 signing
-  api/eligibility/route.ts       Five-chain balance check
-  api/health/route.ts            Signer / contract health
+  api/claim/eligibility/route.ts NFT ownership + claim status for a wallet
+  api/faucet/route.ts            In-app testnet HYPE drip
+  api/eligibility/route.ts       Five-chain balance check (UI gate)
+  api/health/route.ts            Claim funding / pause / fee health
   api/launchpad/config/route.ts  Public launchpad settings
   api/launchpad/contract/route.ts Contract + SeaDrop inspection
   api/admin/launchpad/route.ts   Signed settings read/save
@@ -582,7 +631,7 @@ components/
     admin-console.tsx            Shell, access panel, section navigation
     admin-access-gate.tsx        Owner connect + sign unlock screen
     network-runtime-panel.tsx    Signed network/RPC save
-    claim-section.tsx            Claim + faucet owner controls
+    claim-section.tsx            Community fee, pools, pause, and withdrawals
     collection-section.tsx       NFT contract owner controls + network
     ownership-section.tsx        Transfer / renounce
     admin-data.ts                Shared reads and admin status
@@ -591,19 +640,19 @@ components/
   ...                            Claim card, eligibility, stats, feed, FAQ
 contracts/
   src/ElyziumaToken.sol          Fixed-supply ERC-20
-  src/DailyClaim.sol             EIP-712 faucet
+  src/ElyziumaClaim.sol          Two-pool NFT + community claim
   src/ElyziumaNFT.sol            ERC-721A collection, public mint phase
-  test/DailyClaim.t.sol          Foundry tests
+  test/ElyziumaClaim.t.sol       Foundry tests
   test/ElyziumaNFT.t.sol         Foundry tests
-  script/Deploy.s.sol            Deploy + fund
+  script/Deploy.s.sol            Deploy + fund both pools
   script/DeployNFT.s.sol         Deploy the collection
-hooks/                           Claim flow, eligibility, clocks, launchpad config
+hooks/                           Claim flow, claim eligibility, clocks, launchpad config
 lib/
-  abis.ts                        Claim/token ABIs
+  abis.ts                        Claim/token/NFT-read ABIs
   chains.ts                      Elysium + eligibility chains
   config.ts                      Public config and links
   launchpad/                     Shared types, config, ABIs, status, runtime
-  server/                        RPC, eligibility, signing, launchpad persistence
+  server/                        RPC, claim eligibility, launchpad persistence
 data/launchpad.json              Runtime settings (gitignored, created on save)
 ```
 

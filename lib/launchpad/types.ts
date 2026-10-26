@@ -67,8 +67,10 @@ export type LaunchpadConfig = {
    */
   startAt: number;
   /**
-   * Whether the mint panel checks the connected wallet's native balance before
-   * enabling the mint button. This is a launchpad UI guard only; the contract
+   * Whether the mint panel checks the connected wallet's mainnet ETH/HYPE
+   * balance before enabling the mint button. The check reads Hyperliquid,
+   * HyperEVM, Ethereum, Base, and Ink, so it still deters bots when the mint
+   * itself runs on testnet. This is a launchpad UI guard only; the contract
    * remains the final authority.
    */
   mintBalanceCheck: boolean;

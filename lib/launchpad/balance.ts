@@ -1,11 +1,15 @@
 import { parseUnits } from "viem";
+import type { EligibilityChain } from "@/lib/eligibility-types";
 
 /**
- * Minimum native-token balance a wallet should hold before it starts a mint.
+ * Minimum native-token balance a wallet must hold on a mainnet chain before it
+ * can start a mint.
  *
- * This is a client-side guard: it stops visitors from submitting a mint that
- * cannot pay for the token plus gas. The contract remains the final authority,
- * so the check is deliberately simple and easy to update.
+ * The launchpad runs on Elysium testnet during pre-launch, so the mint chain
+ * balance is not useful as a bot filter: testnet HYPE is free. Instead the mint
+ * panel checks the same wallet on the mainnet chains the claim flow already
+ * supports. The amount stays the launchpad's own minimum, not the lower claim
+ * threshold.
  */
 const MINIMUM_BALANCE_AMOUNTS = {
   HYPE: "0.06",
@@ -13,6 +17,25 @@ const MINIMUM_BALANCE_AMOUNTS = {
 } as const;
 
 const FALLBACK_MINIMUM_BALANCE = "0.0025";
+
+/** Mainnet chains whose native balance can satisfy the mint requirement. */
+export const MINT_MAINNET_CHAINS_LABEL =
+  "Hyperliquid, HyperEVM, Ethereum, Base, or Ink";
+
+/** Human-readable launchpad mainnet requirement, used before data loads. */
+export const MINT_MAINNET_REQUIREMENT_LABEL =
+  `${MINIMUM_BALANCE_AMOUNTS.HYPE} HYPE or ${MINIMUM_BALANCE_AMOUNTS.ETH} ETH`;
+
+export type MintMainnetCheck = {
+  /** At least one mainnet chain met the launchpad minimum. */
+  eligible: boolean;
+  /** The first mainnet chain that met the requirement. */
+  bestChain: EligibilityChain | null;
+  /** Minimum required on `bestChain`, in wei. */
+  required: bigint | null;
+  /** Requirement copy for empty, loading, and error states. */
+  requirementLabel: string;
+};
 
 export function getMintMinimumBalance(
   nativeSymbol: string,
@@ -27,15 +50,48 @@ export function getMintMinimumBalance(
 }
 
 /**
- * What the wallet needs before minting: the minimum balance, raised to the
- * mint total when the selected quantity costs more. That keeps the guard
- * correct if the drop starts charging for tokens.
+ * Finds the first mainnet chain where the wallet holds enough native ETH or
+ * HYPE. The eligibility response already contains balances for Hyperliquid,
+ * HyperEVM, Ethereum, Base, and Ink; this function applies the launchpad's own
+ * per-token minimum instead of the claim threshold.
  */
-export function getMintRequiredBalance(
-  nativeSymbol: string,
-  mintTotal: bigint,
-  decimals = 18,
-): bigint {
-  const minimum = getMintMinimumBalance(nativeSymbol, decimals);
-  return mintTotal > minimum ? mintTotal : minimum;
+export function evaluateMintMainnetEligibility(
+  chains: EligibilityChain[] | undefined,
+): MintMainnetCheck {
+  if (!chains || chains.length === 0) {
+    return {
+      eligible: false,
+      bestChain: null,
+      required: null,
+      requirementLabel: MINT_MAINNET_REQUIREMENT_LABEL,
+    };
+  }
+
+  for (const chain of chains) {
+    if (chain.error) continue;
+
+    let balance: bigint;
+    try {
+      balance = BigInt(chain.balance);
+    } catch {
+      continue;
+    }
+
+    const required = getMintMinimumBalance(chain.nativeSymbol);
+    if (balance >= required) {
+      return {
+        eligible: true,
+        bestChain: chain,
+        required,
+        requirementLabel: MINT_MAINNET_REQUIREMENT_LABEL,
+      };
+    }
+  }
+
+  return {
+    eligible: false,
+    bestChain: null,
+    required: null,
+    requirementLabel: MINT_MAINNET_REQUIREMENT_LABEL,
+  };
 }

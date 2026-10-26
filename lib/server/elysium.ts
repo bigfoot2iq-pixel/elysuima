@@ -1,11 +1,7 @@
 import { createPublicClient, http, type Address } from "viem";
 import { claimAbi, tokenAbi } from "@/lib/abis";
 import { getChainRpcUrl, getElysiumViemChain } from "@/lib/chains";
-import {
-  CLAIM_ADDRESS,
-  CLAIM_CHAIN_ID,
-  TOKEN_ADDRESS,
-} from "@/lib/config";
+import { CLAIM_ADDRESS, CLAIM_CHAIN_ID, TOKEN_ADDRESS } from "@/lib/config";
 import { getLaunchpadConfig } from "./launchpad-config";
 
 type ServerClient = ReturnType<typeof createPublicClient>;
@@ -24,6 +20,7 @@ function getClient(chainId: number, rpcUrl: string): ServerClient {
         transport: http(rpcUrl, {
           timeout: 8_000,
           retryCount: 1,
+          batch: true,
         }),
       }),
     };
@@ -56,63 +53,142 @@ export async function getClaimClient(): Promise<ServerClient> {
 }
 
 export type ClaimState = {
-  dailyAmount: bigint;
-  lastClaim: bigint;
-  nonce: bigint;
+  nftAddress: Address;
+  nftReward: bigint;
+  communityReward: bigint;
+  maxBatch: bigint;
+  communityClaimFee: bigint;
+  feeRecipient: Address;
+  accruedFees: bigint;
+  nftClaimedTotal: bigint;
+  communityClaimedTotal: bigint;
+  nftClaimCount: bigint;
+  communityClaimCount: bigint;
+  nftPoolRemaining: bigint;
+  communityPoolRemaining: bigint;
   paused: boolean;
-  signer: Address;
-  faucetBalance: bigint;
+  tokenBalance: bigint;
   chainTime: number;
+  blockNumber: number;
 };
 
-export async function getClaimState(wallet: Address): Promise<ClaimState> {
+export async function getClaimState(): Promise<ClaimState> {
   const client = await getClaimClient();
 
-  const [dailyAmount, lastClaim, nonce, paused, signer, faucetBalance, block] =
-    await Promise.all([
-      client.readContract({
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "dailyAmount",
-      }),
-      client.readContract({
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "lastClaim",
-        args: [wallet],
-      }),
-      client.readContract({
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "nonces",
-        args: [wallet],
-      }),
-      client.readContract({
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "paused",
-      }),
-      client.readContract({
-        address: CLAIM_ADDRESS,
-        abi: claimAbi,
-        functionName: "signer",
-      }),
-      client.readContract({
-        address: TOKEN_ADDRESS,
-        abi: tokenAbi,
-        functionName: "balanceOf",
-        args: [CLAIM_ADDRESS],
-      }),
-      client.getBlock({ blockTag: "latest" }),
-    ]);
+  const [
+    nftAddress,
+    nftReward,
+    communityReward,
+    maxBatch,
+    communityClaimFee,
+    feeRecipient,
+    accruedFees,
+    nftClaimedTotal,
+    communityClaimedTotal,
+    nftClaimCount,
+    communityClaimCount,
+    nftPoolRemaining,
+    communityPoolRemaining,
+    paused,
+    tokenBalance,
+    block,
+  ] = await Promise.all([
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "nft",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "NFT_REWARD",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "COMMUNITY_REWARD",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "MAX_BATCH",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "communityClaimFee",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "feeRecipient",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "accruedFees",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "nftClaimedTotal",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "communityClaimedTotal",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "nftClaimCount",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "communityClaimCount",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "nftPoolRemaining",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "communityPoolRemaining",
+    }),
+    client.readContract({
+      address: CLAIM_ADDRESS,
+      abi: claimAbi,
+      functionName: "paused",
+    }),
+    client.readContract({
+      address: TOKEN_ADDRESS,
+      abi: tokenAbi,
+      functionName: "balanceOf",
+      args: [CLAIM_ADDRESS],
+    }),
+    client.getBlock({ blockTag: "latest" }),
+  ]);
 
   return {
-    dailyAmount,
-    lastClaim,
-    nonce,
+    nftAddress,
+    nftReward,
+    communityReward,
+    maxBatch,
+    communityClaimFee,
+    feeRecipient,
+    accruedFees,
+    nftClaimedTotal,
+    communityClaimedTotal,
+    nftClaimCount,
+    communityClaimCount,
+    nftPoolRemaining,
+    communityPoolRemaining,
     paused,
-    signer,
-    faucetBalance,
+    tokenBalance,
     chainTime: Number(block.timestamp),
+    blockNumber: Number(block.number),
   };
 }

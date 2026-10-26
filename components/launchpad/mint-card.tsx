@@ -25,12 +25,12 @@ import {
 } from "viem";
 import {
   useAccount,
-  useBalance,
   useReadContract,
   useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+import { useEligibility } from "@/hooks/use-eligibility";
 import {
   erc721TransferAbi,
   elyziumaNftReadAbi,
@@ -38,7 +38,7 @@ import {
   launchpadMintAbi,
   seaDropAbi,
 } from "@/lib/launchpad/abis";
-import { getMintRequiredBalance } from "@/lib/launchpad/balance";
+import { evaluateMintMainnetEligibility } from "@/lib/launchpad/balance";
 import { getPerWalletLimit, getUnitPrice } from "@/lib/launchpad/drop";
 import { getDropStatus, getSupplyState } from "@/lib/launchpad/status";
 import {
@@ -160,6 +160,17 @@ export function MintCard({
   // field from an older config as enabled.
   const balanceCheckEnabled = config.mintBalanceCheck !== false;
 
+  // The launchpad can run on testnet, where the native balance is free. The
+  // guard therefore reads mainnet ETH/HYPE balances, not the mint chain, so it
+  // remains a meaningful bot filter.
+  const eligibility = useEligibility(balanceCheckEnabled ? address : undefined);
+  const refetchEligibility = eligibility.refetch;
+
+  const mainnetCheck = useMemo(
+    () => evaluateMintMainnetEligibility(eligibility.data?.chains),
+    [eligibility.data?.chains],
+  );
+
   const mintStats = useReadContract({
     address: collection,
     abi: launchpadReadAbi,
@@ -182,20 +193,6 @@ export function MintCard({
     query: {
       enabled: Boolean(address && collection),
       refetchInterval: 20_000,
-      retry: false,
-    },
-  });
-
-  // The mint check reads the native balance on the mint chain, not whichever
-  // chain the wallet happens to be on, so the requirement is accurate before
-  // the wallet switches networks.
-  const nativeBalance = useBalance({
-    address,
-    chainId: config.chainId,
-    query: {
-      enabled: Boolean(address) && balanceCheckEnabled,
-      refetchInterval: 20_000,
-      refetchOnWindowFocus: true,
       retry: false,
     },
   });
@@ -305,11 +302,6 @@ export function MintCard({
   const total = unitPrice * BigInt(effectiveQuantity);
 
   const nativeCurrency = config.chain.nativeCurrency;
-  const requiredBalance = getMintRequiredBalance(
-    nativeCurrency.symbol,
-    total,
-    nativeCurrency.decimals,
-  );
   const isTestnet = getElysiumChain(config.chainId).testnet;
   const totalLabel =
     total === 0n
@@ -379,26 +371,27 @@ export function MintCard({
     methodReady &&
     maxQuantity > 0;
 
-  const nativeBalanceValue = nativeBalance.data?.value;
-  const balanceKnown = nativeBalanceValue !== undefined;
-  const balanceUnavailable =
-    balanceCheckEnabled &&
-    Boolean(address) &&
-    !balanceKnown &&
-    nativeBalance.isError;
   const balanceChecking =
     balanceCheckEnabled &&
     Boolean(address) &&
-    !balanceKnown &&
-    !balanceUnavailable;
+    !eligibility.data &&
+    eligibility.isFetching;
+  const balanceUnavailable =
+    balanceCheckEnabled &&
+    Boolean(address) &&
+    !balanceChecking &&
+    (eligibility.isError || eligibility.data?.allUnavailable === true);
   const insufficientBalance =
     balanceCheckEnabled &&
-    nativeBalanceValue !== undefined &&
-    nativeBalanceValue < requiredBalance;
+    Boolean(address) &&
+    !balanceChecking &&
+    !balanceUnavailable &&
+    !mainnetCheck.eligible;
 
   const canMint =
     mintable &&
-    (!balanceCheckEnabled || (balanceKnown && !insufficientBalance));
+    (!balanceCheckEnabled ||
+      (mainnetCheck.eligible && !balanceUnavailable));
 
   const wrongChain = Boolean(address) && walletChainId !== config.chainId;
   const busyOrConfirming = busy || receipt.isLoading;
@@ -418,7 +411,6 @@ export function MintCard({
   const handledError = useRef<Hash | undefined>(undefined);
   const refetchMintStats = mintStats.refetch;
   const refetchBalance = balance.refetch;
-  const refetchNativeBalance = nativeBalance.refetch;
   const refetchPublicMinted = publicMinted.refetch;
 
   useEffect(() => {
@@ -446,7 +438,7 @@ export function MintCard({
     setMintSuccessOpen(true);
     void refetchMintStats();
     void refetchBalance();
-    if (balanceCheckEnabled) void refetchNativeBalance();
+    if (balanceCheckEnabled) void refetchEligibility();
     if (drop) void refetchPublicMinted();
     void queryClient.invalidateQueries({
       predicate: (query) => query.queryKey[0] === "launchpad-contract",
@@ -464,7 +456,7 @@ export function MintCard({
     queryClient,
     refetchBalance,
     refetchMintStats,
-    refetchNativeBalance,
+    refetchEligibility,
     balanceCheckEnabled,
   ]);
 
@@ -618,7 +610,7 @@ export function MintCard({
     }
 
     if (balanceCheckEnabled && balanceUnavailable) {
-      void nativeBalance.refetch();
+      void refetchEligibility();
       return;
     }
 
@@ -649,9 +641,9 @@ export function MintCard({
     if (maxQuantity === 0) return "Wallet limit reached";
     if (receipt.isLoading) return "Confirming on Elysium…";
     if (busy) return "Confirm in wallet…";
-    if (balanceChecking) return "Checking wallet…";
-    if (balanceUnavailable) return "Retry wallet check";
-    if (insufficientBalance) return `Insufficient ${nativeCurrency.symbol}`;
+    if (balanceChecking) return "Checking mainnet…";
+    if (balanceUnavailable) return "Retry mainnet check";
+    if (insufficientBalance) return "Mainnet balance required";
     return `Mint ${effectiveQuantity} · ${totalLabel}`;
   })();
 
@@ -752,12 +744,10 @@ export function MintCard({
       {balanceCheckEnabled ? (
         <MintBalanceCheck
           address={address}
-          balance={nativeBalanceValue}
-          required={requiredBalance}
-          symbol={nativeCurrency.symbol}
-          decimals={nativeCurrency.decimals}
+          check={mainnetCheck}
           checking={balanceChecking}
           unavailable={balanceUnavailable}
+          onRetry={() => void refetchEligibility()}
           isTestnet={isTestnet}
         />
       ) : null}

@@ -8,7 +8,12 @@ import {
 } from "wagmi";
 import { ArrowUpRight, Radio } from "lucide-react";
 import type { Address, Hash } from "viem";
-import { claimAbi, claimedEvent, tokenAbi } from "@/lib/abis";
+import {
+  claimAbi,
+  communityClaimedEvent,
+  nftClaimedEvent,
+  tokenAbi,
+} from "@/lib/abis";
 import {
   CLAIM_ADDRESS,
   CLAIM_CHAIN_ID,
@@ -20,11 +25,14 @@ import { formatAmount, formatRelative, shortAddress } from "@/lib/format";
 import { useNow } from "@/hooks/use-now";
 import { TokenMark } from "./token-mark";
 
+type ClaimKind = "nft" | "community";
+
 type ClaimItem = {
   wallet: Address;
   amount: bigint;
   timestamp: number;
   txHash: Hash;
+  kind: ClaimKind;
 };
 
 const MAX_ITEMS = 8;
@@ -56,38 +64,74 @@ export function ClaimsFeed() {
       try {
         const latest = await publicClient.getBlockNumber();
         const fromBlock = latest > LOOKBACK_BLOCKS ? latest - LOOKBACK_BLOCKS : 0n;
-        const logs = await publicClient.getLogs({
-          address: CLAIM_ADDRESS,
-          event: claimedEvent,
-          fromBlock,
-          toBlock: latest,
-        });
+        const [nftLogs, communityLogs] = await Promise.all([
+          publicClient.getLogs({
+            address: CLAIM_ADDRESS,
+            event: nftClaimedEvent,
+            fromBlock,
+            toBlock: latest,
+          }),
+          publicClient.getLogs({
+            address: CLAIM_ADDRESS,
+            event: communityClaimedEvent,
+            fromBlock,
+            toBlock: latest,
+          }),
+        ]);
 
         if (cancelled) return;
 
-        const items = logs
-          .map((log) => {
-            const { wallet, amount, timestamp } = log.args;
-            if (
-              !wallet ||
-              amount === undefined ||
-              timestamp === undefined ||
-              !log.transactionHash
-            ) {
-              return null;
-            }
-            return {
-              wallet,
-              amount,
-              timestamp: Number(timestamp),
-              txHash: log.transactionHash,
-            } satisfies ClaimItem;
-          })
-          .filter((item): item is ClaimItem => item !== null)
-          .sort((a, b) => b.timestamp - a.timestamp)
-          .slice(0, MAX_ITEMS);
+        const blockNumbers = new Set<string>();
+        for (const log of [...nftLogs, ...communityLogs]) {
+          blockNumbers.add(log.blockNumber.toString());
+        }
 
-        setClaims(items);
+        const blocks = new Map<string, number>();
+        await Promise.all(
+          [...blockNumbers].map(async (value) => {
+            const block = await publicClient
+              .getBlock({ blockNumber: BigInt(value) })
+              .catch(() => null);
+            blocks.set(
+              value,
+              block ? Number(block.timestamp) : Math.floor(Date.now() / 1000),
+            );
+          }),
+        );
+
+        if (cancelled) return;
+
+        const items: ClaimItem[] = [];
+
+        for (const log of nftLogs) {
+          const { wallet, amount } = log.args;
+          if (!wallet || amount === undefined || !log.transactionHash) continue;
+          items.push({
+            wallet,
+            amount,
+            timestamp: blocks.get(log.blockNumber.toString()) ?? 0,
+            txHash: log.transactionHash,
+            kind: "nft",
+          });
+        }
+
+        for (const log of communityLogs) {
+          const { wallet, amount } = log.args;
+          if (!wallet || amount === undefined || !log.transactionHash) continue;
+          items.push({
+            wallet,
+            amount,
+            timestamp: blocks.get(log.blockNumber.toString()) ?? 0,
+            txHash: log.transactionHash,
+            kind: "community",
+          });
+        }
+
+        setClaims(
+          items
+            .sort((left, right) => right.timestamp - left.timestamp)
+            .slice(0, MAX_ITEMS),
+        );
         setError(false);
       } catch {
         if (!cancelled) setError(true);
@@ -104,32 +148,71 @@ export function ClaimsFeed() {
   useWatchContractEvent({
     address: CLAIM_ADDRESS,
     abi: claimAbi,
-    eventName: "Claimed",
+    eventName: "NftClaimed",
     enabled: IS_CONFIGURED,
     pollingInterval: 4_000,
     onLogs: (logs) => {
+      const timestamp = Math.floor(Date.now() / 1000);
       setClaims((previous) => {
         const next = [...previous];
         for (const log of logs) {
-          const { wallet, amount, timestamp } = log.args;
+          const { wallet, amount } = log.args;
+          if (!wallet || amount === undefined || !log.transactionHash) continue;
           if (
-            !wallet ||
-            amount === undefined ||
-            timestamp === undefined ||
-            !log.transactionHash
+            next.some(
+              (item) =>
+                item.txHash === log.transactionHash && item.kind === "nft",
+            )
           ) {
             continue;
           }
-          if (next.some((item) => item.txHash === log.transactionHash)) continue;
           next.unshift({
             wallet,
             amount,
-            timestamp: Number(timestamp),
+            timestamp,
             txHash: log.transactionHash,
+            kind: "nft",
           });
         }
         return next
-          .sort((a, b) => b.timestamp - a.timestamp)
+          .sort((left, right) => right.timestamp - left.timestamp)
+          .slice(0, MAX_ITEMS);
+      });
+    },
+  });
+
+  useWatchContractEvent({
+    address: CLAIM_ADDRESS,
+    abi: claimAbi,
+    eventName: "CommunityClaimed",
+    enabled: IS_CONFIGURED,
+    pollingInterval: 4_000,
+    onLogs: (logs) => {
+      const timestamp = Math.floor(Date.now() / 1000);
+      setClaims((previous) => {
+        const next = [...previous];
+        for (const log of logs) {
+          const { wallet, amount } = log.args;
+          if (!wallet || amount === undefined || !log.transactionHash) continue;
+          if (
+            next.some(
+              (item) =>
+                item.txHash === log.transactionHash &&
+                item.kind === "community",
+            )
+          ) {
+            continue;
+          }
+          next.unshift({
+            wallet,
+            amount,
+            timestamp,
+            txHash: log.transactionHash,
+            kind: "community",
+          });
+        }
+        return next
+          .sort((left, right) => right.timestamp - left.timestamp)
           .slice(0, MAX_ITEMS);
       });
     },
@@ -184,7 +267,7 @@ export function ClaimsFeed() {
           <div className="divide-y divide-paper/[0.06]">
             {claims.map((claim) => (
               <div
-                key={`${claim.txHash}-${claim.wallet}`}
+                key={`${claim.txHash}-${claim.kind}`}
                 className="group grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-4 transition hover:bg-paper/[0.025] sm:grid-cols-[1.6fr_1fr_0.8fr_auto] sm:gap-4"
               >
                 <div className="flex min-w-0 items-center gap-3">
@@ -193,8 +276,8 @@ export function ClaimsFeed() {
                     <p className="truncate font-mono text-xs text-paper">
                       {shortAddress(claim.wallet)}
                     </p>
-                    <p className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-paper-mute sm:hidden">
-                      {formatRelative(claim.timestamp, now || undefined)}
+                    <p className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-paper-mute">
+                      {claim.kind === "nft" ? "NFT reward" : "Community reward"}
                     </p>
                   </div>
                 </div>

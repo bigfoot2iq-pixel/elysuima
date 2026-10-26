@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Droplet, Zap } from "lucide-react";
 import { getChainExplorerUrl } from "@/lib/chains";
 import { FAUCETS } from "@/lib/faucets";
+import { InAppFaucet } from "./in-app-faucet";
 
 const ICONS = {
   droplet: Droplet,
@@ -22,7 +23,7 @@ const STEPS = [
   {
     number: "03",
     title: "Use it on chain",
-    body: "Testnet HYPE covers gas for the daily claim, mints, and anything else you try.",
+    body: "Testnet HYPE covers gas and the community claim fee, plus mints and anything else you try.",
   },
 ];
 
@@ -55,9 +56,10 @@ export function FaucetContent() {
                 Every move on Elysium needs a little gas.
               </p>
               <p className="mt-3 max-w-xl text-[13px] leading-7 text-paper-dim">
-                Top up your wallet with free testnet HYPE from the faucets
-                below. It covers the daily claim, collection mints, and anything
-                else you try on chain 99801.
+                Claim testnet HYPE from the wallet you already have connected,
+                or use one of the official faucets below. It covers the claim
+                fees, collection mints, and anything else you try on chain
+                99801.
               </p>
             </div>
 
@@ -100,6 +102,8 @@ export function FaucetContent() {
           </div>
         </div>
       </section>
+
+      <InAppFaucet />
 
       {/* The faucets themselves. */}
       <section

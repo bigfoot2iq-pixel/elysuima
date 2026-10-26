@@ -3,72 +3,6 @@ import { parseAbiItem } from "viem";
 export const claimAbi = [
   {
     type: "function",
-    name: "claim",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "amount", type: "uint256" },
-      { name: "nonce", type: "uint256" },
-      { name: "deadline", type: "uint256" },
-      { name: "signature", type: "bytes" },
-    ],
-    outputs: [],
-  },
-  {
-    type: "function",
-    name: "hashClaim",
-    stateMutability: "view",
-    inputs: [
-      { name: "wallet", type: "address" },
-      { name: "amount", type: "uint256" },
-      { name: "nonce", type: "uint256" },
-      { name: "deadline", type: "uint256" },
-    ],
-    outputs: [{ name: "", type: "bytes32" }],
-  },
-  {
-    type: "function",
-    name: "dailyAmount",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "COOLDOWN",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "lastClaim",
-    stateMutability: "view",
-    inputs: [{ name: "wallet", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "nonces",
-    stateMutability: "view",
-    inputs: [{ name: "wallet", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "paused",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ name: "", type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "signer",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ name: "", type: "address" }],
-  },
-  {
-    type: "function",
     name: "token",
     stateMutability: "view",
     inputs: [],
@@ -76,10 +10,122 @@ export const claimAbi = [
   },
   {
     type: "function",
-    name: "owner",
+    name: "nft",
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "NFT_REWARD",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "COMMUNITY_REWARD",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "NFT_POOL",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "COMMUNITY_POOL",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "MAX_BATCH",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "communityClaimFee",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "feeRecipient",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "accruedFees",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "nftClaimedTotal",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "communityClaimedTotal",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "nftClaimCount",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "communityClaimCount",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "nftClaimed",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "communityClaimed",
+    stateMutability: "view",
+    inputs: [{ name: "wallet", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "nftPoolRemaining",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "communityPoolRemaining",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
   },
   {
     type: "function",
@@ -97,23 +143,30 @@ export const claimAbi = [
   },
   {
     type: "function",
-    name: "uniqueClaimers",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "setDailyAmount",
+    name: "claimNft",
     stateMutability: "nonpayable",
-    inputs: [{ name: "newAmount", type: "uint256" }],
+    inputs: [{ name: "tokenIds", type: "uint256[]" }],
     outputs: [],
   },
   {
     type: "function",
-    name: "setSigner",
+    name: "claimCommunity",
+    stateMutability: "payable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "setCommunityClaimFee",
     stateMutability: "nonpayable",
-    inputs: [{ name: "newSigner", type: "address" }],
+    inputs: [{ name: "newFee", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "setFeeRecipient",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "newRecipient", type: "address" }],
     outputs: [],
   },
   {
@@ -132,7 +185,14 @@ export const claimAbi = [
   },
   {
     type: "function",
-    name: "withdraw",
+    name: "withdrawFees",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdrawSurplus",
     stateMutability: "nonpayable",
     inputs: [
       { name: "to", type: "address" },
@@ -141,40 +201,108 @@ export const claimAbi = [
     outputs: [],
   },
   {
+    type: "function",
+    name: "withdrawNativeSurplus",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "to", type: "address" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "paused",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
     type: "event",
-    name: "Claimed",
+    name: "NftClaimed",
     inputs: [
       { name: "wallet", type: "address", indexed: true },
+      { name: "tokenCount", type: "uint256", indexed: false },
       { name: "amount", type: "uint256", indexed: false },
-      { name: "nonce", type: "uint256", indexed: false },
-      { name: "timestamp", type: "uint256", indexed: false },
     ],
   },
   {
     type: "event",
-    name: "DailyAmountUpdated",
-    inputs: [{ name: "amount", type: "uint256", indexed: false }],
+    name: "CommunityClaimed",
+    inputs: [
+      { name: "wallet", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+      { name: "fee", type: "uint256", indexed: false },
+    ],
   },
   {
     type: "event",
-    name: "SignerUpdated",
-    inputs: [{ name: "signer", type: "address", indexed: true }],
+    name: "CommunityClaimFeeUpdated",
+    inputs: [{ name: "fee", type: "uint256", indexed: false }],
   },
-  { type: "error", name: "InvalidAmount", inputs: [] },
   {
-    type: "error",
-    name: "InvalidNonce",
-    inputs: [{ name: "expected", type: "uint256" }],
+    type: "event",
+    name: "FeeRecipientUpdated",
+    inputs: [{ name: "recipient", type: "address", indexed: true }],
   },
-  { type: "error", name: "InvalidSignature", inputs: [] },
-  { type: "error", name: "SignatureExpired", inputs: [] },
   {
-    type: "error",
-    name: "ClaimTooSoon",
-    inputs: [{ name: "nextClaimAt", type: "uint256" }],
+    type: "event",
+    name: "FeesWithdrawn",
+    inputs: [
+      { name: "to", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
   },
-  { type: "error", name: "FaucetEmpty", inputs: [] },
+  {
+    type: "event",
+    name: "SurplusWithdrawn",
+    inputs: [
+      { name: "to", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "NativeSurplusWithdrawn",
+    inputs: [
+      { name: "to", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
   { type: "error", name: "ZeroAddress", inputs: [] },
+  { type: "error", name: "ZeroQuantity", inputs: [] },
+  {
+    type: "error",
+    name: "BatchTooLarge",
+    inputs: [{ name: "max", type: "uint256" }],
+  },
+  {
+    type: "error",
+    name: "IncorrectFee",
+    inputs: [
+      { name: "required", type: "uint256" },
+      { name: "sent", type: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "NotNftOwner",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+  },
+  {
+    type: "error",
+    name: "NftAlreadyClaimed",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+  },
+  { type: "error", name: "CommunityAlreadyClaimed", inputs: [] },
+  { type: "error", name: "PoolExhausted", inputs: [] },
+  { type: "error", name: "NoFees", inputs: [] },
+  { type: "error", name: "NoSurplus", inputs: [] },
+  { type: "error", name: "FeeTransferFailed", inputs: [] },
   { type: "error", name: "EnforcedPause", inputs: [] },
   { type: "error", name: "ExpectedPause", inputs: [] },
   {
@@ -191,6 +319,7 @@ export const claimAbi = [
       { name: "needed", type: "uint256" },
     ],
   },
+  { type: "error", name: "OwnerQueryForNonexistentToken", inputs: [] },
 ] as const;
 
 export const tokenAbi = [
@@ -270,6 +399,35 @@ export const tokenAbi = [
   },
 ] as const;
 
-export const claimedEvent = parseAbiItem(
-  "event Claimed(address indexed wallet, uint256 amount, uint256 nonce, uint256 timestamp)",
+/** Minimal NFT surface used by the claim eligibility reader. */
+export const nftReadAbi = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "ownerOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "totalMinted",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+export const nftClaimedEvent = parseAbiItem(
+  "event NftClaimed(address indexed wallet, uint256 tokenCount, uint256 amount)",
+);
+
+export const communityClaimedEvent = parseAbiItem(
+  "event CommunityClaimed(address indexed wallet, uint256 amount, uint256 fee)",
 );

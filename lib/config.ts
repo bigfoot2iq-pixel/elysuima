@@ -17,11 +17,17 @@ export const TOKEN_ADDRESS = (process.env.NEXT_PUBLIC_TOKEN_ADDRESS ??
   ZERO_ADDRESS) as Address;
 
 /**
- * The chain the daily-claim contracts live on. The launchpad and collection can
- * point at a different Elysium network, so the claim console pins its reads and
+ * The chain the claim contracts live on. The launchpad and collection can point
+ * at a different Elysium network, so the claim console pins its reads and
  * writes to this chain instead of following the wallet.
  */
 export const CLAIM_CHAIN_ID = getDefaultChainId();
+
+/**
+ * Kinetiq's testnet faucet only exists on chain 99801. The in-app drip is
+ * pinned to that chain regardless of the network the rest of the app targets.
+ */
+export const FAUCET_CHAIN_ID = 99801;
 
 export const IS_CONFIGURED =
   CLAIM_ADDRESS.toLowerCase() !== ZERO_ADDRESS &&
