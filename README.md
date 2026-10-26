@@ -73,6 +73,8 @@ Each NFT can claim once. If an unclaimed NFT is transferred, the new owner can c
 
 The 0.001 ETH/HYPE check on Hyperliquid, HyperEVM, Ethereum, Base, and Ink is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the threshold, but it still has to satisfy NFT ownership, one-time community eligibility, the pool cap, and the community fee (if one is set).
 
+The `/claim` page is private while claims are being prepared. It is gated on the server by the same owner session as `/admin`, is `noindex, nofollow`, and is not linked from the public navigation or footer. Only the collection owner wallet can connect and sign in to view it. This is a page-level gate, not an on-chain restriction: the deployed claim contracts remain callable by anyone who knows their address.
+
 ---
 
 ## Launchpad
@@ -505,6 +507,8 @@ Clears the owner session cookie (the **Lock** button in the console footer).
 
 The console is gated on the server before any console data is rendered. Without a valid session the page only sends the unlock screen. To unlock, the collection owner connects the wallet configured in `ADMIN_OWNER_ADDRESS` — it defaults to `0xb181FDFe71A0a0f56574D88f22B6BaFD142192F6` — and signs a free message. The server verifies the signature, the owner address, and the five-minute login window, then sets a 12-hour `HttpOnly` session cookie. The cookie carries the signed message itself, so it cannot be forged or edited without the owner's key. The footer has a **Lock** action that clears the session immediately.
 
+The private `/claim` page uses the same session. Its link appears in the main navigation only after the owner unlocks a session, and signing out hides it again.
+
 Writes remain independently protected: contract calls are owner transactions, and launchpad settings changes require their own signed message.
 
 ### 01 — NFT Collection
@@ -549,7 +553,7 @@ The public launchpad's display settings - collection address, mint method, max s
 - Per-IP rate limits on `/api/eligibility` and `/api/claim/eligibility`.
 - Short-lived claim-eligibility caching keyed by block number.
 - Launchpad admin signatures with a five-minute window and replay guard.
-- Owner-console sessions require a fresh owner-wallet signature, are stored in a 12-hour `HttpOnly` cookie, and are verified on the server before the console renders.
+- Owner-console sessions require a fresh owner-wallet signature, are stored in a 12-hour `HttpOnly` cookie, and are verified on the server before the console or the private `/claim` page renders.
 - RPC chain ID and collection bytecode checks before saving settings.
 
 ### Limitations

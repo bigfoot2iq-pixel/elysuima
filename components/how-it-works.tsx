@@ -23,7 +23,7 @@ const STEPS = [
     icon: ShieldCheck,
     title: "Hold the threshold",
     body: "Hold at least 0.001 ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The check is read from your address and gates the claim buttons in the UI.",
-    href: "/claim#eligibility",
+    href: "/#faq",
     linkLabel: "See the check",
   },
   {
@@ -31,7 +31,7 @@ const STEPS = [
     icon: Sparkles,
     title: "Claim your rewards",
     body: "NFT holders claim 10,000 ELYZ per NFT. Every wallet can claim 1,000 ELYZ once from the community pool. The contract enforces NFT ownership and one-time community claims.",
-    href: "/claim#faq",
+    href: "/#faq",
     linkLabel: "Read the rules",
   },
 ];

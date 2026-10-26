@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAccountModal, useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   ArrowLeft,
@@ -16,6 +17,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import type { Address } from "viem";
 import { useAccount, useSignMessage } from "wagmi";
+import { ADMIN_SESSION_QUERY_KEY } from "@/hooks/use-admin-session";
 import {
   ADMIN_SESSION_TTL_SECONDS,
   buildAdminSessionMessage,
@@ -23,6 +25,41 @@ import {
 import { shortAddress } from "@/lib/format";
 import { sameAddress, responseError, txError } from "./admin-utils";
 import { Notice, Panel } from "./admin-ui";
+
+type AccessContext = "admin" | "claim";
+
+const ACCESS_COPY: Record<
+  AccessContext,
+  {
+    badge: string;
+    title: string;
+    description: string;
+    successTitle: string;
+    errorTitle: string;
+    verificationStep: string;
+  }
+> = {
+  admin: {
+    badge: "Owner access",
+    title: "The owner console is locked.",
+    description:
+      "Only the wallet that owns the Elyziuma NFT collection can open this console. Connect the owner wallet and sign a free message — no transaction, no gas, no approvals.",
+    successTitle: "Owner console unlocked",
+    errorTitle: "Could not unlock the console",
+    verificationStep:
+      "The server verifies the signature before any console data loads.",
+  },
+  claim: {
+    badge: "Private page",
+    title: "The claim page is private.",
+    description:
+      "Only the wallet that owns the Elyziuma NFT collection can open this page. Connect the owner wallet and sign a free message — no transaction, no gas, no approvals.",
+    successTitle: "Claim page unlocked",
+    errorTitle: "Could not unlock the claim page",
+    verificationStep:
+      "The server verifies the signature before any claim data loads.",
+  },
+};
 
 function createNonce() {
   const bytes = new Uint8Array(16);
@@ -43,8 +80,15 @@ function useMounted() {
   );
 }
 
-export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
+export function AdminAccessGate({
+  ownerAddress,
+  context = "admin",
+}: {
+  ownerAddress: Address;
+  context?: AccessContext;
+}) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const mounted = useMounted();
   const { address, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -56,6 +100,7 @@ export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
 
   const isOwner = sameAddress(address, ownerAddress);
   const hours = Math.round(ADMIN_SESSION_TTL_SECONDS / 3600);
+  const copy = ACCESS_COPY[context];
 
   async function unlock() {
     if (!address || !isOwner || signing) return;
@@ -83,8 +128,11 @@ export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
 
       if (!response.ok) throw new Error(await responseError(response));
 
-      toast.success("Owner console unlocked", {
+      toast.success(copy.successTitle, {
         description: `This browser stays unlocked for ${hours} hours.`,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_SESSION_QUERY_KEY,
       });
       router.refresh();
     } catch (caught) {
@@ -106,7 +154,7 @@ export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/[0.06] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-brand">
               <LockKeyhole className="size-3" />
-              Owner access
+              {copy.badge}
             </span>
             <span className="inline-flex items-center gap-2 rounded-full border border-paper/10 bg-paper/[0.03] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-paper-dim">
               <ShieldCheck className="size-3" />
@@ -115,12 +163,10 @@ export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
           </div>
 
           <h1 className="mt-6 max-w-[24ch] text-3xl font-semibold tracking-[-0.04em] text-paper sm:text-4xl">
-            The owner console is locked.
+            {copy.title}
           </h1>
           <p className="mt-4 max-w-lg text-[13px] leading-7 text-paper-dim">
-            Only the wallet that owns the Elyziuma NFT collection can open this
-            console. Connect the owner wallet and sign a free message — no
-            transaction, no gas, no approvals.
+            {copy.description}
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-paper/[0.07] bg-ink/40 px-3.5 py-2.5">
@@ -234,7 +280,7 @@ export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
             <div className="mt-4">
               <Notice
                 tone="danger"
-                title="Could not unlock the console"
+                title={copy.errorTitle}
                 body={error}
               />
             </div>
@@ -251,7 +297,7 @@ export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
             </li>
             <li className="flex gap-2.5">
               <span className="font-mono text-[9px] text-brand">03</span>
-              The server verifies the signature before any console data loads.
+              {copy.verificationStep}
             </li>
           </ol>
 

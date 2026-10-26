@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, LockKeyhole } from "lucide-react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
+import { ADMIN_SESSION_QUERY_KEY } from "@/hooks/use-admin-session";
 import { shortAddress } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useClaimData, useCollectionData } from "./admin-data";
@@ -48,6 +50,7 @@ export function AdminConsole({ sessionAddress }: { sessionAddress: Address }) {
 
 function AdminConsoleContent({ sessionAddress }: { sessionAddress: Address }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { address } = useAccount();
   const claim = useClaimData({ poll: false });
   const collection = useCollectionData({ poll: false });
@@ -61,6 +64,9 @@ function AdminConsoleContent({ sessionAddress }: { sessionAddress: Address }) {
 
     try {
       await fetch("/api/admin/session", { method: "DELETE" });
+      await queryClient.invalidateQueries({
+        queryKey: ADMIN_SESSION_QUERY_KEY,
+      });
       router.refresh();
     } finally {
       setLocking(false);
