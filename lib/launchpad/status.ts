@@ -80,6 +80,17 @@ export function getDropStatus(
     };
   }
 
+  // The collection exposes its price and phase on-chain, but this read did not
+  // return them. Do not guess "Live" from the saved settings.
+  if (inspection?.elyziumaDropError) {
+    return {
+      tone: "warn",
+      label: "Unavailable",
+      detail:
+        "The on-chain price and mint phase could not be read. Retrying…",
+    };
+  }
+
   const { remaining } = getSupplyState(config, inspection);
   const soldOut = remaining === 0n;
 

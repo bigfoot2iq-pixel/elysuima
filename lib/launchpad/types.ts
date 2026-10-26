@@ -175,6 +175,13 @@ export type ContractInspection = {
   methods: DetectedMethod[];
   seaDrop?: SeaDropInfo;
   elyziumaDrop?: ElyziumaDropInfo;
+  /**
+   * Set when the collection exposes Elyziuma's on-chain drop getters but the
+   * RPC could not return them. The launchpad must not substitute saved
+   * settings for the missing values: the contract is the only price/phase
+   * source of truth.
+   */
+  elyziumaDropError?: string;
   message?: string;
 };
 

@@ -299,14 +299,19 @@ export function MintCard({
     Math.max(1, quantity),
     Math.max(1, maxQuantity),
   );
-  const total = unitPrice * BigInt(effectiveQuantity);
+  const total =
+    unitPrice === undefined
+      ? undefined
+      : unitPrice * BigInt(effectiveQuantity);
 
   const nativeCurrency = config.chain.nativeCurrency;
   const isTestnet = getElysiumChain(config.chainId).testnet;
   const totalLabel =
-    total === 0n
-      ? "Free"
-      : `${formatAmount(total, nativeCurrency.decimals, 4)} ${nativeCurrency.symbol}`;
+    total === undefined
+      ? "—"
+      : total === 0n
+        ? "Free"
+        : `${formatAmount(total, nativeCurrency.decimals, 4)} ${nativeCurrency.symbol}`;
 
   const minted = Number(totalSupply ?? 0n);
   const cap = maxSupply ? Number(maxSupply) : 0;
@@ -369,6 +374,7 @@ export function MintCard({
     isLive &&
     !scheduled &&
     methodReady &&
+    unitPrice !== undefined &&
     maxQuantity > 0;
 
   const balanceChecking =
@@ -482,7 +488,9 @@ export function MintCard({
 
   async function submitMint() {
     const wallet = address;
-    if (!wallet || !collection || !resolvedMethod) return;
+    if (!wallet || !collection || !resolvedMethod || total === undefined) {
+      return;
+    }
 
     setBusy(true);
     setHash(undefined);
@@ -637,6 +645,11 @@ export function MintCard({
     if (status.label === "Ended") return "Mint ended";
     if (status.label === "Sold out") return "Sold out";
     if (status.label === "Closed") return "Mint closed";
+    if (status.label === "Unavailable")
+      return inspection?.elyziumaDropError
+        ? "Price unavailable"
+        : "Contract unavailable";
+    if (unitPrice === undefined) return "Price unavailable";
     if (!methodReady) return "Mint method unavailable";
     if (maxQuantity === 0) return "Wallet limit reached";
     if (receipt.isLoading) return "Confirming on Elysium…";
@@ -683,9 +696,11 @@ export function MintCard({
             Price
           </p>
           <p className="tabular mt-0.5 font-mono text-lg font-semibold text-paper">
-            {unitPrice === 0n
-              ? "Free"
-              : `${formatAmount(unitPrice, nativeCurrency.decimals, 4)} ${nativeCurrency.symbol}`}
+            {unitPrice === undefined
+              ? "—"
+              : unitPrice === 0n
+                ? "Free"
+                : `${formatAmount(unitPrice, nativeCurrency.decimals, 4)} ${nativeCurrency.symbol}`}
           </p>
         </div>
         <p className="font-mono text-[11px] text-paper-mute">per NFT</p>
@@ -730,10 +745,12 @@ export function MintCard({
       <div className="mt-3 flex items-center justify-between rounded-xl border border-paper/[0.08] bg-paper/[0.02] px-3.5 py-2.5 font-mono text-[13px]">
         <span className="text-paper-mute">Total</span>
         <span className="tabular flex items-center gap-2 text-sm font-semibold text-paper">
-          {total === 0n
-            ? "Free"
-            : formatAmount(total, nativeCurrency.decimals, 4)}
-          {total === 0n ? null : (
+          {total === undefined
+            ? "—"
+            : total === 0n
+              ? "Free"
+              : formatAmount(total, nativeCurrency.decimals, 4)}
+          {total === undefined || total === 0n ? null : (
             <span className="text-[10px] uppercase tracking-[0.12em] text-paper-mute">
               {nativeCurrency.symbol}
             </span>

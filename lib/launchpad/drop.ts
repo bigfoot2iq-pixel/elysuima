@@ -8,32 +8,44 @@ import type {
  * The price of a single token for the phase that is currently live. The
  * on-chain value wins over the saved settings, because the contract rejects
  * any payment that does not match its own price.
+ *
+ * Returns `undefined` when the contract exposes an on-chain drop but its price
+ * could not be read. In that case the saved settings must not be used: they
+ * are only a display fallback for collections without on-chain price getters.
  */
 export function getUnitPrice(
   config: PublicLaunchpadConfig,
   inspection: ContractInspection | undefined,
-): bigint {
+): bigint | undefined {
   const drop = inspection?.elyziumaDrop;
   if (drop) {
     try {
       return BigInt(drop.publicPrice);
     } catch {
-      return 0n;
+      return undefined;
     }
   }
+
+  // The collection has on-chain drop getters, but this inspection could not
+  // read them. Showing the saved price here is what made a 0.1 HYPE mint look
+  // free whenever the RPC dropped the call.
+  if (inspection?.elyziumaDropError) return undefined;
 
   if (inspection?.seaDrop) {
     try {
       return BigInt(inspection.seaDrop.mintPrice);
     } catch {
-      return 0n;
+      return undefined;
     }
   }
+
+  // A failed inspection has no verified price to show either.
+  if (inspection && !inspection.ok) return undefined;
 
   try {
     return parseUnits(config.mintPrice || "0", 18);
   } catch {
-    return 0n;
+    return undefined;
   }
 }
 

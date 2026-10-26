@@ -24,11 +24,13 @@ function priceLabel(
   inspection: ContractInspection | undefined,
 ) {
   const wei = getUnitPrice(config, inspection);
+  if (wei === undefined) return "—";
   if (wei === 0n) return "Free";
   try {
-    return `${formatAmount(wei, 18, 4)} HYPE`;
+    const { decimals, symbol } = config.chain.nativeCurrency;
+    return `${formatAmount(wei, decimals, 4)} ${symbol}`;
   } catch {
-    return "Free";
+    return "—";
   }
 }
 

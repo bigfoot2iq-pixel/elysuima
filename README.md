@@ -448,7 +448,7 @@ Returns the public launchpad settings, including the chain info and a `configure
 
 ### `GET /api/launchpad/contract?address=0x...`
 
-Reads the collection through the configured RPC. Returns name, symbol, owner, standard, supply, proxy implementation, detected mint methods, SeaDrop drop info, and - for the Elyziuma collection - the on-chain `elyziumaDrop` (public price, phase state, and per-wallet limit). Results are cached for 30 seconds per RPC/address combination.
+Reads the collection through the configured RPC. Returns name, symbol, owner, standard, supply, proxy implementation, detected mint methods, SeaDrop drop info, and - for the Elyziuma collection - the on-chain `elyziumaDrop` (public price, phase state, and per-wallet limit). When the on-chain drop getters exist but cannot be read, the response carries `elyziumaDropError` instead of falling back to saved settings. Results are cached for 30 seconds per RPC/address combination; degraded reads are not cached so the next poll can recover.
 
 ### `GET /api/admin/launchpad?address=0x...`
 

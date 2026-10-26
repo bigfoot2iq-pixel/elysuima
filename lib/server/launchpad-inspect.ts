@@ -44,6 +44,25 @@ const ZERO_WORD =
   "0x0000000000000000000000000000000000000000000000000000000000000000";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
+// Dispatcher selectors for the Elyziuma on-chain drop getters. They let a
+// failed read be classified as a temporary RPC problem instead of "this
+// collection has no on-chain drop".
+const PUBLIC_PRICE_SELECTOR = toFunctionSelector("publicPrice()")
+  .slice(2)
+  .toLowerCase();
+const PUBLIC_MINT_OPEN_SELECTOR = toFunctionSelector("publicMintOpen()")
+  .slice(2)
+  .toLowerCase();
+
+const DROP_READ_ATTEMPTS = 3;
+const DROP_READ_BACKOFF_MS = 120;
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function clientFor(rpcUrl: string) {
   return createPublicClient({
     transport: http(rpcUrl, {
@@ -336,39 +355,105 @@ async function detectSeaDrop(
   return undefined;
 }
 
+type ElyziumaDropProbe =
+  | { status: "unsupported" }
+  | { status: "ok"; drop: ElyziumaDropInfo }
+  | { status: "error"; message: string };
+
 /**
- * Reads the on-chain drop configuration of the Elyziuma collection. The
- * contract keeps the public phase on-chain, so the launchpad follows the
- * contract instead of the saved settings. A collection that does not expose
- * these getters simply fails the probe and is left alone.
+ * Reads the on-chain drop configuration of the Elyziuma collection.
+ *
+ * The public RPC occasionally drops one of several concurrent `eth_call`s. A
+ * missing getter used to make the whole drop disappear, which made the UI fall
+ * back to the saved (and possibly stale) price. Each critical getter now has
+ * its own retry budget, so one dropped call cannot erase the on-chain price.
  */
 async function detectElyziumaDrop(
   client: PublicClient,
   collection: Address,
-): Promise<ElyziumaDropInfo | undefined> {
-  const read = <T>(functionName: string) =>
-    readOrUndefined(() =>
+  supported: boolean,
+): Promise<ElyziumaDropProbe> {
+  if (!supported) return { status: "unsupported" };
+
+  const readDropValue = async <T>(
+    read: () => Promise<T>,
+    attempts = DROP_READ_ATTEMPTS,
+  ) => {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        return await read();
+      } catch {
+        if (attempt < attempts - 1) {
+          await wait(DROP_READ_BACKOFF_MS * (attempt + 1));
+        }
+      }
+    }
+    return undefined;
+  };
+
+  // The three getters are independent, so read them together. Each read has
+  // its own retry budget: a dropped call is retried instead of making the
+  // whole drop disappear.
+  const [publicPrice, publicMintOpen, maxPerWallet] = await Promise.all([
+    readDropValue(() =>
       client.readContract({
         address: collection,
         abi: elyziumaNftReadAbi,
-        functionName,
-      } as never),
-    ) as Promise<T | undefined>;
+        functionName: "publicPrice",
+      }),
+    ),
+    readDropValue(() =>
+      client.readContract({
+        address: collection,
+        abi: elyziumaNftReadAbi,
+        functionName: "publicMintOpen",
+      }),
+    ),
+    readDropValue(() =>
+      client.readContract({
+        address: collection,
+        abi: elyziumaNftReadAbi,
+        functionName: "maxPerWallet",
+      }),
+    ),
+  ]);
 
-  const [publicPrice, publicMintOpen, maxPerWallet, legacyMaxPerWallet] =
-    await Promise.all([
-      read<bigint>("publicPrice"),
-      read<boolean>("publicMintOpen"),
-      read<bigint>("maxPerWallet"),
-      read<bigint>("MAX_PER_WALLET"),
-    ]);
+  if (publicPrice === undefined) {
+    return {
+      status: "error",
+      message: "The on-chain public price could not be read.",
+    };
+  }
 
-  if (publicPrice === undefined || publicMintOpen === undefined) return undefined;
+  if (publicMintOpen === undefined) {
+    return {
+      status: "error",
+      message: "The on-chain mint phase could not be read.",
+    };
+  }
+
+  // The per-wallet cap only affects the quantity picker. Try the legacy name
+  // once when the current one is missing, but never let a failed cap read hide
+  // the price and phase that did resolve.
+  const walletCap =
+    maxPerWallet ??
+    (await readDropValue(
+      () =>
+        client.readContract({
+          address: collection,
+          abi: elyziumaNftReadAbi,
+          functionName: "MAX_PER_WALLET",
+        }),
+      1,
+    ));
 
   return {
-    publicPrice: publicPrice.toString(),
-    publicMintOpen,
-    maxPerWallet: Number(maxPerWallet ?? legacyMaxPerWallet ?? 0n),
+    status: "ok",
+    drop: {
+      publicPrice: publicPrice.toString(),
+      publicMintOpen,
+      maxPerWallet: Number(walletCap ?? 0n),
+    },
   };
 }
 
@@ -457,6 +542,25 @@ export async function inspectContract(
     ? await readOrUndefined(() => client.getCode({ address: implementation }))
     : undefined;
 
+  const bytecode = (
+    implementationCode && implementationCode !== "0x"
+      ? implementationCode
+      : code
+  ).toLowerCase();
+
+  const supportsOnChainDrop =
+    bytecode.includes(PUBLIC_PRICE_SELECTOR) &&
+    bytecode.includes(PUBLIC_MINT_OPEN_SELECTOR);
+
+  // Read the price and phase before the bulk reads below. The public RPC
+  // drops concurrent calls, and a failed critical read must be reported as
+  // unavailable rather than silently treated as a free drop.
+  const dropProbe = await detectElyziumaDrop(
+    client,
+    collection,
+    supportsOnChainDrop,
+  );
+
   const [name, symbol, owner, totalSupply, maxSupply, isErc721, isErc1155] =
     await Promise.all([
       readOrUndefined(() =>
@@ -512,12 +616,6 @@ export async function inspectContract(
       ),
     ]);
 
-  const bytecode = (
-    implementationCode && implementationCode !== "0x"
-      ? implementationCode
-      : code
-  ).toLowerCase();
-
   const methods: DetectedMethod[] = COLLECTION_METHODS.map((method) => {
     const selector = toFunctionSelector(method.signature).slice(2);
     return {
@@ -538,7 +636,10 @@ export async function inspectContract(
     source: "seadrop",
   });
 
-  const elyziumaDrop = await detectElyziumaDrop(client, collection);
+  const elyziumaDrop =
+    dropProbe.status === "ok" ? dropProbe.drop : undefined;
+  const elyziumaDropError =
+    dropProbe.status === "error" ? dropProbe.message : undefined;
 
   const detectedCollectionMethod = methods.find(
     (method) => method.available && method.id !== "seadrop",
@@ -571,6 +672,7 @@ export async function inspectContract(
     methods,
     seaDrop,
     elyziumaDrop,
+    elyziumaDropError,
     message: detectedMethod
       ? undefined
       : "No common public mint function was detected. Choose a method manually.",

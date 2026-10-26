@@ -42,7 +42,10 @@ export function useLaunchpadContract(address?: string) {
     queryKey: ["launchpad-contract", address?.toLowerCase()],
     enabled: Boolean(address),
     staleTime: 15_000,
-    refetchInterval: 30_000,
+    // A degraded on-chain read should recover quickly instead of leaving the
+    // launchpad on "Unavailable" for a full polling interval.
+    refetchInterval: (query) =>
+      query.state.data?.elyziumaDropError ? 5_000 : 30_000,
     refetchOnWindowFocus: true,
     retry: 1,
     queryFn: async () => {
