@@ -170,6 +170,12 @@ export type ContractInspection = {
   isErc1155?: boolean;
   totalSupply?: string;
   maxSupply?: string;
+  /**
+   * Set when the collection exposes supply getters but the RPC could not return
+   * them. The UI keeps the last successfully read supply visible instead of
+   * replacing it with an "Open" / "0" fallback.
+   */
+  supplyError?: string;
   mintedBy?: string;
   detectedMethod?: Exclude<MintMethod, "auto">;
   methods: DetectedMethod[];

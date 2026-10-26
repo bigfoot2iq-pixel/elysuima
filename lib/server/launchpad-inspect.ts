@@ -54,8 +54,17 @@ const PUBLIC_MINT_OPEN_SELECTOR = toFunctionSelector("publicMintOpen()")
   .slice(2)
   .toLowerCase();
 
-const DROP_READ_ATTEMPTS = 3;
-const DROP_READ_BACKOFF_MS = 120;
+// Supply getters are read separately from the drop so a dropped supply call
+// can be detected without hiding a valid price/phase.
+const TOTAL_SUPPLY_SELECTOR = toFunctionSelector("totalSupply()")
+  .slice(2)
+  .toLowerCase();
+const MAX_SUPPLY_SELECTOR = toFunctionSelector("maxSupply()")
+  .slice(2)
+  .toLowerCase();
+
+const RPC_READ_ATTEMPTS = 3;
+const RPC_READ_BACKOFF_MS = 120;
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => {
@@ -72,12 +81,23 @@ function clientFor(rpcUrl: string) {
   });
 }
 
-async function readOrUndefined<T>(read: () => Promise<T>): Promise<T | undefined> {
-  try {
-    return await read();
-  } catch {
-    return undefined;
+async function readOrUndefined<T>(
+  read: () => Promise<T>,
+  attempts = 1,
+): Promise<T | undefined> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await read();
+    } catch {
+      // The public RPC occasionally drops a call while other calls are in
+      // flight. Back off briefly and retry instead of reporting the value as
+      // missing, which would make the UI fall back to stale defaults.
+      if (attempt < attempts - 1) {
+        await wait(RPC_READ_BACKOFF_MS * (attempt + 1));
+      }
+    }
   }
+  return undefined;
 }
 
 export type InspectInput = {
@@ -375,21 +395,10 @@ async function detectElyziumaDrop(
 ): Promise<ElyziumaDropProbe> {
   if (!supported) return { status: "unsupported" };
 
-  const readDropValue = async <T>(
+  const readDropValue = <T>(
     read: () => Promise<T>,
-    attempts = DROP_READ_ATTEMPTS,
-  ) => {
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-      try {
-        return await read();
-      } catch {
-        if (attempt < attempts - 1) {
-          await wait(DROP_READ_BACKOFF_MS * (attempt + 1));
-        }
-      }
-    }
-    return undefined;
-  };
+    attempts = RPC_READ_ATTEMPTS,
+  ) => readOrUndefined(read, attempts);
 
   // The three getters are independent, so read them together. Each read has
   // its own retry budget: a dropped call is retried instead of making the
@@ -561,60 +570,93 @@ export async function inspectContract(
     supportsOnChainDrop,
   );
 
-  const [name, symbol, owner, totalSupply, maxSupply, isErc721, isErc1155] =
-    await Promise.all([
-      readOrUndefined(() =>
+  const readCollection = <T>(read: () => Promise<T>) =>
+    readOrUndefined(read, RPC_READ_ATTEMPTS);
+
+  const [
+    name,
+    symbol,
+    owner,
+    totalSupplyRead,
+    maxSupplyRead,
+    isErc721,
+    isErc1155,
+  ] = await Promise.all([
+    readCollection(() =>
+      client.readContract({
+        address: collection,
+        abi: launchpadReadAbi,
+        functionName: "name",
+      }),
+    ),
+    readCollection(() =>
+      client.readContract({
+        address: collection,
+        abi: launchpadReadAbi,
+        functionName: "symbol",
+      }),
+    ),
+    readCollection(() =>
+      client.readContract({
+        address: collection,
+        abi: launchpadReadAbi,
+        functionName: "owner",
+      }),
+    ),
+    readCollection(() =>
+      client.readContract({
+        address: collection,
+        abi: launchpadReadAbi,
+        functionName: "totalSupply",
+      }),
+    ),
+    readCollection(() =>
+      client.readContract({
+        address: collection,
+        abi: launchpadReadAbi,
+        functionName: "maxSupply",
+      }),
+    ),
+    readCollection(() =>
+      client.readContract({
+        address: collection,
+        abi: launchpadReadAbi,
+        functionName: "supportsInterface",
+        args: [ERC721_INTERFACE_ID],
+      }),
+    ),
+    readCollection(() =>
+      client.readContract({
+        address: collection,
+        abi: launchpadReadAbi,
+        functionName: "supportsInterface",
+        args: [ERC1155_INTERFACE_ID],
+      }),
+    ),
+  ]);
+
+  let totalSupply = totalSupplyRead;
+  let maxSupply = maxSupplyRead;
+
+  // `getMintStats` returns the current supply and the cap in one call. Use it
+  // as a second chance when either individual read was dropped, so the summary
+  // does not fall back to "Open" / "0" while the collection is readable.
+  if (totalSupply === undefined || maxSupply === undefined) {
+    const mintStats = await readOrUndefined(
+      () =>
         client.readContract({
           address: collection,
           abi: launchpadReadAbi,
-          functionName: "name",
+          functionName: "getMintStats",
+          args: [ZERO_ADDRESS],
         }),
-      ),
-      readOrUndefined(() =>
-        client.readContract({
-          address: collection,
-          abi: launchpadReadAbi,
-          functionName: "symbol",
-        }),
-      ),
-      readOrUndefined(() =>
-        client.readContract({
-          address: collection,
-          abi: launchpadReadAbi,
-          functionName: "owner",
-        }),
-      ),
-      readOrUndefined(() =>
-        client.readContract({
-          address: collection,
-          abi: launchpadReadAbi,
-          functionName: "totalSupply",
-        }),
-      ),
-      readOrUndefined(() =>
-        client.readContract({
-          address: collection,
-          abi: launchpadReadAbi,
-          functionName: "maxSupply",
-        }),
-      ),
-      readOrUndefined(() =>
-        client.readContract({
-          address: collection,
-          abi: launchpadReadAbi,
-          functionName: "supportsInterface",
-          args: [ERC721_INTERFACE_ID],
-        }),
-      ),
-      readOrUndefined(() =>
-        client.readContract({
-          address: collection,
-          abi: launchpadReadAbi,
-          functionName: "supportsInterface",
-          args: [ERC1155_INTERFACE_ID],
-        }),
-      ),
-    ]);
+      RPC_READ_ATTEMPTS,
+    );
+    if (mintStats) {
+      totalSupply ??= mintStats[1];
+      maxSupply ??= mintStats[2];
+    }
+  }
 
   const methods: DetectedMethod[] = COLLECTION_METHODS.map((method) => {
     const selector = toFunctionSelector(method.signature).slice(2);
@@ -640,6 +682,16 @@ export async function inspectContract(
     dropProbe.status === "ok" ? dropProbe.drop : undefined;
   const elyziumaDropError =
     dropProbe.status === "error" ? dropProbe.message : undefined;
+
+  // Only flag a supply error when the implementation actually exposes the
+  // getter. A collection without a cap (or without a total-supply view) is a
+  // valid open-supply collection, not a failed read.
+  const supplyMissing =
+    (bytecode.includes(TOTAL_SUPPLY_SELECTOR) && totalSupply === undefined) ||
+    (bytecode.includes(MAX_SUPPLY_SELECTOR) && maxSupply === undefined);
+  const supplyError = supplyMissing
+    ? "The on-chain supply could not be read. Retrying…"
+    : undefined;
 
   const detectedCollectionMethod = methods.find(
     (method) => method.available && method.id !== "seadrop",
@@ -668,6 +720,7 @@ export async function inspectContract(
     isErc1155: Boolean(isErc1155),
     totalSupply: totalSupply?.toString(),
     maxSupply: maxSupply?.toString(),
+    supplyError,
     detectedMethod,
     methods,
     seaDrop,

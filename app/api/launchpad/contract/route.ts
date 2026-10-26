@@ -103,9 +103,12 @@ export async function GET(request: Request) {
       seaDropAddress: config.seaDropAddress,
       feeRecipient: config.feeRecipient,
     });
-    // A degraded inspection (for example the RPC dropped the price call) must
-    // not be pinned for 30 seconds: the next poll has to be able to recover.
-    if (!inspection.elyziumaDropError) remember(key, inspection);
+    // A degraded inspection (for example the RPC dropped the price or supply
+    // call) must not be pinned for 30 seconds: the next read has to be able to
+    // recover.
+    if (!inspection.elyziumaDropError && !inspection.supplyError) {
+      remember(key, inspection);
+    }
   }
 
   return NextResponse.json(

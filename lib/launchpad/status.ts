@@ -28,15 +28,27 @@ export function getSupplyState(
   const inspectedMax = bigintOrUndefined(inspection?.maxSupply);
   const configuredMax =
     config.maxSupply > 0 ? BigInt(config.maxSupply) : undefined;
+  // A readable on-chain cap wins, including an explicit zero (open supply).
+  // The saved setting is only a fallback when the collection did not report a
+  // cap at all.
   const maxSupply =
-    inspectedMax && inspectedMax > 0n ? inspectedMax : configuredMax;
+    inspection?.maxSupply !== undefined
+      ? inspectedMax && inspectedMax > 0n
+        ? inspectedMax
+        : undefined
+      : configuredMax;
 
   if (!maxSupply || maxSupply === 0n) {
     return { totalSupply, maxSupply: undefined, remaining: undefined };
   }
 
-  const supply = totalSupply ?? 0n;
-  const remaining = maxSupply > supply ? maxSupply - supply : 0n;
+  // Without a total we cannot tell how much is left. Do not report the full
+  // cap as remaining; the caller shows an em dash instead.
+  if (totalSupply === undefined) {
+    return { totalSupply, maxSupply, remaining: undefined };
+  }
+
+  const remaining = maxSupply > totalSupply ? maxSupply - totalSupply : 0n;
 
   return { totalSupply, maxSupply, remaining };
 }

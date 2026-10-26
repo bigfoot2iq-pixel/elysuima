@@ -171,6 +171,14 @@ export function MintCard({
     [eligibility.data?.chains],
   );
 
+  // The Elyziuma collection tracks public mints per wallet, so the allowance
+  // left for this wallet comes from that counter instead of balanceOf.
+  const drop = inspection?.elyziumaDrop;
+
+  // Wallet state is read on mount/account change and refreshed explicitly after
+  // a confirmed mint. Polling it made dropped RPC reads blank the counters.
+  // The generic fallbacks are only needed when the collection does not expose
+  // the on-chain drop counters.
   const mintStats = useReadContract({
     address: collection,
     abi: launchpadReadAbi,
@@ -178,8 +186,7 @@ export function MintCard({
     args: [address ?? zeroAddress],
     chainId: config.chainId,
     query: {
-      enabled: Boolean(address && collection),
-      refetchInterval: 20_000,
+      enabled: Boolean(address && collection && !drop),
       retry: false,
     },
   });
@@ -191,15 +198,10 @@ export function MintCard({
     args: [address ?? zeroAddress],
     chainId: config.chainId,
     query: {
-      enabled: Boolean(address && collection),
-      refetchInterval: 20_000,
+      enabled: Boolean(address && collection && !drop),
       retry: false,
     },
   });
-
-  // The Elyziuma collection tracks public mints per wallet, so the allowance
-  // left for this wallet comes from that counter.
-  const drop = inspection?.elyziumaDrop;
 
   const publicMinted = useReadContract({
     address: collection,
@@ -209,7 +211,6 @@ export function MintCard({
     chainId: config.chainId,
     query: {
       enabled: Boolean(address && collection && drop),
-      refetchInterval: 20_000,
       retry: false,
     },
   });
@@ -315,7 +316,10 @@ export function MintCard({
 
   const minted = Number(totalSupply ?? 0n);
   const cap = maxSupply ? Number(maxSupply) : 0;
-  const progress = cap > 0 ? Math.min(100, (minted / cap) * 100) : null;
+  const progress =
+    cap > 0 && totalSupply !== undefined
+      ? Math.min(100, (minted / cap) * 100)
+      : null;
 
   // ERC-721 transfers in the receipt tell us which tokens this wallet received,
   // so the confirmation can name them instead of only counting them.
@@ -442,10 +446,13 @@ export function MintCard({
     onMintConfirmed?.(lastQuantity);
     toast.dismiss(hash);
     setMintSuccessOpen(true);
-    void refetchMintStats();
-    void refetchBalance();
+    if (drop) {
+      void refetchPublicMinted();
+    } else {
+      void refetchMintStats();
+      void refetchBalance();
+    }
     if (balanceCheckEnabled) void refetchEligibility();
-    if (drop) void refetchPublicMinted();
     void queryClient.invalidateQueries({
       predicate: (query) => query.queryKey[0] === "launchpad-contract",
     });

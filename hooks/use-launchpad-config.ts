@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  replaceEqualDeep,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { getRuntimeNetwork, setRuntimeNetwork } from "@/lib/launchpad/runtime";
 import type {
   ContractInspection,
@@ -37,16 +41,58 @@ export function useLaunchpadConfig() {
   });
 }
 
+/**
+ * Keeps the last successfully read supply when a refetch returns a degraded
+ * inspection. The RPC sometimes drops the supply calls while the price/phase
+ * calls succeed; replacing the values with undefined would make the summary
+ * show "Open" / "0" even though the collection reports 2,222 / 191.
+ */
+function keepLastSupply(
+  previous: ContractInspection | undefined,
+  next: ContractInspection,
+) {
+  if (
+    !previous ||
+    previous.collectionAddress !== next.collectionAddress ||
+    (next.totalSupply !== undefined && next.maxSupply !== undefined) ||
+    (previous.totalSupply === undefined && previous.maxSupply === undefined)
+  ) {
+    return next;
+  }
+
+  return {
+    ...next,
+    totalSupply: next.totalSupply ?? previous.totalSupply,
+    maxSupply: next.maxSupply ?? previous.maxSupply,
+  };
+}
+
 export function useLaunchpadContract(address?: string) {
   return useQuery<ContractInspection>({
     queryKey: ["launchpad-contract", address?.toLowerCase()],
     enabled: Boolean(address),
     staleTime: 15_000,
-    // A degraded on-chain read should recover quickly instead of leaving the
-    // launchpad on "Unavailable" for a full polling interval.
-    refetchInterval: (query) =>
-      query.state.data?.elyziumaDropError ? 5_000 : 30_000,
-    refetchOnWindowFocus: true,
+    structuralSharing: (previous, next) =>
+      replaceEqualDeep(
+        previous,
+        keepLastSupply(
+          previous as ContractInspection | undefined,
+          next as ContractInspection,
+        ),
+      ),
+    // Supply and cap are deliberately not polled: the RPC occasionally drops
+    // one of the concurrent reads, and a failed poll used to flip a 2,222
+    // supply into "Open" / "0". The initial load reads them, and a confirmed
+    // mint invalidates this query explicitly. Only a degraded inspection is
+    // polled, so it can recover without changing stable values.
+    refetchInterval: (query) => {
+      const inspection = query.state.data;
+      if (!inspection) return false;
+      if (!inspection.ok || inspection.elyziumaDropError) return 5_000;
+      if (inspection.supplyError) return 5_000;
+      return false;
+    },
+    refetchOnWindowFocus: false,
     retry: 1,
     queryFn: async () => {
       const response = await fetch(

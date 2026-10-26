@@ -55,15 +55,28 @@ export function LaunchpadSummary({
   const mintedCount = totalSupply !== undefined ? Number(totalSupply) : 0;
   const cap = maxSupply ? Number(maxSupply) : 0;
   const supplyProgress =
-    cap > 0 ? Math.min(100, (mintedCount / cap) * 100) : null;
+    cap > 0 && totalSupply !== undefined
+      ? Math.min(100, (mintedCount / cap) * 100)
+      : null;
+
+  // "Open" only when the contract actually reported no cap. A missing value
+  // means the read failed, and must not be presented as an open edition.
+  const supplyLabel = maxSupply
+    ? formatAmount(maxSupply, 0, 0)
+    : inspection?.maxSupply !== undefined
+      ? "Open"
+      : "—";
+  const mintedLabel =
+    totalSupply !== undefined ? formatAmount(totalSupply, 0, 0) : "—";
+
   const stats = [
     {
       label: "Supply",
-      value: maxSupply ? formatAmount(maxSupply, 0, 0) : "Open",
+      value: supplyLabel,
     },
     {
       label: "Minted",
-      value: totalSupply !== undefined ? formatAmount(totalSupply, 0, 0) : "0",
+      value: mintedLabel,
     },
     { label: "Price", value: priceLabel(config, inspection) },
     { label: "Max / wallet", value: String(perWallet) },

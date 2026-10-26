@@ -138,20 +138,25 @@ export function LaunchpadContent() {
     (quantity: number) => {
       if (!config) return;
       const collection = config.collectionAddress;
-      const chain = Number(inspection?.totalSupply ?? 0);
-      setMintedFloor((floor) => {
-        const base =
-          floor && floor.collection === collection ? floor.supply : chain;
-        return {
-          collection,
-          supply: Math.max(chain, base) + quantity,
-        };
-      });
+      // Only move a known total. With no supply yet, "1" would be a made-up
+      // number; keep the em dash until the refetch returns the real total.
+      const knownSupply = displayInspection?.totalSupply;
+      if (knownSupply !== undefined) {
+        const chain = Number(knownSupply);
+        setMintedFloor((floor) => {
+          const base =
+            floor && floor.collection === collection ? floor.supply : chain;
+          return {
+            collection,
+            supply: Math.max(chain, base) + quantity,
+          };
+        });
+      }
       // Pull the real supply as soon as the route cache lets a fresh read
       // through; the optimistic floor above covers the gap.
       void refetchContract();
     },
-    [config, inspection?.totalSupply, refetchContract],
+    [config, displayInspection?.totalSupply, refetchContract],
   );
 
   if (!hydrated || configQuery.isPending) {
