@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { LINKS } from "@/lib/config";
 import { MASCOTS, getMascot, HERO_MASCOT_ID, MASCOT_GLOWS } from "@/lib/mascots";
 import { NetworkBadge } from "./network-badge";
 
@@ -68,10 +69,15 @@ export function Hero() {
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Link href="/launchpad" className="btn-ink">
-              Mint the collection
-              <ArrowRight className="size-4" />
-            </Link>
+            <a
+              href={LINKS.kalos}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ink"
+            >
+              Get Your Elyziuma
+              <ArrowUpRight className="size-4" />
+            </a>
             <Link href="/faucet" className="btn-ink-ghost">
               Get testnet HYPE
               <ArrowRight className="size-3.5" />

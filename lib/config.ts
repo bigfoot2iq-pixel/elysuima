@@ -53,6 +53,7 @@ export const LINKS = {
   explorer: getChainExplorerUrl(getDefaultChainId()),
   docs: "https://elysium.kinetiq.xyz/docs",
   x: "https://x.com/Elyziumaa",
+  kalos: "https://www.kalos.fun/collections/elyziuma",
 } as const;
 
 export function explorerAddress(address: string) {
