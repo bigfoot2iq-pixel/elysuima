@@ -75,6 +75,60 @@ export type ClaimState = {
 export async function getClaimState(): Promise<ClaimState> {
   const client = await getClaimClient();
 
+  const stateResults = await client.multicall({
+    contracts: [
+      { address: CLAIM_ADDRESS, abi: claimAbi, functionName: "nft" },
+      { address: CLAIM_ADDRESS, abi: claimAbi, functionName: "NFT_REWARD" },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "COMMUNITY_REWARD",
+      },
+      { address: CLAIM_ADDRESS, abi: claimAbi, functionName: "MAX_BATCH" },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityClaimFee",
+      },
+      { address: CLAIM_ADDRESS, abi: claimAbi, functionName: "feeRecipient" },
+      { address: CLAIM_ADDRESS, abi: claimAbi, functionName: "accruedFees" },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "nftClaimedTotal",
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityClaimedTotal",
+      },
+      { address: CLAIM_ADDRESS, abi: claimAbi, functionName: "nftClaimCount" },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityClaimCount",
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "nftPoolRemaining",
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityPoolRemaining",
+      },
+      { address: CLAIM_ADDRESS, abi: claimAbi, functionName: "paused" },
+      {
+        address: TOKEN_ADDRESS,
+        abi: tokenAbi,
+        functionName: "balanceOf",
+        args: [CLAIM_ADDRESS],
+      },
+    ],
+    allowFailure: false,
+  });
+
   const [
     nftAddress,
     nftReward,
@@ -91,86 +145,25 @@ export async function getClaimState(): Promise<ClaimState> {
     communityPoolRemaining,
     paused,
     tokenBalance,
-    block,
-  ] = await Promise.all([
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "nft",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "NFT_REWARD",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "COMMUNITY_REWARD",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "MAX_BATCH",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "communityClaimFee",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "feeRecipient",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "accruedFees",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "nftClaimedTotal",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "communityClaimedTotal",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "nftClaimCount",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "communityClaimCount",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "nftPoolRemaining",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "communityPoolRemaining",
-    }),
-    client.readContract({
-      address: CLAIM_ADDRESS,
-      abi: claimAbi,
-      functionName: "paused",
-    }),
-    client.readContract({
-      address: TOKEN_ADDRESS,
-      abi: tokenAbi,
-      functionName: "balanceOf",
-      args: [CLAIM_ADDRESS],
-    }),
-    client.getBlock({ blockTag: "latest" }),
-  ]);
+  ] = stateResults as unknown as [
+    Address,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    Address,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    boolean,
+    bigint,
+  ];
+
+  const block = await client.getBlock({ blockTag: "latest" });
 
   return {
     nftAddress,

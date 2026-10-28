@@ -38,7 +38,6 @@ export function CommunityClaimCard() {
     eligibility,
     claimEligibility,
     thresholdEligible,
-    checking,
     refresh,
   } = useClaimData();
   const { openConnectModal } = useConnectModal();
@@ -53,10 +52,11 @@ export function CommunityClaimCard() {
   const communityPoolRemaining = BigInt(
     data?.pools.communityRemaining ?? "0",
   );
+  const checking =
+    Boolean(address) && eligibility.isLoading && !eligibility.data;
 
   const busy =
     phase === "authorizing" || phase === "submitting" || phase === "pending";
-  const dataReady = Boolean(data);
 
   const label = (() => {
     if (!IS_CONFIGURED) return "Claim not live yet";
@@ -70,22 +70,36 @@ export function CommunityClaimCard() {
     if (phase === "success") return "Claimed";
     if (paused) return "Claims paused";
     if (checking) return "Checking eligibility…";
-    if (eligibility.isError) return "Retry eligibility";
+    if (eligibility.isError) return "Retry balance check";
+    if (community?.claimed) return "Already claimed";
     if (!thresholdEligible) return "Not eligible";
     if (claimEligibility.isError) return "Retry claim data";
     if (!community) return "Loading reward…";
-    if (community.claimed) return "Already claimed";
     if (communityPoolRemaining === 0n) return "Community pool empty";
     return `Claim ${formatAmount(communityClaimable, decimals, 0)} ${symbol}`;
   })();
 
-  const detail = !community
-    ? "Reading the community pool from Elysium…"
-    : community.claimed
-      ? "This wallet has already claimed its community reward. Nothing left to do here."
-      : communityPoolRemaining === 0n
-        ? "The community pool is empty right now. Check back after a top-up."
-        : "One claim per wallet, paid from the shared community pool.";
+  const detail = (() => {
+    if (!address) return "Connect the wallet you want to claim with.";
+    if (checking) return "Checking your mainnet ETH and HYPE balances…";
+    if (eligibility.isError) {
+      return "The mainnet balance check is unavailable. Retry to continue.";
+    }
+    if (community?.claimed) {
+      return "This wallet has already claimed its 1,000 ELYZ. You can still claim any eligible NFT rewards on the left.";
+    }
+    if (!thresholdEligible) {
+      return "The community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM.";
+    }
+    if (claimEligibility.isError) {
+      return "The community reward could not be read. Retry to continue.";
+    }
+    if (!community) return "Reading the community pool from Elysium…";
+    if (communityPoolRemaining === 0n) {
+      return "The community pool is empty right now. Check back after a top-up.";
+    }
+    return `Eligible via ${eligibility.data?.bestChain}. One claim per wallet; the HYPE fee is set by the owner.`;
+  })();
 
   const amountLabel = community?.claimed
     ? "already claimed"
@@ -98,23 +112,28 @@ export function CommunityClaimCard() {
     if (!address) return { tone: "muted", label: "Wallet needed" };
     if (checking) return { tone: "brand", label: "Checking" };
     if (eligibility.isError) return { tone: "warn", label: "Unavailable" };
+    if (community?.claimed) return { tone: "mint", label: "Complete" };
     if (!thresholdEligible) return { tone: "muted", label: "Locked" };
     if (claimEligibility.isError) return { tone: "warn", label: "Unavailable" };
     if (!community) return { tone: "muted", label: "Syncing" };
-    if (community.claimed) return { tone: "mint", label: "Complete" };
     if (communityPoolRemaining === 0n) return { tone: "warn", label: "Empty" };
     return { tone: "mint", label: "Open" };
   })();
 
+  const needsRetry = eligibility.isError || claimEligibility.isError;
   const disabled =
     !IS_CONFIGURED ||
     busy ||
     phase === "success" ||
     paused ||
     checking ||
-    (Boolean(address) && !community && !claimEligibility.isError) ||
-    (community !== undefined &&
-      (communityPoolRemaining === 0n || community.claimed));
+    (!needsRetry &&
+      Boolean(address) &&
+      chainId === CLAIM_CHAIN_ID &&
+      (!thresholdEligible ||
+        !community ||
+        (community !== undefined &&
+          (communityPoolRemaining === 0n || community.claimed))));
 
   const buttonIcon = !address ? (
     <Wallet className="size-4" />
@@ -151,9 +170,7 @@ export function CommunityClaimCard() {
     }
 
     if (!thresholdEligible) {
-      document
-        .getElementById("eligibility")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      void eligibility.refetch();
       return false;
     }
 
@@ -162,7 +179,7 @@ export function CommunityClaimCard() {
       return false;
     }
 
-    if (!dataReady || paused || busy || phase === "success") return false;
+    if (!community || paused || busy || phase === "success") return false;
 
     return true;
   }
@@ -212,9 +229,12 @@ export function CommunityClaimCard() {
               ? `${formatCompact(communityPoolRemaining, decimals)}`
               : "—"
           }
-          label="ELYZ in pool"
+          label="ELYZ left"
         />
-        <ClaimStat value="0.001" label="ETH / HYPE" />
+        <ClaimStat
+          value={community ? formatAmount(communityFee, 18, 6) : "—"}
+          label="HYPE fee"
+        />
       </dl>
 
       <p className="mt-4 min-h-10 text-[11px] leading-5 text-paper-mute">

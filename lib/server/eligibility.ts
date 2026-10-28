@@ -15,6 +15,9 @@ export type EligibilityChainResult = {
   shortName: string;
   chainId: number;
   nativeSymbol: string;
+  minBalance: string;
+  thresholdWei: string;
+  thresholdFormatted: string;
   color: string;
   explorer: string;
   balance: string;
@@ -26,8 +29,6 @@ export type EligibilityChainResult = {
 export type EligibilityResult = {
   address: Address;
   eligible: boolean;
-  thresholdWei: string;
-  thresholdFormatted: string;
   chains: EligibilityChainResult[];
   bestChain: string | null;
   allUnavailable: boolean;
@@ -73,16 +74,8 @@ function clientFor(url: string) {
   return client;
 }
 
-function thresholdWei() {
-  const raw = process.env.ELIGIBILITY_THRESHOLD_WEI;
-  if (raw) {
-    try {
-      return BigInt(raw);
-    } catch {
-      // Fall through to the documented 0.001 native-token threshold.
-    }
-  }
-  return 10n ** 15n;
+function thresholdFor(minBalance: string) {
+  return parseUnits(minBalance, 18);
 }
 
 /**
@@ -134,20 +127,22 @@ async function balanceOnChain(chainKey: string, address: Address) {
 }
 
 async function runChecks(address: Address): Promise<EligibilityResult> {
-  const threshold = thresholdWei();
-
   const results = await Promise.allSettled(
     ELIGIBILITY_CHAINS.map((chain) => balanceOnChain(chain.key, address)),
   );
 
   const chains = ELIGIBILITY_CHAINS.map((chain, index) => {
     const result = results[index];
+    const required = thresholdFor(chain.minBalance);
     const meta = {
       key: chain.key,
       name: chain.name,
       shortName: chain.shortName,
       chainId: chain.chainId,
       nativeSymbol: chain.nativeSymbol,
+      minBalance: chain.minBalance,
+      thresholdWei: required.toString(),
+      thresholdFormatted: formatEther(required),
       color: chain.color,
       explorer: chain.explorer,
     };
@@ -167,7 +162,7 @@ async function runChecks(address: Address): Promise<EligibilityResult> {
       ...meta,
       balance: balance.toString(),
       balanceFormatted: formatEther(balance),
-      ok: balance >= threshold,
+      ok: balance >= required,
       error: null,
     };
   });
@@ -179,8 +174,6 @@ async function runChecks(address: Address): Promise<EligibilityResult> {
   return {
     address,
     eligible,
-    thresholdWei: threshold.toString(),
-    thresholdFormatted: formatEther(threshold),
     chains,
     bestChain,
     allUnavailable,

@@ -21,8 +21,8 @@ const STEPS = [
   {
     number: "02",
     icon: ShieldCheck,
-    title: "Hold the threshold",
-    body: "Hold at least 0.001 ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The check is read from your address and gates the claim buttons in the UI.",
+    title: "Check the community gate",
+    body: "The community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. NFT holder claims are free and skip this check.",
     href: "/#faq",
     linkLabel: "See the check",
   },
@@ -50,9 +50,9 @@ export function HowItWorks() {
           </h2>
         </div>
         <p className="max-w-sm text-xs leading-6 text-paper-mute">
-          No account, no email, no custody. The threshold is checked across five
-          chains in the UI; the claim contract enforces NFT ownership and
-          one-time community claims.
+          No account, no email, no custody. The community balance check runs
+          across five mainnet chains in the UI; the claim contract enforces NFT
+          ownership and one-time community claims.
         </p>
       </div>
 

@@ -14,12 +14,12 @@ import {
 export const metadata: Metadata = {
   title: "Claim Rewards",
   description:
-    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. Hold at least 0.001 ETH or HYPE on Hyperliquid, HyperEVM, Ethereum, Base, or Ink to unlock the claim.",
+    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. NFT claims are free; the community claim needs 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM.",
   keywords: [
     "Elyziuma claim",
     "claim ELYZ",
     "Elysium NFT rewards",
-    "0.001 ETH or HYPE eligibility",
+    "0.001 ETH or 0.05 HYPE eligibility",
     `Elysium ${CLAIM_CHAIN_ID}`,
   ],
   // The claim page is private for the collection owner until claims go public.
@@ -30,14 +30,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Elyziuma Claim Rewards",
     description:
-      "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. No sign-up, just your wallet.",
+      "Claim 10,000 ELYZ per NFT for free, and 1,000 ELYZ once per wallet from the community pool. No sign-up, just your wallet.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Elyziuma Claim Rewards",
     description:
-      "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. No sign-up, just your wallet.",
+      "Claim 10,000 ELYZ per NFT for free, and 1,000 ELYZ once per wallet from the community pool. No sign-up, just your wallet.",
   },
 };
 

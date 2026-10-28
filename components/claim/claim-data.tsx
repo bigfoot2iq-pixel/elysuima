@@ -10,16 +10,16 @@ import { toast } from "sonner";
 import { useAccount, useReadContracts } from "wagmi";
 import { useClaimEligibility } from "@/hooks/use-claim-eligibility";
 import { useEligibility } from "@/hooks/use-eligibility";
-import { tokenAbi } from "@/lib/abis";
+import { claimAbi, tokenAbi } from "@/lib/abis";
 import {
   CLAIM_ADDRESS,
+  CLAIM_CHAIN_ID,
   IS_CONFIGURED,
   SITE_URL,
+  TOKENOMICS,
   TOKEN_ADDRESS,
   TOKEN_FALLBACK,
 } from "@/lib/config";
-
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 
 function useClaimDataValue() {
   const { address, chainId, connector } = useAccount();
@@ -33,23 +33,31 @@ function useClaimDataValue() {
         address: TOKEN_ADDRESS,
         abi: tokenAbi,
         functionName: "symbol",
+        chainId: CLAIM_CHAIN_ID,
       },
       {
         address: TOKEN_ADDRESS,
         abi: tokenAbi,
         functionName: "decimals",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "NFT_POOL",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "COMMUNITY_POOL",
+        chainId: CLAIM_CHAIN_ID,
       },
       {
         address: TOKEN_ADDRESS,
         abi: tokenAbi,
-        functionName: "balanceOf",
-        args: [address ?? ZERO_ADDRESS],
-      },
-      {
-        address: TOKEN_ADDRESS,
-        abi: tokenAbi,
-        functionName: "balanceOf",
-        args: [CLAIM_ADDRESS],
+        functionName: "totalSupply",
+        chainId: CLAIM_CHAIN_ID,
       },
     ],
     query: {
@@ -62,8 +70,9 @@ function useClaimDataValue() {
   const [
     symbolResult,
     decimalsResult,
-    userBalanceResult,
-    claimBalanceResult,
+    nftPoolResult,
+    communityPoolResult,
+    totalSupplyResult,
   ] = tokenData ?? [];
 
   const symbol =
@@ -74,22 +83,28 @@ function useClaimDataValue() {
     decimalsResult?.status === "success"
       ? Number(decimalsResult.result)
       : TOKEN_FALLBACK.decimals;
-  const userBalance =
-    userBalanceResult?.status === "success"
-      ? (userBalanceResult.result as bigint)
-      : undefined;
-  const claimBalance =
-    claimBalanceResult?.status === "success"
-      ? (claimBalanceResult.result as bigint)
-      : undefined;
+  const nftPool =
+    nftPoolResult?.status === "success"
+      ? (nftPoolResult.result as bigint)
+      : TOKENOMICS.nftPool;
+  const communityPool =
+    communityPoolResult?.status === "success"
+      ? (communityPoolResult.result as bigint)
+      : TOKENOMICS.communityPool;
+  const totalSupply =
+    totalSupplyResult?.status === "success"
+      ? (totalSupplyResult.result as bigint)
+      : TOKENOMICS.totalSupply;
+  const ownerAllocation =
+    totalSupply > nftPool + communityPool
+      ? totalSupply - nftPool - communityPool
+      : TOKENOMICS.ownerAllocation;
 
   const data = claimEligibility.data;
   const nft = data?.nft;
   const community = data?.community;
   const paused = data?.paused ?? false;
   const thresholdEligible = eligibility.data?.eligible ?? false;
-  const checking =
-    Boolean(address) && eligibility.isLoading && !eligibility.data;
 
   function refresh() {
     void claimEligibility.refetch();
@@ -138,10 +153,11 @@ function useClaimDataValue() {
     paused,
     symbol,
     decimals,
-    userBalance,
-    claimBalance,
+    totalSupply,
+    nftPool,
+    communityPool,
+    ownerAllocation,
     thresholdEligible,
-    checking,
     addedToken,
     addToken,
     refresh,

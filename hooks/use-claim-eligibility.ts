@@ -29,8 +29,8 @@ export function useClaimEligibility(address?: Address) {
 
       return payload;
     },
-    staleTime: 10_000,
-    refetchInterval: 15_000,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: true,
     retry: 1,
   });

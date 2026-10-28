@@ -6,6 +6,9 @@ export type EligibilityChain = {
   shortName: string;
   chainId: number;
   nativeSymbol: string;
+  minBalance: string;
+  thresholdWei: string;
+  thresholdFormatted: string;
   color: string;
   explorer: string;
   balance: string;
@@ -17,8 +20,6 @@ export type EligibilityChain = {
 export type EligibilityResponse = {
   address: Address;
   eligible: boolean;
-  thresholdWei: string;
-  thresholdFormatted: string;
   chains: EligibilityChain[];
   bestChain: string | null;
   allUnavailable: boolean;

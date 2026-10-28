@@ -5,19 +5,29 @@ import { LINKS } from "@/lib/config";
 
 const FAQS = [
   {
-    question: "Why the 0.001 threshold?",
+    question: "How much can I claim?",
     answer:
-      "The threshold is a cheap anti-sybil check. It keeps bots out without asking for meaningful capital. Any one of the five supported chains qualifies, so you do not need to split funds across them. The check is a UI gate; the claim contract itself does not read balances on other chains.",
+      "Each Elyziuma NFT pays 10,000 ELYZ once, and every wallet can claim 1,000 ELYZ once from the community pool. The two rewards are independent: NFT holders can also claim the community reward, and a wallet that already claimed 1,000 ELYZ can still claim any unclaimed NFT it later receives.",
   },
   {
-    question: "How many claims can I make?",
+    question: "Why does the community claim need a balance check?",
     answer:
-      "Each NFT can claim 10,000 ELYZ once. A wallet can claim 1,000 ELYZ from the community pool once. If you hold several NFTs, you can claim them in batches of up to 50.",
+      "The 1,000 ELYZ community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. NFT holder claims are free and skip this check. It is a UI anti-sybil gate; the claim contract does not read balances on other chains.",
   },
   {
-    question: "What gas and fees do I pay?",
+    question: "What happens when an NFT is transferred?",
     answer:
-      "Gas is paid in HYPE, the native currency of Elysium. NFT holder claims have no protocol fee. The community claim has an admin-set HYPE fee, shown on its card before you submit. Bridge a small amount of HYPE so your wallet can cover gas and any community fee.",
+      "The reward belongs to the NFT id, not the wallet. If it has not claimed yet, the new owner can claim it. Once claimed, it stays consumed forever and cannot be claimed again after any transfer.",
+  },
+  {
+    question: "What fees do I pay?",
+    answer:
+      "Gas is paid in HYPE. NFT holder claims have no protocol fee. The community claim has an owner-set HYPE fee shown on its card, plus gas.",
+  },
+  {
+    question: "What is the ELYZ supply?",
+    answer:
+      "34,330,000 ELYZ: 22,220,000 reserved for 2,222 NFT holders, 11,110,000 for 11,110 community claims, and 1,000,000 allocated to the owner at deployment.",
   },
   {
     question: "Is the claim custodial?",
@@ -50,7 +60,8 @@ export function ClaimContent() {
               <span className="font-mono text-paper">10,000 ELYZ per NFT</span>{" "}
               for free. Every wallet can claim{" "}
               <span className="font-mono text-paper">1,000 ELYZ once</span> from
-              the community pool for an admin-set HYPE fee.
+              the community pool for an owner-set HYPE fee. The two claims are
+              independent.
             </p>
           </div>
 

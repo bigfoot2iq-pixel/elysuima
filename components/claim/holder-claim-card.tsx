@@ -4,7 +4,6 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useSwitchChain } from "wagmi";
 import {
   Loader2,
-  LockKeyhole,
   RefreshCw,
   Sparkles,
   Wallet,
@@ -35,10 +34,7 @@ export function HolderClaimCard() {
     symbol,
     decimals,
     paused,
-    eligibility,
     claimEligibility,
-    thresholdEligible,
-    checking,
     refresh,
   } = useClaimData();
   const { openConnectModal } = useConnectModal();
@@ -61,10 +57,11 @@ export function HolderClaimCard() {
   const hasMoreNfts = unclaimedCount > claimableIds.length;
   const nftBalance = BigInt(nft?.balance ?? "0");
   const claimedNftCount = nft?.claimedTokenIds.length ?? 0;
+  const checking =
+    Boolean(address) && claimEligibility.isLoading && !claimEligibility.data;
 
   const busy =
     phase === "authorizing" || phase === "submitting" || phase === "pending";
-  const dataReady = Boolean(data);
 
   const label = (() => {
     if (!IS_CONFIGURED) return "Claim not live yet";
@@ -77,43 +74,58 @@ export function HolderClaimCard() {
     }
     if (phase === "success") return "Claimed";
     if (paused) return "Claims paused";
-    if (checking) return "Checking eligibility…";
-    if (eligibility.isError) return "Retry eligibility";
-    if (!thresholdEligible) return "Not eligible";
-    if (claimEligibility.isError) return "Retry claim data";
-    if (!nft) return "Loading NFTs…";
-    if (nftBalance === 0n) return "No NFTs in wallet";
+    if (checking) return "Checking your NFTs…";
+    if (claimEligibility.isError) return "Retry NFT check";
+    if (!nft) return "Checking your NFTs…";
+    if (nftBalance === 0n) return "No NFTs to claim";
     if (unclaimedCount === 0) return "All NFT rewards claimed";
     if (nftPoolRemaining === 0n) return "NFT pool empty";
-    if (hasMoreNfts)
-      return `Claim ${formatAmount(claimableBatchAmount, decimals, 0)} ${symbol}`;
-    return `Claim ${formatAmount(nftClaimable, decimals, 0)} ${symbol}`;
+
+    const amount = hasMoreNfts ? claimableBatchAmount : nftClaimable;
+    return `Claim ${formatAmount(amount, decimals, 0)} ${symbol}`;
   })();
 
-  const detail = !nft
-    ? "Reading your NFT ownership from the collection…"
-    : nftBalance === 0n
-      ? "No Elyziuma NFTs in this wallet yet. Mint one to unlock the holder reward."
-      : unclaimedCount === 0
-        ? `All ${formatAmount(nftBalance, 0, 0)} NFT reward${nftBalance === 1n ? "" : "s"} already claimed.`
-        : hasMoreNfts
-          ? `${formatAmount(
-              BigInt(claimableIds.length),
-              0,
-              0,
-            )} of ${formatAmount(
-              BigInt(unclaimedCount),
-              0,
-              0,
-            )} ready rewards claim in one batch.`
-          : "The reward belongs to the NFT. Claim it before you transfer the token.";
+  const detail = (() => {
+    if (!address) return "Connect the wallet holding your Elyziuma NFTs.";
+    if (checking) return "Reading your Elyziuma NFT balance on Elysium…";
+    if (claimEligibility.isError) {
+      return "The NFT check could not be reached. Retry to load your holdings.";
+    }
+    if (!nft) return "Checking your Elyziuma NFT holdings…";
+    if (nftBalance === 0n) {
+      return "No Elyziuma NFTs in this wallet yet. Mint one to unlock 10,000 ELYZ.";
+    }
+    if (unclaimedCount === 0) {
+      return `All ${formatAmount(nftBalance, 0, 0)} NFT reward${
+        nftBalance === 1n ? "" : "s"
+      } already claimed. A claimed NFT stays claimed after transfer.`;
+    }
+    if (hasMoreNfts) {
+      return `${formatAmount(
+        BigInt(claimableIds.length),
+        0,
+        0,
+      )} of ${formatAmount(
+        BigInt(unclaimedCount),
+        0,
+        0,
+      )} ready rewards are included in this claim. Up to ${maxBatch} NFTs are paid per transaction.`;
+    }
+    return `You hold ${formatAmount(
+      nftBalance,
+      0,
+      0,
+    )} Elyziuma NFT${
+      nftBalance === 1n ? "" : "s"
+    }. Each eligible NFT pays 10,000 ELYZ once.`;
+  })();
 
   const amountLabel = !nft
-    ? "claimable now"
+    ? "checking holdings"
     : nftBalance === 0n
       ? "no NFTs held"
       : unclaimedCount === 0
-        ? "already claimed"
+        ? "all rewards claimed"
         : "claimable now";
 
   const status: { tone: ClaimTone; label: string } = (() => {
@@ -121,10 +133,8 @@ export function HolderClaimCard() {
     if (paused) return { tone: "danger", label: "Paused" };
     if (phase === "success") return { tone: "mint", label: "Claimed" };
     if (!address) return { tone: "muted", label: "Wallet needed" };
-    if (checking) return { tone: "brand", label: "Checking" };
-    if (eligibility.isError) return { tone: "warn", label: "Unavailable" };
-    if (!thresholdEligible) return { tone: "muted", label: "Locked" };
     if (claimEligibility.isError) return { tone: "warn", label: "Unavailable" };
+    if (checking) return { tone: "brand", label: "Checking" };
     if (!nft) return { tone: "muted", label: "Syncing" };
     if (nftBalance === 0n) return { tone: "muted", label: "No NFTs" };
     if (unclaimedCount === 0) return { tone: "mint", label: "Complete" };
@@ -146,10 +156,8 @@ export function HolderClaimCard() {
 
   const buttonIcon = !address ? (
     <Wallet className="size-4" />
-  ) : eligibility.isError || claimEligibility.isError ? (
+  ) : claimEligibility.isError ? (
     <RefreshCw className="size-4" />
-  ) : !thresholdEligible ? (
-    <LockKeyhole className="size-4" />
   ) : !nft ? (
     <Loader2 className="size-4 animate-spin" />
   ) : undefined;
@@ -173,24 +181,12 @@ export function HolderClaimCard() {
       return false;
     }
 
-    if (eligibility.isError) {
-      void eligibility.refetch();
-      return false;
-    }
-
-    if (!thresholdEligible) {
-      document
-        .getElementById("eligibility")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return false;
-    }
-
     if (claimEligibility.isError) {
       void claimEligibility.refetch();
       return false;
     }
 
-    if (!dataReady || paused || busy || phase === "success") return false;
+    if (!nft || paused || busy || phase === "success") return false;
 
     return true;
   }
@@ -238,12 +234,12 @@ export function HolderClaimCard() {
           label="NFTs held"
         />
         <ClaimStat
-          value={nft ? formatAmount(BigInt(claimedNftCount), 0, 0) : "—"}
-          label="Claimed"
-        />
-        <ClaimStat
           value={nft ? formatAmount(BigInt(unclaimedCount), 0, 0) : "—"}
           label="Ready"
+        />
+        <ClaimStat
+          value={nft ? formatAmount(BigInt(claimedNftCount), 0, 0) : "—"}
+          label="Claimed"
         />
       </dl>
 

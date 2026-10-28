@@ -157,7 +157,7 @@ export default async function OpengraphImage() {
               <span style={{ color: "#2d7388" }}>·</span>
               <span>1K PER WALLET</span>
               <span style={{ color: "#2d7388" }}>·</span>
-              <span>0.001 ETH / HYPE · 5 CHAINS</span>
+              <span>0.001 ETH / 0.05 HYPE · 5 CHAINS</span>
             </div>
           </div>
 

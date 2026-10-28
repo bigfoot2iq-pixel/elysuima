@@ -43,6 +43,22 @@ export const TOKEN_FALLBACK = {
   decimals: 18,
 } as const;
 
+/**
+ * Product tokenomics in token base units. The claim page reads the live values
+ * from the contracts and uses these only while the contracts are not
+ * configured or a read is unavailable.
+ */
+export const TOKENOMICS = {
+  totalSupply: 34_330_000n * 10n ** 18n,
+  nftPool: 22_220_000n * 10n ** 18n,
+  communityPool: 11_110_000n * 10n ** 18n,
+  ownerAllocation: 1_000_000n * 10n ** 18n,
+  nftReward: 10_000n * 10n ** 18n,
+  communityReward: 1_000n * 10n ** 18n,
+  nftSupply: 2_222n,
+  communityWallets: 11_110n,
+} as const;
+
 export const LINKS = {
   bridge: "https://elyspump.com",
   elyspump: "https://elyspump.com/#/",

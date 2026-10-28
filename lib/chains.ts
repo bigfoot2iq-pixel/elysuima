@@ -162,12 +162,16 @@ export function getElysiumViemChain(chainId: number) {
 }
 
 /**
- * Chains that can satisfy the claim threshold.
+ * Chains that can satisfy the community claim check.
  *
  * Hyperliquid (HyperCore) and HyperEVM share the same HYPE token, but they are
  * different balance surfaces: HyperCore spot balances are read from the
  * Hyperliquid info API, while HyperEVM balances are read over JSON-RPC. Both
  * rows are shown so the check describes exactly where a balance was found.
+ *
+ * `minBalance` is the amount a wallet must hold on that chain. NFT holder
+ * claims are free and do not use this check; only the 1,000 ELYZ community
+ * claim does.
  */
 export const ELIGIBILITY_CHAINS = [
   {
@@ -176,6 +180,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "HYPE",
     chainId: 999,
     nativeSymbol: "HYPE",
+    minBalance: "0.05",
     color: "#97FCE4",
     explorer: "https://app.hyperliquid.xyz/explorer",
   },
@@ -185,6 +190,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "HYPE",
     chainId: 999,
     nativeSymbol: "HYPE",
+    minBalance: "0.05",
     color: "#50D2C1",
     explorer: "https://hyperevmscan.io",
   },
@@ -194,6 +200,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "ETH",
     chainId: 1,
     nativeSymbol: "ETH",
+    minBalance: "0.001",
     color: "#627EEA",
     explorer: "https://etherscan.io",
   },
@@ -203,6 +210,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "BASE",
     chainId: 8453,
     nativeSymbol: "ETH",
+    minBalance: "0.001",
     color: "#0052FF",
     explorer: "https://basescan.org",
   },
@@ -212,6 +220,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "INK",
     chainId: 57073,
     nativeSymbol: "ETH",
+    minBalance: "0.001",
     color: "#7132F5",
     explorer: "https://explorer.inkonchain.com",
   },

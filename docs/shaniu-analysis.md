@@ -73,14 +73,14 @@ The live successor had `airdropTotal = 214,823e18` and `airdropRemaining = 0` at
 
 | Shaniu | Elyziuma v2 | Reason |
 | --- | --- | --- |
-| 21M fixed supply | 50M: 22.22M NFT pool + 22.22M community pool + 5.56M owner allocation | Product tokenomics |
-| 90% claim pool / 10% owner | 44.44% NFT / 44.44% community / 11.12% owner | Product tokenomics |
+| 21M fixed supply | 34.33M: 22.22M NFT pool + 11.11M community pool + 1M owner allocation | Product tokenomics |
+| 90% claim pool / 10% owner | 64.73% NFT / 32.36% community / 2.91% owner | Product tokenomics |
 | One claim per address, ever | One 1,000 ELYZ community claim per wallet + one 10,000 ELYZ claim per NFT | Explicit product requirement |
 | Random lottery amount | Fixed 10,000 per NFT / 1,000 per wallet | Explicit product requirement |
 | $0.20 payable claim | Owner-set HYPE fee on the community claim; NFT claims are free | Product requirement |
-| Binance Agent ID gate | UI-only 0.001 native-token threshold | The contract does not read other chains |
+| Binance Agent ID gate | Community-only UI balance check (0.001 ETH / 0.05 HYPE) | The contract does not read other chains |
 | Single contract, owner renounced | Separate token + claim contract, owner controls | Allows a community fee, pause, fee withdrawal, and surplus withdrawal |
 | Final-claim sweep | No sweep; underfunded claims revert | Keeps the per-NFT and per-wallet amounts exact |
 | `block.prevrandao` randomness | No randomness | Avoids validator-influenced payouts |
 
-The result is a two-pool claim model built for Elyziuma rather than a literal Shaniu copy. The threshold remains a UI anti-bot check only.
+The result is a two-pool claim model built for Elyziuma rather than a literal Shaniu copy. The balance check remains a community-claim UI anti-bot gate only.

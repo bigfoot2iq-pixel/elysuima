@@ -7,23 +7,25 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ElyziumaToken} from "../src/ElyziumaToken.sol";
 import {ElyziumaClaim} from "../src/ElyziumaClaim.sol";
 
-/// @notice Deploys ElyziumaToken and ElyziumaClaim, then funds both claim pools.
+/// @notice Deploys ElyziumaToken and ElyziumaClaim, then funds both claim pools
+///         and the owner allocation.
 /// @dev Required env:
 ///      DEPLOYER_PRIVATE_KEY
 ///      NFT_ADDRESS (the ElyziumaNFT collection on the same chain)
 ///
 ///      Optional:
-///      OWNER_ALLOCATION_RECIPIENT   default deployer
+///      OWNER_ALLOCATION_RECIPIENT   default CLAIM_OWNER
 ///      CLAIM_OWNER                  default deployer
 ///      FEE_RECIPIENT                default deployer
 ///      COMMUNITY_CLAIM_FEE          default 0
 contract Deploy is Script {
-    // Fixed tokenomics: 50M total = 22.22M NFT pool + 22.22M community pool +
-    // 5.56M owner allocation. These must match ElyziumaClaim's pool constants.
-    uint256 internal constant TOTAL_SUPPLY = 50_000_000e18;
+    // Fixed tokenomics: 34,330,000 total = 22,220,000 NFT pool +
+    // 11,110,000 community pool + 1,000,000 owner allocation. These must match
+    // ElyziumaClaim's pool constants.
+    uint256 internal constant TOTAL_SUPPLY = 34_330_000e18;
     uint256 internal constant NFT_ALLOCATION = 22_220_000e18;
-    uint256 internal constant COMMUNITY_ALLOCATION = 22_220_000e18;
-    uint256 internal constant OWNER_ALLOCATION = 5_560_000e18;
+    uint256 internal constant COMMUNITY_ALLOCATION = 11_110_000e18;
+    uint256 internal constant OWNER_ALLOCATION = 1_000_000e18;
 
     function run() external {
         uint256 deployerPk = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -32,8 +34,8 @@ contract Deploy is Script {
         address nftAddress = vm.envAddress("NFT_ADDRESS");
         require(nftAddress.code.length > 0, "NFT_ADDRESS has no code");
 
-        address ownerRecipient = vm.envOr("OWNER_ALLOCATION_RECIPIENT", deployer);
         address claimOwner = vm.envOr("CLAIM_OWNER", deployer);
+        address ownerRecipient = vm.envOr("OWNER_ALLOCATION_RECIPIENT", claimOwner);
         address feeRecipient = vm.envOr("FEE_RECIPIENT", deployer);
         uint256 communityClaimFee = vm.envOr("COMMUNITY_CLAIM_FEE", uint256(0));
 

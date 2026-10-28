@@ -10,10 +10,16 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Elyziuma Claim
-/// @notice Two one-time reward pools funded at deployment:
+/// @notice Two independent one-time reward pools funded at deployment:
 ///
 ///   - NFT holders: {NFT_REWARD} ELYZ per NFT, claimable once per token id.
 ///   - Community: {COMMUNITY_REWARD} ELYZ per wallet, claimable once per wallet.
+///
+/// A reward belongs to the token id, not to a wallet. Once an NFT has claimed,
+/// the claim is consumed forever, even if the NFT is later transferred. An
+/// unclaimed NFT can still be claimed by whoever holds it at claim time. The two
+/// pools are independent, so a holder can claim the community reward as well and
+/// a community claimant can later claim any unclaimed NFTs they hold.
 ///
 /// NFT claims are free. Community claims charge an owner-set HYPE fee. Fees
 /// accrue in the contract and are withdrawn by the owner to {feeRecipient}. The
@@ -21,8 +27,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /// tokens above the outstanding NFT + community liabilities.
 ///
 /// @dev The cross-chain balance threshold used by the website is deliberately
-///      not enforced here. It is a UI gate only, so a direct contract call that
-///      holds the required NFT or has not claimed the community reward succeeds.
+///      not enforced here. It is a community-claim UI gate only, so a direct
+///      contract call that holds the required NFT or has not claimed the
+///      community reward succeeds.
 contract ElyziumaClaim is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -36,8 +43,8 @@ contract ElyziumaClaim is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Total ELYZ reserved for NFT holders (2,222 NFTs x 10,000).
     uint256 public constant NFT_POOL = 22_220_000e18;
 
-    /// @notice Total ELYZ reserved for the community (22,220 wallets x 1,000).
-    uint256 public constant COMMUNITY_POOL = 22_220_000e18;
+    /// @notice Total ELYZ reserved for the community (11,110 wallets x 1,000).
+    uint256 public constant COMMUNITY_POOL = 11_110_000e18;
 
     /// @notice Maximum number of NFT ids that can be claimed in one transaction.
     uint256 public constant MAX_BATCH = 50;
@@ -97,6 +104,12 @@ contract ElyziumaClaim is Ownable2Step, Pausable, ReentrancyGuard {
     error NoSurplus();
     error FeeTransferFailed();
 
+    /// @param token_ ELYZ token that funds both reward pools.
+    /// @param nft_ ElyziumaNFT collection used to verify holder claims.
+    ///        Immutable for the life of this claim contract.
+    /// @param communityClaimFee_ HYPE fee for one community claim. May be zero.
+    /// @param feeRecipient_ Receives withdrawn community claim fees.
+    /// @param initialOwner Address that can configure, pause, and withdraw fees.
     constructor(
         IERC20 token_,
         IERC721 nft_,

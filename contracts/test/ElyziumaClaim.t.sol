@@ -20,10 +20,10 @@ contract ElyziumaClaimTest is Test {
     address internal bob = makeAddr("bob");
     address internal carol = makeAddr("carol");
 
-    uint256 internal constant SUPPLY = 50_000_000e18;
+    uint256 internal constant SUPPLY = 34_330_000e18;
     uint256 internal constant NFT_POOL = 22_220_000e18;
-    uint256 internal constant COMMUNITY_POOL = 22_220_000e18;
-    uint256 internal constant OWNER_ALLOCATION = 5_560_000e18;
+    uint256 internal constant COMMUNITY_POOL = 11_110_000e18;
+    uint256 internal constant OWNER_ALLOCATION = 1_000_000e18;
     uint256 internal constant NFT_REWARD = 10_000e18;
     uint256 internal constant COMMUNITY_REWARD = 1_000e18;
     uint256 internal constant COMMUNITY_FEE = 0.005 ether;
@@ -72,6 +72,13 @@ contract ElyziumaClaimTest is Test {
 
     function testAllocationsSumToSupply() public pure {
         assertEq(NFT_POOL + COMMUNITY_POOL + OWNER_ALLOCATION, SUPPLY);
+    }
+
+    function testPoolsMatchProductTokenomics() public view {
+        // 2,222 NFTs x 10,000 ELYZ and 11,110 wallets x 1,000 ELYZ.
+        assertEq(NFT_POOL / NFT_REWARD, nft.MAX_SUPPLY());
+        assertEq(COMMUNITY_POOL / COMMUNITY_REWARD, 11_110);
+        assertEq(OWNER_ALLOCATION, 1_000_000e18);
     }
 
     function testInitialState() public view {
@@ -302,6 +309,38 @@ contract ElyziumaClaimTest is Test {
 
         assertEq(claim.nftPoolRemaining(), NFT_POOL);
         assertEq(claim.nftClaimedTotal(), 0);
+    }
+
+    function testNftHolderCanAlsoClaimCommunity() public {
+        uint256[] memory ids = _ids(1);
+
+        vm.prank(alice);
+        claim.claimNft(ids);
+        vm.prank(alice);
+        claim.claimCommunity{value: COMMUNITY_FEE}();
+
+        assertEq(token.balanceOf(alice), NFT_REWARD + COMMUNITY_REWARD);
+        assertTrue(claim.nftClaimed(1));
+        assertTrue(claim.communityClaimed(alice));
+    }
+
+    function testCommunityClaimerCanAlsoClaimNftAfterReceivingOne() public {
+        vm.prank(bob);
+        claim.claimCommunity{value: COMMUNITY_FEE}();
+
+        // Alice transfers an unclaimed NFT to Bob after Bob already claimed the
+        // community reward. The two pools are independent, so the NFT reward is
+        // still Bob's to claim.
+        vm.prank(alice);
+        nft.transferFrom(alice, bob, 2);
+
+        uint256[] memory ids = _ids(2);
+        vm.prank(bob);
+        claim.claimNft(ids);
+
+        assertEq(token.balanceOf(bob), COMMUNITY_REWARD + NFT_REWARD);
+        assertTrue(claim.communityClaimed(bob));
+        assertTrue(claim.nftClaimed(2));
     }
 
     // ---- Pause --------------------------------------------------------------

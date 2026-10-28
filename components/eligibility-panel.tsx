@@ -36,12 +36,17 @@ function ChainRow({
     >
       <ChainIcon chainKey={chain.key} size={28} />
 
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="truncate text-[13px] font-medium text-paper">
-          {chain.name}
-        </span>
-        <span className="hidden rounded-full border border-paper/[0.08] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-paper-mute sm:inline">
-          {chain.nativeSymbol}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="truncate text-[13px] font-medium text-paper">
+            {chain.name}
+          </span>
+          <span className="hidden rounded-full border border-paper/[0.08] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-paper-mute sm:inline">
+            {chain.nativeSymbol}
+          </span>
+        </div>
+        <span className="mt-0.5 font-mono text-[9px] text-paper-mute">
+          min {chain.minBalance} {chain.nativeSymbol}
         </span>
       </div>
 
@@ -89,7 +94,7 @@ export function EligibilityPanel() {
       return {
         tone: "muted" as const,
         title: "Connect to check",
-        body: "We'll look up your native balance on all five chains.",
+        body: "We'll look up your ETH and HYPE balances on the supported mainnet chains.",
       };
     }
     if (eligibility.isLoading && !data) {
@@ -117,13 +122,13 @@ export function EligibilityPanel() {
       return {
         tone: "mint" as const,
         title: `Eligible via ${data.bestChain}`,
-        body: "Your wallet holds at least 0.001 ETH or HYPE on a supported chain.",
+        body: "This wallet can claim the 1,000 ELYZ community reward.",
       };
     }
     return {
       tone: "muted" as const,
       title: "Not eligible yet",
-      body: "Hold at least 0.001 ETH or HYPE on any one of these five chains.",
+      body: "The community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. NFT holder claims do not need this check.",
     };
   })();
 
@@ -144,7 +149,7 @@ export function EligibilityPanel() {
         <div className="flex items-center gap-2">
           <ShieldCheck className="size-4 text-brand" />
           <p className="text-[9px] uppercase tracking-[0.22em] text-paper-dim">
-            Eligibility
+            Community eligibility
           </p>
         </div>
         <button
@@ -162,8 +167,12 @@ export function EligibilityPanel() {
       </div>
 
       <h2 className="mt-3 text-lg font-semibold tracking-[-0.02em] text-paper sm:text-xl">
-        One threshold, five chains.
+        The community claim check.
       </h2>
+      <p className="mt-1.5 text-[11px] leading-5 text-paper-mute">
+        Only the 1,000 ELYZ community claim uses this balance check. NFT holder
+        claims are free and never gated by it.
+      </p>
 
       <div className="mt-4 space-y-1.5">
         {ELIGIBILITY_CHAINS.map((chain) => (

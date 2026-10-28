@@ -422,6 +422,13 @@ export const nftReadAbi = [
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
   },
+  {
+    type: "function",
+    name: "tokensOfOwner",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+  },
 ] as const;
 
 export const nftClaimedEvent = parseAbiItem(
