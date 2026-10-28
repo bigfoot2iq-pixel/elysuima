@@ -8,12 +8,14 @@ import {
   RefreshCw,
   Search,
   Sparkles,
+  TriangleAlert,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getElysiumChain } from "@/lib/chains";
 import { CLAIM_CHAIN_ID, IS_CONFIGURED } from "@/lib/config";
 import { formatAmount } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useClaimFlow } from "@/hooks/use-claim-flow";
 import { useClaimData } from "./claim-data";
 import {
@@ -64,8 +66,11 @@ export function HolderClaimCard() {
   const nftBalance = BigInt(nft?.balance ?? "0");
   const claimedNftCount = nft?.claimedTokenIds.length ?? 0;
   const checking =
-    Boolean(address) && hasChecked && claimEligibility.isFetching;
-  const showData = Boolean(hasChecked && !checking && nft);
+    Boolean(address) &&
+    hasChecked &&
+    claimEligibility.isFetching &&
+    !claimEligibility.data;
+  const showSummary = Boolean(hasChecked && !checking && nft);
 
   const busy =
     phase === "authorizing" || phase === "submitting" || phase === "pending";
@@ -93,11 +98,6 @@ export function HolderClaimCard() {
   })();
 
   const detail = (() => {
-    if (!address) return "Connect the wallet holding your Elyziuma NFTs.";
-    if (!hasChecked) {
-      return "Check this wallet's Elyziuma NFT holdings on Elysium to see what you can claim.";
-    }
-    if (checking) return "Reading your Elyziuma NFT holdings on Elysium…";
     if (claimEligibility.isError) {
       return "The NFT check could not be reached. Retry to load your holdings.";
     }
@@ -130,17 +130,64 @@ export function HolderClaimCard() {
     }. Each eligible NFT pays 10,000 ELYZ once.`;
   })();
 
-  const amountLabel = !hasChecked
-    ? "eligibility not checked"
-    : checking
-      ? "checking holdings"
-      : !nft
-        ? "no holdings data"
-        : nftBalance === 0n
-          ? "0 NFTs held"
-          : unclaimedCount === 0
-            ? "all rewards claimed"
-            : "claimable now";
+  const amountLabel = !nft
+    ? "no holdings data"
+    : nftBalance === 0n
+      ? "0 NFTs held"
+      : unclaimedCount === 0
+        ? "all rewards claimed"
+        : "claimable now";
+
+  // Unchecked, checking, and error states get a dedicated simple panel instead
+  // of the amount and stats layout, which only makes sense once data is loaded.
+  const checkState = (() => {
+    if (!IS_CONFIGURED) {
+      return {
+        tone: "border-paper/15 bg-paper/[0.04] text-paper-mute",
+        icon: <Sparkles className="size-5" />,
+        title: "Holder claim is not live yet",
+        body: "The claim contract has not been configured for this deployment.",
+      };
+    }
+    if (!address) {
+      return {
+        tone: "border-brand/25 bg-brand/10 text-brand",
+        icon: <Wallet className="size-5" />,
+        title: "Connect to check your rewards",
+        body: "Connect the wallet holding your Elyziuma NFTs. Each eligible NFT pays 10,000 ELYZ once.",
+      };
+    }
+    if (checking) {
+      return {
+        tone: "border-brand/25 bg-brand/10 text-brand",
+        icon: <Loader2 className="size-5 animate-spin" />,
+        title: "Checking your NFTs…",
+        body: "Reading this wallet's Elyziuma NFT holdings on Elysium.",
+      };
+    }
+    if (claimEligibility.isError) {
+      return {
+        tone: "border-warn/30 bg-warn/10 text-warn",
+        icon: <TriangleAlert className="size-5" />,
+        title: "We couldn't check this wallet",
+        body: "The NFT lookup didn't respond. Retry in a moment — nothing was signed.",
+      };
+    }
+    if (hasChecked && !nft) {
+      return {
+        tone: "border-warn/30 bg-warn/10 text-warn",
+        icon: <TriangleAlert className="size-5" />,
+        title: "No holdings returned",
+        body: "The check finished without data. Retry to try again.",
+      };
+    }
+    return {
+      tone: "border-brand/25 bg-brand/10 text-brand",
+      icon: <Search className="size-5" />,
+      title: "Check your NFT rewards",
+      body: "We'll read the Elyziuma NFTs held by this wallet and show what's claimable. Nothing is signed or approved.",
+    };
+  })();
 
   const status: { tone: ClaimTone; label: string } = (() => {
     if (!IS_CONFIGURED) return { tone: "muted", label: "Preview" };
@@ -246,38 +293,59 @@ export function HolderClaimCard() {
         <ClaimStatusBadge tone={status.tone}>{status.label}</ClaimStatusBadge>
       </div>
 
-      <div className="mt-6">
-        <div className="flex items-end gap-2">
-          <span className="tabular truncate font-mono text-[clamp(2.6rem,6vw,3.8rem)] font-semibold leading-[0.85] tracking-[-0.07em] text-paper">
-            {showData ? formatAmount(nftClaimable, decimals, 0) : "—"}
+      {showSummary ? (
+        <>
+          <div className="mt-6">
+            <div className="flex items-end gap-2">
+              <span className="tabular truncate font-mono text-[clamp(2.6rem,6vw,3.8rem)] font-semibold leading-[0.85] tracking-[-0.07em] text-paper">
+                {formatAmount(nftClaimable, decimals, 0)}
+              </span>
+              <span className="mb-1 shrink-0 text-[11px] font-bold tracking-[0.2em] text-brand">
+                {symbol}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-paper-dim">{amountLabel}</p>
+          </div>
+
+          <dl className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-paper/[0.08] bg-paper/[0.06]">
+            <ClaimStat
+              value={formatAmount(nftBalance, 0, 0)}
+              label="NFTs held"
+            />
+            <ClaimStat
+              value={formatAmount(BigInt(unclaimedCount), 0, 0)}
+              label="Ready"
+            />
+            <ClaimStat
+              value={formatAmount(BigInt(claimedNftCount), 0, 0)}
+              label="Claimed"
+            />
+          </dl>
+
+          <p className="mt-4 min-h-10 text-[11px] leading-5 text-paper-mute">
+            {detail}
+          </p>
+        </>
+      ) : (
+        <div className="mt-6 flex flex-1 flex-col items-center justify-center py-6 text-center">
+          <span
+            className={cn(
+              "flex size-12 items-center justify-center rounded-full border",
+              checkState.tone,
+            )}
+          >
+            {checkState.icon}
           </span>
-          <span className="mb-1 shrink-0 text-[11px] font-bold tracking-[0.2em] text-brand">
-            {symbol}
-          </span>
+          <div aria-live="polite" className="mt-4">
+            <p className="text-sm font-semibold tracking-[-0.01em] text-paper">
+              {checkState.title}
+            </p>
+            <p className="mx-auto mt-1.5 max-w-[32ch] text-[11px] leading-5 text-paper-dim">
+              {checkState.body}
+            </p>
+          </div>
         </div>
-        <p className="mt-2 text-xs text-paper-dim">{amountLabel}</p>
-      </div>
-
-      <dl className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-paper/[0.08] bg-paper/[0.06]">
-        <ClaimStat
-          value={showData ? formatAmount(nftBalance, 0, 0) : "—"}
-          label="NFTs held"
-        />
-        <ClaimStat
-          value={showData ? formatAmount(BigInt(unclaimedCount), 0, 0) : "—"}
-          label="Ready"
-        />
-        <ClaimStat
-          value={
-            showData ? formatAmount(BigInt(claimedNftCount), 0, 0) : "—"
-          }
-          label="Claimed"
-        />
-      </dl>
-
-      <p className="mt-4 min-h-10 text-[11px] leading-5 text-paper-mute">
-        {detail}
-      </p>
+      )}
 
       <div className="mt-auto">
         <button
