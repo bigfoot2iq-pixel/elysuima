@@ -65,6 +65,13 @@ export function HolderClaimCard() {
   const hasMoreNfts = unclaimedCount > claimableIds.length;
   const nftBalance = BigInt(nft?.balance ?? "0");
   const claimedNftCount = nft?.claimedTokenIds.length ?? 0;
+  // The contract caps each claim at maxBatch NFTs, so the headline number must
+  // be the amount this transaction will actually pay, not the full total.
+  const claimAmount = hasMoreNfts ? claimableBatchAmount : nftClaimable;
+  const remainingCount = Math.max(unclaimedCount - claimableIds.length, 0);
+  const remainingAmount = hasMoreNfts
+    ? nftClaimable - claimableBatchAmount
+    : 0n;
   const checking =
     Boolean(address) &&
     hasChecked &&
@@ -93,8 +100,7 @@ export function HolderClaimCard() {
     if (nftPoolRemaining === 0n) return "NFT pool empty";
     if (chainId !== CLAIM_CHAIN_ID) return `Switch to ${claimChain.label}`;
 
-    const amount = hasMoreNfts ? claimableBatchAmount : nftClaimable;
-    return `Claim ${formatAmount(amount, decimals, 0)} ${symbol}`;
+    return `Claim ${formatAmount(claimAmount, decimals, 0)} ${symbol}`;
   })();
 
   const detail = (() => {
@@ -119,7 +125,15 @@ export function HolderClaimCard() {
         BigInt(unclaimedCount),
         0,
         0,
-      )} ready rewards are included in this claim. Up to ${maxBatch} NFTs are paid per transaction.`;
+      )} ready NFTs are in this claim. The remaining ${formatAmount(
+        BigInt(remainingCount),
+        0,
+        0,
+      )} (${formatAmount(
+        remainingAmount,
+        decimals,
+        0,
+      )} ${symbol}) can be claimed in a second transaction — the contract pays up to ${maxBatch} NFTs per claim.`;
     }
     return `You hold ${formatAmount(
       nftBalance,
@@ -136,7 +150,13 @@ export function HolderClaimCard() {
       ? "0 NFTs held"
       : unclaimedCount === 0
         ? "all rewards claimed"
-        : "claimable now";
+        : hasMoreNfts
+          ? `this claim · ${formatAmount(
+              BigInt(claimableIds.length),
+              0,
+              0,
+            )} of ${formatAmount(BigInt(unclaimedCount), 0, 0)} ready NFTs`
+          : "claimable now";
 
   // Unchecked, checking, and error states get a dedicated simple panel instead
   // of the amount and stats layout, which only makes sense once data is loaded.
@@ -298,7 +318,7 @@ export function HolderClaimCard() {
           <div className="mt-6">
             <div className="flex items-end gap-2">
               <span className="tabular truncate font-mono text-[clamp(2.6rem,6vw,3.8rem)] font-semibold leading-[0.85] tracking-[-0.07em] text-paper">
-                {formatAmount(nftClaimable, decimals, 0)}
+                {formatAmount(claimAmount, decimals, 0)}
               </span>
               <span className="mb-1 shrink-0 text-[11px] font-bold tracking-[0.2em] text-brand">
                 {symbol}
