@@ -1,6 +1,6 @@
 # Elyziuma
 
-A two-pool ELYZ claim and an NFT launchpad on **Elysium Testnet** (chain ID `99801`; mainnet is `99901`). NFT holders claim 10,000 ELYZ per NFT, every wallet can claim 1,000 ELYZ once, and the community claim is gated by a native ETH or HYPE balance on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
+A two-pool ELYZ claim and an NFT launchpad on **Elysium Testnet** (chain ID `99801`; mainnet is `99901`). NFT holders claim 10,000 ELYZ per NFT, every wallet can claim 1,000 ELYZ once, and the community claim is gated by a mainnet balance on Ethereum, Hyperliquid, or HyperEVM. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
 
 The repository contains:
 
@@ -27,7 +27,7 @@ The reference contract was verified on BscScan and its source was retrieved thro
 | $0.20 payable claim in BNB via Chainlink | **Changed** to an owner-set HYPE fee on the community claim; NFT claims are free |
 | Randomized lottery tiers (50–150, 300–500, 1,000–3,000, 21,000, bonus sweep) | **Not copied** — both pools pay fixed amounts |
 | Last claim sweeps the remaining pool | **Not copied** — each pool has an exact cap; underfunded claims revert |
-| Binance Agent ID gate (v4) | **Replaced** with a community-only UI 0.001 ETH / 0.05 HYPE check |
+| Binance Agent ID gate (v4) | **Replaced** with a community-only UI 0.001 ETH / 0.05 HYPE / 0.005 HYPE check |
 | Owner renounced / no admin controls | **Changed** — the owner sets the community fee and fee recipient, pauses, and withdraws fees/surplus; the reward pools cannot be withdrawn |
 
 The Shaniu code is a single token contract with built-in claim logic. Elyziuma keeps the token and claim contract separate so the claim can be paused, refilled, or replaced without migrating the token. The full source-level comparison is in [`docs/shaniu-analysis.md`](docs/shaniu-analysis.md).
@@ -72,7 +72,7 @@ Each NFT can claim once. If an unclaimed NFT is transferred, the new owner can c
 
 ### The community balance check
 
-The community claim requires at least 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. This is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the check, but it still has to satisfy the one-time community claim, the pool cap, and the community fee (if one is set). NFT holder claims are free and are not gated by this check.
+The community claim requires 0.001 ETH on Ethereum mainnet, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. This is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the check, but it still has to satisfy the one-time community claim, the pool cap, and the community fee (if one is set). NFT holder claims are free and are not gated by this check.
 
 The `/claim` page is private while claims are being prepared. It is gated on the server by the same owner session as `/admin`, is `noindex, nofollow`, and is not linked from the public navigation or footer. Only the collection owner wallet can connect and sign in to view it. This is a page-level gate, not an on-chain restriction: the deployed claim contracts remain callable by anyone who knows their address.
 
@@ -109,7 +109,7 @@ Token URIs resolve to `{baseURI}{tokenId}.json` and token ids start at `1`.
 
 The launchpad reads this contract directly. The server probe picks up `publicPrice`, `publicMintOpen`, and `maxPerWallet`, and the browser then follows the live phase: it shows the public price and calls `publicMint` while the public phase is open.
 
-Before submitting a mint, when `mintBalanceCheck` is enabled (the default), the mint panel checks the connected wallet's mainnet ETH/HYPE balance through the same five-chain eligibility service used by the claim flow. The wallet must hold at least `0.06 HYPE` or `0.0025 ETH` on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The mint chain's testnet HYPE balance is deliberately not used, because testnet tokens are free and cannot deter bots. A failed balance read blocks the button with a retry action. The admin console can turn this guard off from **Mint requirements**; when it is off, the balance panel is hidden and the mint button is not gated. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
+Before submitting a mint, when `mintBalanceCheck` is enabled (the default), the mint panel checks the connected wallet's mainnet ETH/HYPE balance through the shared eligibility service. The claim page uses a narrower three-chain subset (Ethereum, Hyperliquid, and HyperEVM); the launchpad keeps its own five-chain guard. The wallet must hold at least `0.06 HYPE` or `0.0025 ETH` on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The mint chain's testnet HYPE balance is deliberately not used, because testnet tokens are free and cannot deter bots. A failed balance read blocks the button with a retry action. The admin console can turn this guard off from **Mint requirements**; when it is off, the balance panel is hidden and the mint button is not gated. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
 
 ### Launchpad runtime network settings
 
@@ -550,7 +550,7 @@ The public launchpad's display settings - collection address, mint method, max s
 
 ### Enforced off-chain
 
-- Community balance check: at least 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. This is a UI gate, not a contract check.
+- Community balance check: at least 0.001 ETH on Ethereum mainnet, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. This is a UI gate, not a contract check. The launchpad keeps its own separate five-chain mint guard.
 - Per-IP rate limits on `/api/eligibility` and `/api/claim/eligibility`.
 - Short-lived claim-eligibility caching keyed by block number.
 - Launchpad admin signatures with a five-minute window and replay guard.
@@ -560,7 +560,7 @@ The public launchpad's display settings - collection address, mint method, max s
 ### Limitations
 
 - The community balance check is a UI gate only. A user calling the claim contract directly bypasses it; the contract still enforces one-time community eligibility, pool caps, and the community fee.
-- The check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH or 0.05 HYPE.
+- The check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH, 0.05 HYPE, or 0.005 HYPE.
 - The owner can set the community claim fee, including a fee high enough to make community claims unattractive, and can pause claims. NFT claims are free. The owner cannot withdraw the reward pools, but community fees are a trust assumption.
 - The NFT pool is sized for all 2,222 NFTs. If the collection does not sell out, the unclaimed portion stays in the claim contract; the owner cannot withdraw it through `withdrawSurplus`.
 - The community pool is sized for 11,110 wallets. If fewer wallets claim, the remainder stays in the claim contract.

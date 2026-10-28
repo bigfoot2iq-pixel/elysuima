@@ -8,6 +8,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useAccount, useReadContracts } from "wagmi";
+import { CLAIM_ELIGIBILITY_CHAINS } from "@/lib/chains";
 import { useClaimEligibility } from "@/hooks/use-claim-eligibility";
 import { useEligibility } from "@/hooks/use-eligibility";
 import { claimAbi, tokenAbi } from "@/lib/abis";
@@ -104,7 +105,14 @@ function useClaimDataValue() {
   const nft = data?.nft;
   const community = data?.community;
   const paused = data?.paused ?? false;
-  const thresholdEligible = eligibility.data?.eligible ?? false;
+  const claimChains = eligibility.data?.chains.filter((chain) =>
+    CLAIM_ELIGIBILITY_CHAINS.some(
+      (claimChain) => claimChain.key === chain.key,
+    ),
+  );
+  const thresholdEligible = claimChains?.some((chain) => chain.ok) ?? false;
+  const bestClaimChain =
+    claimChains?.find((chain) => chain.ok)?.name ?? null;
 
   function refresh() {
     void claimEligibility.refetch();
@@ -158,6 +166,7 @@ function useClaimDataValue() {
     communityPool,
     ownerAllocation,
     thresholdEligible,
+    bestClaimChain,
     addedToken,
     addToken,
     refresh,

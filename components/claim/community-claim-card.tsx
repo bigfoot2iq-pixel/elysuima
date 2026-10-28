@@ -38,6 +38,7 @@ export function CommunityClaimCard() {
     eligibility,
     claimEligibility,
     thresholdEligible,
+    bestClaimChain,
     refresh,
   } = useClaimData();
   const { openConnectModal } = useConnectModal();
@@ -89,7 +90,7 @@ export function CommunityClaimCard() {
       return "This wallet has already claimed its 1,000 ELYZ. You can still claim any eligible NFT rewards on the left.";
     }
     if (!thresholdEligible) {
-      return "The community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM.";
+      return "The community claim requires 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. These are mainnet balances.";
     }
     if (claimEligibility.isError) {
       return "The community reward could not be read. Retry to continue.";
@@ -98,7 +99,7 @@ export function CommunityClaimCard() {
     if (communityPoolRemaining === 0n) {
       return "The community pool is empty right now. Check back after a top-up.";
     }
-    return `Eligible via ${eligibility.data?.bestChain}. One claim per wallet; the HYPE fee is set by the owner.`;
+    return `Eligible via ${bestClaimChain}. One claim per wallet; the HYPE fee is set by the owner.`;
   })();
 
   const amountLabel = community?.claimed

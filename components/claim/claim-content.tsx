@@ -12,7 +12,7 @@ const FAQS = [
   {
     question: "Why does the community claim need a balance check?",
     answer:
-      "The 1,000 ELYZ community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. NFT holder claims are free and skip this check. It is a UI anti-sybil gate; the claim contract does not read balances on other chains.",
+      "The 1,000 ELYZ community claim requires 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. These are mainnet balances. NFT holder claims are free and skip this check. It is a UI anti-sybil gate; the claim contract does not read balances on other chains.",
   },
   {
     question: "What happens when an NFT is transferred?",

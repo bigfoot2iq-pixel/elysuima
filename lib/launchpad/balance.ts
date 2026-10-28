@@ -7,9 +7,9 @@ import type { EligibilityChain } from "@/lib/eligibility-types";
  *
  * The launchpad runs on Elysium testnet during pre-launch, so the mint chain
  * balance is not useful as a bot filter: testnet HYPE is free. Instead the mint
- * panel checks the same wallet on the mainnet chains the claim flow already
- * supports. The amount stays the launchpad's own minimum, not the lower claim
- * threshold.
+ * panel checks the shared five-chain mainnet balance service. The claim page
+ * uses a narrower three-chain subset, but the launchpad keeps its own guard and
+ * minimums.
  */
 const MINIMUM_BALANCE_AMOUNTS = {
   HYPE: "0.06",

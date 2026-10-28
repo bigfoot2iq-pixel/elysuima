@@ -22,7 +22,7 @@ const STEPS = [
     number: "02",
     icon: ShieldCheck,
     title: "Check the community gate",
-    body: "The community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. NFT holder claims are free and skip this check.",
+    body: "The community claim requires 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. These are mainnet balances. NFT holder claims are free and skip this check.",
     href: "/#faq",
     linkLabel: "See the check",
   },
@@ -50,8 +50,8 @@ export function HowItWorks() {
           </h2>
         </div>
         <p className="max-w-sm text-xs leading-6 text-paper-mute">
-          No account, no email, no custody. The community balance check runs
-          across five mainnet chains in the UI; the claim contract enforces NFT
+          No account, no email, no custody. The community balance check runs on
+          three mainnet chains in the UI; the claim contract enforces NFT
           ownership and one-time community claims.
         </p>
       </div>

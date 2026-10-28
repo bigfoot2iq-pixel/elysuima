@@ -162,16 +162,12 @@ export function getElysiumViemChain(chainId: number) {
 }
 
 /**
- * Chains that can satisfy the community claim check.
+ * Mainnet chains the eligibility service can read. The claim page uses the
+ * narrower `CLAIM_ELIGIBILITY_CHAINS` subset below; the launchpad keeps its own
+ * five-chain mint guard and minimums.
  *
- * Hyperliquid (HyperCore) and HyperEVM share the same HYPE token, but they are
- * different balance surfaces: HyperCore spot balances are read from the
- * Hyperliquid info API, while HyperEVM balances are read over JSON-RPC. Both
- * rows are shown so the check describes exactly where a balance was found.
- *
- * `minBalance` is the amount a wallet must hold on that chain. NFT holder
- * claims are free and do not use this check; only the 1,000 ELYZ community
- * claim does.
+ * `minBalance` is the community claim minimum for that chain. It is not used by
+ * the launchpad, which applies its own ETH/HYPE minimums.
  */
 export const ELIGIBILITY_CHAINS = [
   {
@@ -190,7 +186,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "HYPE",
     chainId: 999,
     nativeSymbol: "HYPE",
-    minBalance: "0.05",
+    minBalance: "0.005",
     color: "#50D2C1",
     explorer: "https://hyperevmscan.io",
   },
@@ -225,5 +221,17 @@ export const ELIGIBILITY_CHAINS = [
     explorer: "https://explorer.inkonchain.com",
   },
 ] as const;
+
+/**
+ * The claim page only accepts a mainnet balance on these three chains:
+ * Ethereum (0.001 ETH), Hyperliquid (0.05 HYPE), or HyperEVM (0.005 HYPE).
+ * Base and Ink remain available to the launchpad's separate mint guard.
+ */
+export const CLAIM_ELIGIBILITY_CHAINS = ELIGIBILITY_CHAINS.filter(
+  (chain) =>
+    chain.key === "ethereum" ||
+    chain.key === "hyperliquid" ||
+    chain.key === "hyperevm",
+);
 
 export type EligibilityChainKey = (typeof ELIGIBILITY_CHAINS)[number]["key"];

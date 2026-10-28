@@ -14,12 +14,12 @@ import {
 export const metadata: Metadata = {
   title: "Claim Rewards",
   description:
-    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. NFT claims are free; the community claim needs 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM.",
+    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. NFT claims are free; the community claim needs 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM mainnet.",
   keywords: [
     "Elyziuma claim",
     "claim ELYZ",
     "Elysium NFT rewards",
-    "0.001 ETH or 0.05 HYPE eligibility",
+    "0.001 ETH / 0.05 HYPE / 0.005 HYPE eligibility",
     `Elysium ${CLAIM_CHAIN_ID}`,
   ],
   // The claim page is private for the collection owner until claims go public.

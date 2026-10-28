@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Check, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { useAccount } from "wagmi";
-import { ELIGIBILITY_CHAINS } from "@/lib/chains";
+import { CLAIM_ELIGIBILITY_CHAINS, ELIGIBILITY_CHAINS } from "@/lib/chains";
 import type { EligibilityChain } from "@/lib/eligibility-types";
 import { formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -84,6 +84,13 @@ export function EligibilityPanel() {
   const now = useNow(5_000);
 
   const data = eligibility.data;
+  const claimResults = CLAIM_ELIGIBILITY_CHAINS.map((chain) =>
+    data?.chains.find((item) => item.key === chain.key),
+  );
+  const bestClaimChain = claimResults.find((result) => result?.ok) ?? null;
+  const claimUnavailable =
+    claimResults.length > 0 &&
+    claimResults.every((result) => Boolean(result?.error));
   const checkedAgo =
     data && now
       ? formatRelative(Math.floor(data.checkedAt / 1_000), now)
@@ -101,7 +108,7 @@ export function EligibilityPanel() {
       return {
         tone: "brand" as const,
         title: "Checking your wallet",
-        body: "Reading balances from Hyperliquid, HyperEVM, Ethereum, Base, and Ink.",
+        body: "Reading mainnet balances from Ethereum, Hyperliquid, and HyperEVM.",
       };
     }
     if (eligibility.isError) {
@@ -111,24 +118,24 @@ export function EligibilityPanel() {
         body: "One or more RPCs did not respond. Retry the check.",
       };
     }
-    if (data?.allUnavailable) {
+    if (claimUnavailable) {
       return {
         tone: "warn" as const,
         title: "Networks unreachable",
-        body: "None of the balance RPCs responded. Retry in a moment.",
+        body: "None of the claim-chain RPCs responded. Retry in a moment.",
       };
     }
-    if (data?.eligible) {
+    if (bestClaimChain) {
       return {
         tone: "mint" as const,
-        title: `Eligible via ${data.bestChain}`,
+        title: `Eligible via ${bestClaimChain.name}`,
         body: "This wallet can claim the 1,000 ELYZ community reward.",
       };
     }
     return {
       tone: "muted" as const,
       title: "Not eligible yet",
-      body: "The community claim requires 0.001 ETH on Ethereum, Base, or Ink, or 0.05 HYPE on Hyperliquid or HyperEVM. NFT holder claims do not need this check.",
+      body: "The community claim requires 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. These are mainnet balances. NFT holder claims do not need this check.",
     };
   })();
 
@@ -170,12 +177,12 @@ export function EligibilityPanel() {
         The community claim check.
       </h2>
       <p className="mt-1.5 text-[11px] leading-5 text-paper-mute">
-        Only the 1,000 ELYZ community claim uses this balance check. NFT holder
-        claims are free and never gated by it.
+        Only the 1,000 ELYZ community claim uses this mainnet balance check.
+        NFT holder claims are free and never gated by it.
       </p>
 
       <div className="mt-4 space-y-1.5">
-        {ELIGIBILITY_CHAINS.map((chain) => (
+        {CLAIM_ELIGIBILITY_CHAINS.map((chain) => (
           <ChainRow
             key={chain.key}
             chain={chain}
