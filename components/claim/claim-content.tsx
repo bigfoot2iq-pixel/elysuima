@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ArrowUpRight, Fuel } from "lucide-react";
 import { ClaimCards } from "@/components/claim/claim-cards";
 import { EligibilityPanel } from "@/components/eligibility-panel";
@@ -48,21 +49,46 @@ export function ClaimContent() {
         </div>
 
         <div className="section-shell relative pb-14 pt-12 sm:pb-16 sm:pt-16">
-          <div className="animate-rise mx-auto max-w-2xl text-center">
-            <div className="flex justify-center">
-              <span className="eyebrow">Claim rewards</span>
+          <div className="animate-rise mx-auto grid max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:gap-12">
+            <div className="text-center lg:text-left">
+              <div className="flex justify-center lg:justify-start">
+                <span className="eyebrow">Claim rewards</span>
+              </div>
+              <h1 className="mt-4 font-display text-[clamp(2.3rem,5.4vw,3.9rem)] font-extrabold leading-[0.95] tracking-[-0.045em] text-paper">
+                Your <span className="text-gradient">ELYZ</span>, two ways.
+              </h1>
+              <p className="mx-auto mt-4 max-w-lg text-[15px] leading-7 text-paper-dim lg:mx-0">
+                NFT holders claim{" "}
+                <span className="font-mono text-paper">
+                  10,000 ELYZ per NFT
+                </span>{" "}
+                for free. Every wallet can claim{" "}
+                <span className="font-mono text-paper">1,000 ELYZ once</span>{" "}
+                from the community pool for an owner-set HYPE fee. The two
+                claims are independent.
+              </p>
             </div>
-            <h1 className="mt-4 font-display text-[clamp(2.3rem,5.4vw,3.9rem)] font-extrabold leading-[0.95] tracking-[-0.045em] text-paper">
-              Your <span className="text-gradient">ELYZ</span>, two ways.
-            </h1>
-            <p className="mx-auto mt-4 max-w-lg text-[15px] leading-7 text-paper-dim">
-              NFT holders claim{" "}
-              <span className="font-mono text-paper">10,000 ELYZ per NFT</span>{" "}
-              for free. Every wallet can claim{" "}
-              <span className="font-mono text-paper">1,000 ELYZ once</span> from
-              the community pool for an owner-set HYPE fee. The two claims are
-              independent.
-            </p>
+
+            <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[360px] lg:max-w-none">
+              <div
+                className="pointer-events-none absolute -inset-5 rounded-full bg-brand/[0.14] blur-[70px]"
+                aria-hidden="true"
+              />
+              <div className="glass relative overflow-hidden rounded-[32px] border border-paper/[0.08] p-2">
+                <Image
+                  src="/brand/elyziuma-token.png"
+                  alt="Elyziuma token mascot holding a flaming pan"
+                  width={1024}
+                  height={768}
+                  priority
+                  sizes="(min-width: 1024px) 400px, (min-width: 640px) 360px, 300px"
+                  className="h-auto w-full rounded-[24px]"
+                />
+                <span className="absolute bottom-5 right-5 rounded-full border border-paper/10 bg-ink/80 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-brand backdrop-blur">
+                  ELYZ
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="animate-rise mt-9 [animation-delay:120ms]">
