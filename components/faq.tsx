@@ -25,17 +25,17 @@ const FAQS = [
   {
     question: "Why the 0.001 ETH / 0.01 HYPE balance check?",
     answer:
-      "It is a bot-resistance check for the community claim. Your wallet must hold 0.001 ETH on Ethereum mainnet, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. The balance stays in your wallet — we only read it. NFT holder claims are free and do not use this check.",
+      "It is a bot-resistance check for the community claim. Your wallet must hold 0.001 ETH on Ethereum mainnet or 0.01 HYPE on HyperEVM. The balance stays in your wallet — we only read it. NFT holder claims are free and do not use this check.",
   },
   {
     question: "Which chains count?",
     answer:
-      "Ethereum mainnet, Hyperliquid, and HyperEVM. The community claim needs 0.001 ETH on Ethereum, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. Base and Ink are not part of the claim check.",
+      "Ethereum mainnet and HyperEVM. The community claim needs 0.001 ETH on Ethereum or 0.01 HYPE on HyperEVM. Hyperliquid, Base, and Ink are not part of the claim check.",
   },
   {
     question: "Is the balance check enforced on-chain?",
     answer:
-      "No. The three-chain mainnet check runs in the UI and only gates the community claim button. The claim contract does not read balances on other chains, so a direct contract call can bypass the check. The contract itself enforces NFT ownership and one-time community claims.",
+      "No. The two-chain mainnet check runs in the UI and only gates the community claim button. The claim contract does not read balances on other chains, so a direct contract call can bypass the check. The contract itself enforces NFT ownership and one-time community claims.",
   },
   {
     question: "How many claims can I make?",

@@ -126,12 +126,15 @@ async function balanceOnChain(chainKey: string, address: Address) {
   throw lastError instanceof Error ? lastError : new Error("RPC unavailable");
 }
 
-async function runChecks(address: Address): Promise<EligibilityResult> {
+async function runChecks(
+  address: Address,
+  chainsToCheck: readonly (typeof ELIGIBILITY_CHAINS)[number][],
+): Promise<EligibilityResult> {
   const results = await Promise.allSettled(
-    ELIGIBILITY_CHAINS.map((chain) => balanceOnChain(chain.key, address)),
+    chainsToCheck.map((chain) => balanceOnChain(chain.key, address)),
   );
 
-  const chains = ELIGIBILITY_CHAINS.map((chain, index) => {
+  const chains = chainsToCheck.map((chain, index) => {
     const result = results[index];
     const required = thresholdFor(chain.minBalance);
     const meta = {
@@ -190,20 +193,37 @@ const cache = new Map<string, CacheEntry>();
 const CACHE_MS = 30_000;
 const CACHE_LIMIT = 1_000;
 
+/** Restricts a check to the requested chain keys; all chains when omitted. */
+function selectedChains(chainKeys?: readonly string[]) {
+  if (!chainKeys || chainKeys.length === 0) return ELIGIBILITY_CHAINS;
+
+  return ELIGIBILITY_CHAINS.filter((chain) => chainKeys.includes(chain.key));
+}
+
+function cacheKeyFor(
+  address: Address,
+  chains: readonly (typeof ELIGIBILITY_CHAINS)[number][],
+) {
+  return `${address.toLowerCase()}|${chains.map((chain) => chain.key).join(",")}`;
+}
+
 export async function checkEligibility(
   address: Address,
-  options: { bypassCache?: boolean } = {},
+  options: { bypassCache?: boolean; chainKeys?: readonly string[] } = {},
 ): Promise<EligibilityResult> {
   if (!isAddress(address)) throw new Error("Invalid address");
 
-  const key = address.toLowerCase();
+  const chains = selectedChains(options.chainKeys);
+  if (chains.length === 0) throw new Error("No eligibility chains selected");
+
+  const key = cacheKeyFor(address, chains);
 
   if (!options.bypassCache) {
     const cached = cache.get(key);
     if (cached && cached.expiresAt > Date.now()) return cached.data;
   }
 
-  const data = await runChecks(address);
+  const data = await runChecks(address, chains);
 
   if (cache.size >= CACHE_LIMIT) {
     const now = Date.now();

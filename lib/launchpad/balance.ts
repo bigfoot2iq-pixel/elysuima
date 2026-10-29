@@ -8,7 +8,7 @@ import type { EligibilityChain } from "@/lib/eligibility-types";
  * The launchpad runs on Elysium testnet during pre-launch, so the mint chain
  * balance is not useful as a bot filter: testnet HYPE is free. Instead the mint
  * panel checks the shared five-chain mainnet balance service. The claim page
- * uses a narrower three-chain subset, but the launchpad keeps its own guard and
+ * uses a narrower two-chain subset, but the launchpad keeps its own guard and
  * minimums.
  */
 const MINIMUM_BALANCE_AMOUNTS = {

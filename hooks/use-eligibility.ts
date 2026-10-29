@@ -4,15 +4,24 @@ import { useQuery } from "@tanstack/react-query";
 import type { Address } from "viem";
 import type { EligibilityResponse } from "@/lib/eligibility-types";
 
-export function useEligibility(address?: Address) {
+export function useEligibility(
+  address?: Address,
+  chainKeys?: readonly string[],
+) {
   return useQuery<EligibilityResponse>({
-    queryKey: ["eligibility", address?.toLowerCase()],
+    queryKey: [
+      "eligibility",
+      address?.toLowerCase(),
+      chainKeys?.join(",") ?? "all",
+    ],
     enabled: Boolean(address),
     queryFn: async () => {
       const response = await fetch("/api/eligibility", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ address }),
+        body: JSON.stringify(
+          chainKeys ? { address, chains: chainKeys } : { address },
+        ),
         cache: "no-store",
       });
 

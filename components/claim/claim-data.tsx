@@ -22,9 +22,12 @@ import {
   TOKEN_FALLBACK,
 } from "@/lib/config";
 
+/** The claim check only asks about Ethereum and HyperEVM. */
+const CLAIM_CHAIN_KEYS = CLAIM_ELIGIBILITY_CHAINS.map((chain) => chain.key);
+
 function useClaimDataValue() {
   const { address, chainId, connector } = useAccount();
-  const eligibility = useEligibility(address);
+  const eligibility = useEligibility(address, CLAIM_CHAIN_KEYS);
   const claimEligibility = useClaimEligibility(address);
   const [addedToken, setAddedToken] = useState(false);
 

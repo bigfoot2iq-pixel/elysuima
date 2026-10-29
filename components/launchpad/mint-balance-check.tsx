@@ -29,7 +29,7 @@ function nativeAmount(value: bigint | undefined, decimals = 18) {
  * The launchpad can run on Elysium testnet, where balances are free and cannot
  * prove anything about a wallet. This panel therefore reads the five mainnet
  * chains supported by the shared eligibility service; the claim page uses a
- * narrower three-chain subset.
+ * narrower two-chain subset.
  */
 export function MintBalanceCheck({
   address,

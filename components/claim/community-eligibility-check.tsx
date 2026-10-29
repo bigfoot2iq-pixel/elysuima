@@ -142,7 +142,7 @@ export function CommunityEligibilityCheck({
         Hold any one of these mainnet balances. Nothing is signed.
       </p>
 
-      <ul className="mt-2.5 grid grid-cols-3 gap-1.5">
+      <ul className="mt-2.5 grid grid-cols-2 gap-1.5">
         {rows.map(({ chain, result }) => {
           const met = result?.ok === true;
           const failed = Boolean(result && !result.ok && !result.error);

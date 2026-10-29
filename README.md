@@ -1,6 +1,6 @@
 # Elyziuma
 
-A two-pool ELYZ claim and an NFT launchpad on **Elysium Testnet** (chain ID `99801`; mainnet is `99901`). NFT holders claim 10,000 ELYZ per NFT, every wallet can claim 1,000 ELYZ once, and the community claim is gated by a mainnet balance on Ethereum, Hyperliquid, or HyperEVM. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
+A two-pool ELYZ claim and an NFT launchpad on **Elysium Testnet** (chain ID `99801`; mainnet is `99901`). NFT holders claim 10,000 ELYZ per NFT, every wallet can claim 1,000 ELYZ once, and the community claim is gated by a mainnet balance on Ethereum or HyperEVM. The launchpad mints an already-deployed NFT collection on Elysium, with automatic OpenSea SeaDrop support.
 
 The repository contains:
 
@@ -74,7 +74,7 @@ Each NFT can claim once. If an unclaimed NFT is transferred, the new owner can c
 
 ### The community balance check
 
-The community claim requires 0.001 ETH on Ethereum mainnet, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. This is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the check, but it still has to satisfy the one-time community claim, the pool cap, and the community fee (if one is set). NFT holder claims are free and are not gated by this check.
+The community claim requires 0.001 ETH on Ethereum mainnet or 0.01 HYPE on HyperEVM. This is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the check, but it still has to satisfy the one-time community claim, the pool cap, and the community fee (if one is set). NFT holder claims are free and are not gated by this check.
 
 The claim page also shows live progress for the holder and community pools above the claim cards. Progress is read directly from the claim contract, so it is visible before a wallet connects.
 
@@ -113,7 +113,7 @@ Token URIs resolve to `{baseURI}{tokenId}.json` and token ids start at `1`.
 
 The launchpad reads this contract directly. The server probe picks up `publicPrice`, `publicMintOpen`, and `maxPerWallet`, and the browser then follows the live phase: it shows the public price and calls `publicMint` while the public phase is open.
 
-Before submitting a mint, when `mintBalanceCheck` is enabled (the default), the mint panel checks the connected wallet's mainnet ETH/HYPE balance through the shared eligibility service. The claim page uses a narrower three-chain subset (Ethereum, Hyperliquid, and HyperEVM); the launchpad keeps its own five-chain guard. The wallet must hold at least `0.06 HYPE` or `0.0025 ETH` on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The mint chain's testnet HYPE balance is deliberately not used, because testnet tokens are free and cannot deter bots. A failed balance read blocks the button with a retry action. The admin console can turn this guard off from **Mint requirements**; when it is off, the balance panel is hidden and the mint button is not gated. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
+Before submitting a mint, when `mintBalanceCheck` is enabled (the default), the mint panel checks the connected wallet's mainnet ETH/HYPE balance through the shared eligibility service. The claim page uses a narrower two-chain subset (Ethereum and HyperEVM); the launchpad keeps its own five-chain guard. The wallet must hold at least `0.06 HYPE` or `0.0025 ETH` on Hyperliquid, HyperEVM, Ethereum, Base, or Ink. The mint chain's testnet HYPE balance is deliberately not used, because testnet tokens are free and cannot deter bots. A failed balance read blocks the button with a retry action. The admin console can turn this guard off from **Mint requirements**; when it is off, the balance panel is hidden and the mint button is not gated. This is a UI guard only; the contract remains the final authority, so a funded wallet can still call it directly.
 
 ### Launchpad runtime network settings
 
@@ -369,10 +369,10 @@ The claim contract's NFT address is immutable. If you change `NEXT_PUBLIC_LAUNCH
 Request:
 
 ```json
-{ "address": "0x..." }
+{ "address": "0x...", "chains": ["ethereum", "hyperevm"] }
 ```
 
-Response includes the balance, the per-chain minimum, and the status for each supported chain, the best qualifying chain, and `checkedAt`. Results are cached for 30 seconds per address.
+`chains` is optional. When omitted, all supported chains are checked. The claim page requests only `ethereum` and `hyperevm`; the launchpad omits it for its five-chain guard. Response includes the balance, the per-chain minimum, and the status for each checked chain, the best qualifying chain, and `checkedAt`. Results are cached for 30 seconds per address and chain set.
 
 ### `POST /api/claim/eligibility`
 
@@ -555,7 +555,7 @@ The public launchpad's display settings - collection address, mint method, max s
 
 ### Enforced off-chain
 
-- Community balance check: at least 0.001 ETH on Ethereum mainnet, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. This is a UI gate, not a contract check. The launchpad keeps its own separate five-chain mint guard.
+- Community balance check: at least 0.001 ETH on Ethereum mainnet or 0.01 HYPE on HyperEVM. This is a UI gate, not a contract check. The launchpad keeps its own separate five-chain mint guard.
 - Per-IP rate limits on `/api/eligibility` and `/api/claim/eligibility`.
 - Short-lived claim-eligibility caching keyed by block number.
 - Launchpad admin signatures with a five-minute window and replay guard.

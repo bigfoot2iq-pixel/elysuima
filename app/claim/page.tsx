@@ -15,7 +15,7 @@ import { getClaimAccessAddresses } from "@/lib/server/claim-access";
 export const metadata: Metadata = {
   title: "Claim Rewards",
   description:
-    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. NFT claims are free; the community claim needs 0.001 ETH on Ethereum, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM mainnet.",
+    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. NFT claims are free; the community claim needs 0.001 ETH on Ethereum or 0.01 HYPE on HyperEVM mainnet.",
   keywords: [
     "Elyziuma claim",
     "claim ELYZ",

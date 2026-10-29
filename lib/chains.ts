@@ -223,15 +223,13 @@ export const ELIGIBILITY_CHAINS = [
 ] as const;
 
 /**
- * The claim page only accepts a mainnet balance on these three chains:
- * Ethereum (0.001 ETH), Hyperliquid (0.01 HYPE), or HyperEVM (0.01 HYPE).
- * Base and Ink remain available to the launchpad's separate mint guard.
+ * The claim page only accepts a mainnet balance on these two chains:
+ * Ethereum (0.001 ETH) or HyperEVM (0.01 HYPE). Hyperliquid (HyperCore) HYPE
+ * does not qualify, and Base and Ink remain available to the launchpad's
+ * separate mint guard.
  */
 export const CLAIM_ELIGIBILITY_CHAINS = ELIGIBILITY_CHAINS.filter(
-  (chain) =>
-    chain.key === "ethereum" ||
-    chain.key === "hyperliquid" ||
-    chain.key === "hyperevm",
+  (chain) => chain.key === "ethereum" || chain.key === "hyperevm",
 );
 
 export type EligibilityChainKey = (typeof ELIGIBILITY_CHAINS)[number]["key"];
