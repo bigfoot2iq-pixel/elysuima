@@ -39,31 +39,55 @@ export function ClaimPoolsProgress() {
   const communityActive = ownerAllocation + communityClaimed;
   const communityTotal = communityPool + ownerAllocation;
 
+  // Both pools combined. The owner allocation counts as active from the start,
+  // so the total begins at 1,000,000 of 34,330,000 like the community bar.
+  const totalClaimed =
+    nftClaimed === undefined ? undefined : nftClaimed + communityActive;
+  const totalPool = nftPool + communityTotal;
+  const totalRemaining =
+    nftPoolRemaining === undefined || communityPoolRemaining === undefined
+      ? undefined
+      : nftPoolRemaining + communityPoolRemaining;
+
   return (
-    <div className="mt-4 grid gap-px overflow-hidden rounded-2xl border border-paper/[0.08] bg-paper/[0.07] sm:grid-cols-2">
+    <div className="mt-4 grid gap-px overflow-hidden rounded-2xl border border-paper/[0.08] bg-paper/[0.07]">
       <div className="bg-ink/85 px-4 py-3.5 sm:px-5">
         <ClaimPoolProgress
-          label="Holder pool"
-          claimed={nftClaimed}
-          total={nftPool}
-          remaining={nftPoolRemaining}
+          label="All pools"
+          claimed={totalClaimed}
+          total={totalPool}
+          remaining={totalRemaining}
           symbol={symbol}
           decimals={decimals}
-          tone="brand"
+          tone="mixed"
+          totalText={formatAmount(totalPool, decimals, 0)}
         />
       </div>
-      <div className="bg-ink/85 px-4 py-3.5 sm:px-5">
-        <ClaimPoolProgress
-          label="Community pool"
-          claimed={communityActive}
-          total={communityTotal}
-          remaining={communityPoolRemaining}
-          symbol={symbol}
-          decimals={decimals}
-          tone="mint"
-          claimedLabel="active"
-          totalText={formatAmount(communityTotal, decimals, 0)}
-        />
+      <div className="grid gap-px sm:grid-cols-2">
+        <div className="bg-ink/85 px-4 py-3.5 sm:px-5">
+          <ClaimPoolProgress
+            label="Holder pool"
+            claimed={nftClaimed}
+            total={nftPool}
+            remaining={nftPoolRemaining}
+            symbol={symbol}
+            decimals={decimals}
+            tone="brand"
+          />
+        </div>
+        <div className="bg-ink/85 px-4 py-3.5 sm:px-5">
+          <ClaimPoolProgress
+            label="Community pool"
+            claimed={communityActive}
+            total={communityTotal}
+            remaining={communityPoolRemaining}
+            symbol={symbol}
+            decimals={decimals}
+            tone="mint"
+            claimedLabel="active"
+            totalText={formatAmount(communityTotal, decimals, 0)}
+          />
+        </div>
       </div>
     </div>
   );

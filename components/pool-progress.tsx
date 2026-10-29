@@ -22,7 +22,7 @@ export function PoolProgress({
   remaining?: bigint;
   symbol: string;
   decimals: number;
-  tone: "brand" | "mint";
+  tone: "brand" | "mint" | "mixed";
   /** Wording for the filled portion, e.g. "claimed" or "active". */
   claimedLabel?: string;
   /** Optional exact total, used when compact notation would hide detail. */
@@ -64,7 +64,9 @@ export function PoolProgress({
             "h-full rounded-full transition-[width] duration-700 ease-out",
             tone === "mint"
               ? "bg-gradient-to-r from-mint/60 to-mint"
-              : "bg-gradient-to-r from-brand-deep via-brand to-brand-soft",
+              : tone === "mixed"
+                ? "bg-gradient-to-r from-brand-deep via-brand to-mint"
+                : "bg-gradient-to-r from-brand-deep via-brand to-brand-soft",
           )}
           style={{ width: `${percent}%` }}
         />
