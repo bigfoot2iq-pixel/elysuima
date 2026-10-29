@@ -1,6 +1,7 @@
 "use client";
 
 import { formatAmount } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useClaimData } from "./claim-data";
 
 /**
@@ -22,28 +23,29 @@ export function ClaimTokenomics() {
       label: "Total supply",
       value: totalSupply,
       hint: "fixed at deployment",
+      className: "",
     },
     {
       label: "NFT holders",
       value: nftPool,
       hint: "2,222 NFTs × 10,000",
+      className: "",
     },
     {
       label: "Community",
-      value: communityPool,
-      hint: "11,110 wallets × 1,000",
-    },
-    {
-      label: "Owner allocation",
-      value: ownerAllocation,
-      hint: "at deployment",
+      value: communityPool + ownerAllocation,
+      hint: "11,110 wallets × 1,000 + 1,000,000",
+      className: "col-span-2 sm:col-span-1",
     },
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-paper/[0.08] bg-paper/[0.07] lg:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-paper/[0.08] bg-paper/[0.07] sm:grid-cols-3">
       {items.map((item) => (
-        <div key={item.label} className="bg-ink/85 px-4 py-3.5 sm:px-5">
+        <div
+          key={item.label}
+          className={cn("bg-ink/85 px-4 py-3.5 sm:px-5", item.className)}
+        >
           <dt className="text-[9px] uppercase tracking-[0.16em] text-paper-mute">
             {item.label}
           </dt>

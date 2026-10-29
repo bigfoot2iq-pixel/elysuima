@@ -9,14 +9,14 @@ import {
   authenticateAdminLogin,
   encodeAdminSession,
   getAdminOwnerAddress,
-  readAdminSession,
+  readClaimSession,
 } from "@/lib/server/admin-session";
 import { getClientIp, rateLimit } from "@/lib/server/rate-limit";
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
 export async function GET() {
-  const session = await readAdminSession();
+  const session = await readClaimSession();
 
   return NextResponse.json(
     {

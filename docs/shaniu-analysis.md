@@ -78,7 +78,7 @@ The live successor had `airdropTotal = 214,823e18` and `airdropRemaining = 0` at
 | One claim per address, ever | One 1,000 ELYZ community claim per wallet + one 10,000 ELYZ claim per NFT | Explicit product requirement |
 | Random lottery amount | Fixed 10,000 per NFT / 1,000 per wallet | Explicit product requirement |
 | $0.20 payable claim | Owner-set HYPE fee on the community claim; NFT claims are free | Product requirement |
-| Binance Agent ID gate | Community-only UI balance check (0.001 ETH / 0.05 HYPE / 0.005 HYPE) | The contract does not read other chains |
+| Binance Agent ID gate | Community-only UI balance check (0.001 ETH / 0.01 HYPE) | The contract does not read other chains |
 | Single contract, owner renounced | Separate token + claim contract, owner controls | Allows a community fee, pause, fee withdrawal, and surplus withdrawal |
 | Final-claim sweep | No sweep; underfunded claims revert | Keeps the per-NFT and per-wallet amounts exact |
 | `block.prevrandao` randomness | No randomness | Avoids validator-influenced payouts |

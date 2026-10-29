@@ -158,6 +158,24 @@ export function useClaimData(options: PollOptions = {}) {
         functionName: "symbol",
         chainId: CLAIM_CHAIN_ID,
       },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "NFT_REWARD",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "COMMUNITY_REWARD",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "MAX_BATCH",
+        chainId: CLAIM_CHAIN_ID,
+      },
     ],
     query: {
       enabled: IS_CONFIGURED,
@@ -182,6 +200,9 @@ export function useClaimData(options: PollOptions = {}) {
     tokenBalanceResult,
     decimalsResult,
     symbolResult,
+    nftRewardResult,
+    communityRewardResult,
+    maxBatchResult,
   ] = query.data ?? [];
 
   return {
@@ -248,6 +269,18 @@ export function useClaimData(options: PollOptions = {}) {
       symbolResult?.status === "success"
         ? (symbolResult.result as string)
         : TOKEN_FALLBACK.symbol,
+    nftReward:
+      nftRewardResult?.status === "success"
+        ? (nftRewardResult.result as bigint)
+        : undefined,
+    communityReward:
+      communityRewardResult?.status === "success"
+        ? (communityRewardResult.result as bigint)
+        : undefined,
+    maxBatch:
+      maxBatchResult?.status === "success"
+        ? (maxBatchResult.result as bigint)
+        : undefined,
   };
 }
 

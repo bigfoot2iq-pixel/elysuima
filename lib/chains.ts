@@ -176,7 +176,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "HYPE",
     chainId: 999,
     nativeSymbol: "HYPE",
-    minBalance: "0.05",
+    minBalance: "0.01",
     color: "#97FCE4",
     explorer: "https://app.hyperliquid.xyz/explorer",
   },
@@ -186,7 +186,7 @@ export const ELIGIBILITY_CHAINS = [
     shortName: "HYPE",
     chainId: 999,
     nativeSymbol: "HYPE",
-    minBalance: "0.005",
+    minBalance: "0.01",
     color: "#50D2C1",
     explorer: "https://hyperevmscan.io",
   },
@@ -224,7 +224,7 @@ export const ELIGIBILITY_CHAINS = [
 
 /**
  * The claim page only accepts a mainnet balance on these three chains:
- * Ethereum (0.001 ETH), Hyperliquid (0.05 HYPE), or HyperEVM (0.005 HYPE).
+ * Ethereum (0.001 ETH), Hyperliquid (0.01 HYPE), or HyperEVM (0.01 HYPE).
  * Base and Ink remain available to the launchpad's separate mint guard.
  */
 export const CLAIM_ELIGIBILITY_CHAINS = ELIGIBILITY_CHAINS.filter(

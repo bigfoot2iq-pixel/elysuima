@@ -60,6 +60,24 @@ function useClaimDataValue() {
         functionName: "totalSupply",
         chainId: CLAIM_CHAIN_ID,
       },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "nftPoolRemaining",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityPoolRemaining",
+        chainId: CLAIM_CHAIN_ID,
+      },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "communityClaimFee",
+        chainId: CLAIM_CHAIN_ID,
+      },
     ],
     query: {
       enabled: IS_CONFIGURED,
@@ -74,6 +92,9 @@ function useClaimDataValue() {
     nftPoolResult,
     communityPoolResult,
     totalSupplyResult,
+    nftPoolRemainingResult,
+    communityPoolRemainingResult,
+    communityClaimFeeResult,
   ] = tokenData ?? [];
 
   const symbol =
@@ -96,6 +117,18 @@ function useClaimDataValue() {
     totalSupplyResult?.status === "success"
       ? (totalSupplyResult.result as bigint)
       : TOKENOMICS.totalSupply;
+  const nftPoolRemaining =
+    nftPoolRemainingResult?.status === "success"
+      ? (nftPoolRemainingResult.result as bigint)
+      : undefined;
+  const communityPoolRemaining =
+    communityPoolRemainingResult?.status === "success"
+      ? (communityPoolRemainingResult.result as bigint)
+      : undefined;
+  const communityClaimFee =
+    communityClaimFeeResult?.status === "success"
+      ? (communityClaimFeeResult.result as bigint)
+      : undefined;
   const ownerAllocation =
     totalSupply > nftPool + communityPool
       ? totalSupply - nftPool - communityPool
@@ -164,6 +197,9 @@ function useClaimDataValue() {
     totalSupply,
     nftPool,
     communityPool,
+    nftPoolRemaining,
+    communityPoolRemaining,
+    communityClaimFee,
     ownerAllocation,
     thresholdEligible,
     bestClaimChain,

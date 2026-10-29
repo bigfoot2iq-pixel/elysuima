@@ -13,6 +13,7 @@ import {
   ADMIN_SESSION_TTL_SECONDS,
   buildAdminSessionMessage,
 } from "@/lib/admin/access";
+import { isClaimAccessAddress } from "./claim-access";
 
 /**
  * Hard fallback for the wallet that owns the Elyziuma NFT collection. It can
@@ -126,17 +127,26 @@ async function verifySignature(record: AdminSessionRecord) {
   }
 }
 
-async function verifyAdminSessionRecord(
+async function verifySessionRecord(
   record: AdminSessionRecord,
   now: number,
 ): Promise<AdminSession | null> {
-  if (record.a !== getAdminOwnerAddress()) return null;
   if (record.exp <= now) return null;
   if (record.iat > now + CLOCK_SKEW_SECONDS) return null;
   if (record.exp - record.iat !== ADMIN_SESSION_TTL_SECONDS) return null;
   if (!(await verifySignature(record))) return null;
 
   return { address: record.a, expiresAt: record.exp };
+}
+
+/** Owner-only check, used by the owner console under `/admin`. */
+async function verifyAdminSessionRecord(
+  record: AdminSessionRecord,
+  now: number,
+): Promise<AdminSession | null> {
+  if (record.a !== getAdminOwnerAddress()) return null;
+
+  return verifySessionRecord(record, now);
 }
 
 /** Reads and verifies the owner-console session from the request cookies. */
@@ -151,9 +161,30 @@ export async function readAdminSession(): Promise<AdminSession | null> {
 }
 
 /**
+ * Reads a session for the private claim page. The collection owner and the
+ * claim-only allowlist are accepted; the owner console stays owner-only.
+ */
+export async function readClaimSession(): Promise<AdminSession | null> {
+  const raw = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+  if (!raw) return null;
+
+  const record = decodeAdminSession(raw);
+  if (!record) return null;
+
+  const now = Math.floor(Date.now() / 1000);
+  const session = await verifySessionRecord(record, now);
+  if (!session) return null;
+  if (!isClaimAccessAddress(session.address, getAdminOwnerAddress())) {
+    return null;
+  }
+
+  return session;
+}
+
+/**
  * Validates a signed login message and returns the session to persist.
  * Throws `AdminSessionError` when the message is stale, forged, or signed by
- * any wallet other than the configured collection owner.
+ * a wallet that is neither the collection owner nor claim-allowlisted.
  */
 export async function authenticateAdminLogin(input: {
   address: string;
@@ -165,7 +196,7 @@ export async function authenticateAdminLogin(input: {
   if (!isAddress(input.address)) {
     throw new AdminSessionError(
       "INVALID_ADDRESS",
-      "Connect a valid owner wallet.",
+      "Connect a valid wallet.",
       400,
     );
   }
@@ -196,10 +227,10 @@ export async function authenticateAdminLogin(input: {
   const address = getAddress(input.address);
   const owner = getAdminOwnerAddress();
 
-  if (address !== owner) {
+  if (!isClaimAccessAddress(address, owner)) {
     throw new AdminSessionError(
       "NOT_AUTHORIZED",
-      "Only the wallet that owns the collection can unlock this console.",
+      "This wallet is not on the claim access list.",
       403,
     );
   }
@@ -233,8 +264,8 @@ export async function authenticateAdminLogin(input: {
     s: input.signature,
   };
 
-  const session = await verifyAdminSessionRecord(record, now);
-  if (!session) {
+  const session = await verifySessionRecord(record, now);
+  if (!session || !isClaimAccessAddress(session.address, owner)) {
     throw new AdminSessionError(
       "INVALID_SIGNATURE",
       "The wallet signature did not match this login request.",

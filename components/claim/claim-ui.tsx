@@ -13,6 +13,8 @@ import { formatAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useClaimData } from "./claim-data";
 
+export { PoolProgress as ClaimPoolProgress } from "@/components/pool-progress";
+
 export type ClaimTone = "mint" | "warn" | "danger" | "muted" | "brand";
 
 const TONE_STYLES: Record<ClaimTone, string> = {

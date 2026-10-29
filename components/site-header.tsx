@@ -20,7 +20,7 @@ const PUBLIC_NAV = [
 
 const CLAIM_NAV = { label: "Claim", href: "/claim" };
 
-/** The claim page is private, so its link only appears with an owner session. */
+/** The claim page is private, so its link only appears with an allowed session. */
 function navigationFor(showClaim: boolean) {
   if (!showClaim) return PUBLIC_NAV;
 

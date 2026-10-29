@@ -8,21 +8,22 @@ import { SiteHeader } from "@/components/site-header";
 import { CLAIM_CHAIN_ID } from "@/lib/config";
 import {
   getAdminOwnerAddress,
-  readAdminSession,
+  readClaimSession,
 } from "@/lib/server/admin-session";
+import { getClaimAccessAddresses } from "@/lib/server/claim-access";
 
 export const metadata: Metadata = {
   title: "Claim Rewards",
   description:
-    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. NFT claims are free; the community claim needs 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM mainnet.",
+    "Claim 10,000 ELYZ per NFT and 1,000 ELYZ once per wallet on Elysium. NFT claims are free; the community claim needs 0.001 ETH on Ethereum, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM mainnet.",
   keywords: [
     "Elyziuma claim",
     "claim ELYZ",
     "Elysium NFT rewards",
-    "0.001 ETH / 0.05 HYPE / 0.005 HYPE eligibility",
+    "0.001 ETH / 0.01 HYPE eligibility",
     `Elysium ${CLAIM_CHAIN_ID}`,
   ],
-  // The claim page is private for the collection owner until claims go public.
+  // The claim page is private for allowlisted wallets until claims go public.
   robots: {
     index: false,
     follow: false,
@@ -56,18 +57,20 @@ export default function ClaimPage() {
 }
 
 /**
- * The owner session is read on the server, so the claim flow never renders for
- * anyone but the collection owner, even before client JavaScript runs.
+ * The session is read on the server, so the claim flow never renders for
+ * anyone outside the allowlist, even before client JavaScript runs.
  */
 async function ClaimAccess() {
   await connection();
 
-  const session = await readAdminSession();
+  const owner = getAdminOwnerAddress();
+  const session = await readClaimSession();
 
   if (!session) {
     return (
       <AdminAccessGate
-        ownerAddress={getAdminOwnerAddress()}
+        ownerAddress={owner}
+        allowedAddresses={getClaimAccessAddresses(owner)}
         context="claim"
       />
     );
@@ -80,7 +83,7 @@ function ClaimAccessFallback() {
   return (
     <div className="section-shell pb-24 pt-14" aria-busy="true">
       <div className="h-[430px] animate-pulse rounded-[32px] bg-paper/[0.04]" />
-      <p className="sr-only">Checking owner access…</p>
+      <p className="sr-only">Checking wallet access…</p>
     </div>
   );
 }

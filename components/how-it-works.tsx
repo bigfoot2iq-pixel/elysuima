@@ -22,7 +22,7 @@ const STEPS = [
     number: "02",
     icon: ShieldCheck,
     title: "Check the community gate",
-    body: "The community claim requires 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. These are mainnet balances. NFT holder claims are free and skip this check.",
+    body: "The community claim requires 0.001 ETH on Ethereum, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. These are mainnet balances. NFT holder claims are free and skip this check.",
     href: "/#faq",
     linkLabel: "See the check",
   },

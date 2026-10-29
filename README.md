@@ -27,7 +27,7 @@ The reference contract was verified on BscScan and its source was retrieved thro
 | $0.20 payable claim in BNB via Chainlink | **Changed** to an owner-set HYPE fee on the community claim; NFT claims are free |
 | Randomized lottery tiers (50–150, 300–500, 1,000–3,000, 21,000, bonus sweep) | **Not copied** — both pools pay fixed amounts |
 | Last claim sweeps the remaining pool | **Not copied** — each pool has an exact cap; underfunded claims revert |
-| Binance Agent ID gate (v4) | **Replaced** with a community-only UI 0.001 ETH / 0.05 HYPE / 0.005 HYPE check |
+| Binance Agent ID gate (v4) | **Replaced** with a community-only UI 0.001 ETH / 0.01 HYPE check |
 | Owner renounced / no admin controls | **Changed** — the owner sets the community fee and fee recipient, pauses, and withdraws fees/surplus; the reward pools cannot be withdrawn |
 
 The Shaniu code is a single token contract with built-in claim logic. Elyziuma keeps the token and claim contract separate so the claim can be paused, refilled, or replaced without migrating the token. The full source-level comparison is in [`docs/shaniu-analysis.md`](docs/shaniu-analysis.md).
@@ -48,6 +48,8 @@ The Shaniu code is a single token contract with built-in claim logic. Elyziuma k
 
 The deploy script transfers 22,220,000 ELYZ to `ElyziumaClaim` for the NFT pool, another 11,110,000 for the community pool, and 1,000,000 to the owner allocation recipient. The pool caps are constants in the claim contract, so the script enforces the fixed 34.33M split instead of accepting allocation overrides.
 
+The claim page groups the owner allocation into its Community cell, so that cell shows 12,110,000 ELYZ while the community claim pool itself remains 11,110,000 ELYZ.
+
 The owner allocation is transferred at deployment, so the owner receives it before any claim is opened. The claim contract cannot pay a partial reward: if a pool is underfunded or exhausted, the claim reverts.
 
 ---
@@ -66,15 +68,17 @@ Each NFT can claim once. If an unclaimed NFT is transferred, the new owner can c
 ### Community claim
 
 1. The browser reads the wallet's `communityClaimed` flag from the claim contract.
-2. The UI checks that the wallet holds the community minimum on a supported mainnet chain.
+2. The UI's eligibility step shows each supported chain, its minimum, and the wallet's live balance, then unlocks the claim when at least one requirement is met.
 3. The wallet submits `claimCommunity()` on Elysium. The contract verifies that the wallet has not claimed, that the community pool can cover 1,000 ELYZ, and that the exact HYPE fee was sent.
 4. The contract marks the wallet claimed and transfers 1,000 ELYZ.
 
 ### The community balance check
 
-The community claim requires 0.001 ETH on Ethereum mainnet, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. This is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the check, but it still has to satisfy the one-time community claim, the pool cap, and the community fee (if one is set). NFT holder claims are free and are not gated by this check.
+The community claim requires 0.001 ETH on Ethereum mainnet, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. This is a UI gate only. The claim contract does not read balances on other chains. A direct contract call bypasses the check, but it still has to satisfy the one-time community claim, the pool cap, and the community fee (if one is set). NFT holder claims are free and are not gated by this check.
 
-The `/claim` page is private while claims are being prepared. It is gated on the server by the same owner session as `/admin`, is `noindex, nofollow`, and is not linked from the public navigation or footer. Only the collection owner wallet can connect and sign in to view it. This is a page-level gate, not an on-chain restriction: the deployed claim contracts remain callable by anyone who knows their address.
+The claim page also shows live progress for the holder and community pools above the claim cards. Progress is read directly from the claim contract, so it is visible before a wallet connects.
+
+The `/claim` page is private while claims are being prepared. It is gated on the server by the same session as `/admin`, is `noindex, nofollow`, and is not linked from the public navigation or footer. Only the collection owner and the claim allowlist can connect and sign in to view it. This is a page-level gate, not an on-chain restriction: the deployed claim contracts remain callable by anyone who knows their address.
 
 ---
 
@@ -265,6 +269,7 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel KV credentials. `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are also supported |
 | `LAUNCHPAD_ADMIN_ADDRESSES` | Optional allowlist of launchpad admins, as comma-separated addresses |
 | `ADMIN_OWNER_ADDRESS` | Wallet allowed to unlock `/admin`. Defaults to the Elyziuma collection owner |
+| `CLAIM_ALLOWED_ADDRESSES` | Optional extra wallets allowed to open `/claim`, as comma-separated addresses. Claim-only; `/admin` stays owner-only |
 | `ETH_RPC_URL`, `HYPEREVM_RPC_URL`, `BASE_RPC_URL`, `INK_RPC_URL` | Optional eligibility RPC overrides. Hyperliquid (HyperCore) is read from the official info API |
 
 ### Deploy variables
@@ -491,7 +496,7 @@ Exchanges a signed owner login message for an `HttpOnly` session cookie. Body:
 }
 ```
 
-The signature must cover `address`, both timestamps, and the nonce. Only `ADMIN_OWNER_ADDRESS` is accepted, and the login message must be less than five minutes old. Sessions last 12 hours.
+The signature must cover `address`, both timestamps, and the nonce. Only the collection owner and wallets on the claim allowlist are accepted, and the login message must be less than five minutes old. Sessions last 12 hours.
 
 ### `DELETE /api/admin/session`
 
@@ -507,7 +512,7 @@ Clears the owner session cookie (the **Lock** button in the console footer).
 
 The console is gated on the server before any console data is rendered. Without a valid session the page only sends the unlock screen. To unlock, the collection owner connects the wallet configured in `ADMIN_OWNER_ADDRESS` — it defaults to `0xb181FDFe71A0a0f56574D88f22B6BaFD142192F6` — and signs a free message. The server verifies the signature, the owner address, and the five-minute login window, then sets a 12-hour `HttpOnly` session cookie. The cookie carries the signed message itself, so it cannot be forged or edited without the owner's key. The footer has a **Lock** action that clears the session immediately.
 
-The private `/claim` page uses the same session. Its link appears in the main navigation only after the owner unlocks a session, and signing out hides it again.
+The private `/claim` page uses the same session. Its link appears in the main navigation only after an allowed wallet unlocks a session, and signing out hides it again. Claim access is limited to the collection owner, the built-in allowlist in `lib/server/claim-access.ts`, and any addresses added through `CLAIM_ALLOWED_ADDRESSES`; those extra wallets still cannot open `/admin`.
 
 Writes remain independently protected: contract calls are owner transactions, and launchpad settings changes require their own signed message.
 
@@ -523,7 +528,7 @@ Transfer ownership to another wallet or renounce it permanently. Both are two-st
 
 ### 03 — Claim & rewards
 
-Community claim fee, fee recipient, pause/unpause, fee withdrawal, token-surplus withdrawal, pool balances, and health. NFT claims are free. This section is separate from the NFT collection and requires the claim owner. The claim owner can never withdraw the outstanding reward pools; `withdrawSurplus` only releases ELYZ above the NFT + community liabilities.
+Token & claim configuration (reward per NFT, community reward, batch cap, community fee, fee recipient, claim network, pause state), live pool accounting with holder and community progress bars, fee withdrawal, token-surplus withdrawal, and health. NFT claims are free. This section is separate from the NFT collection and requires the claim owner. The claim owner can never withdraw the outstanding reward pools; `withdrawSurplus` only releases ELYZ above the NFT + community liabilities.
 
 `/admin/launchpad` and `/admin/collection` are kept as 307 redirects to `/admin#collection`.
 
@@ -550,7 +555,7 @@ The public launchpad's display settings - collection address, mint method, max s
 
 ### Enforced off-chain
 
-- Community balance check: at least 0.001 ETH on Ethereum mainnet, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. This is a UI gate, not a contract check. The launchpad keeps its own separate five-chain mint guard.
+- Community balance check: at least 0.001 ETH on Ethereum mainnet, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. This is a UI gate, not a contract check. The launchpad keeps its own separate five-chain mint guard.
 - Per-IP rate limits on `/api/eligibility` and `/api/claim/eligibility`.
 - Short-lived claim-eligibility caching keyed by block number.
 - Launchpad admin signatures with a five-minute window and replay guard.
@@ -560,7 +565,7 @@ The public launchpad's display settings - collection address, mint method, max s
 ### Limitations
 
 - The community balance check is a UI gate only. A user calling the claim contract directly bypasses it; the contract still enforces one-time community eligibility, pool caps, and the community fee.
-- The check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH, 0.05 HYPE, or 0.005 HYPE.
+- The check is a bot speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH or 0.01 HYPE.
 - The owner can set the community claim fee, including a fee high enough to make community claims unattractive, and can pause claims. NFT claims are free. The owner cannot withdraw the reward pools, but community fees are a trust assumption.
 - The NFT pool is sized for all 2,222 NFTs. If the collection does not sell out, the unclaimed portion stays in the claim contract; the owner cannot withdraw it through `withdrawSurplus`.
 - The community pool is sized for 11,110 wallets. If fewer wallets claim, the remainder stays in the claim contract.
@@ -643,7 +648,7 @@ components/
     admin-data.ts                Shared reads and admin status
     admin-ui.tsx                 Console primitives
   launchpad/                     Hero, mint card, details, teaser
-  ...                            Claim cards, tokenomics strip, eligibility, stats, feed, FAQ
+  ...                            Claim cards, tokenomics strip, pool progress, eligibility step, stats, feed, FAQ
 contracts/
   src/ElyziumaToken.sol          Fixed-supply ERC-20
   src/ElyziumaClaim.sol          Two-pool NFT + community claim

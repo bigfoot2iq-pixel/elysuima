@@ -23,14 +23,14 @@ const FAQS = [
       "It is a separate mint page for the Elyziuma NFT collection on Elysium. The owner configures the collection address, mint price, and wallet limit from the admin console. Minting goes directly to the collection, or through OpenSea SeaDrop when the drop uses it.",
   },
   {
-    question: "Why the 0.001 ETH / 0.05 HYPE / 0.005 HYPE balance check?",
+    question: "Why the 0.001 ETH / 0.01 HYPE balance check?",
     answer:
-      "It is a bot-resistance check for the community claim. Your wallet must hold 0.001 ETH on Ethereum mainnet, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. The balance stays in your wallet — we only read it. NFT holder claims are free and do not use this check.",
+      "It is a bot-resistance check for the community claim. Your wallet must hold 0.001 ETH on Ethereum mainnet, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. The balance stays in your wallet — we only read it. NFT holder claims are free and do not use this check.",
   },
   {
     question: "Which chains count?",
     answer:
-      "Ethereum mainnet, Hyperliquid, and HyperEVM. The community claim needs 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. Base and Ink are not part of the claim check.",
+      "Ethereum mainnet, Hyperliquid, and HyperEVM. The community claim needs 0.001 ETH on Ethereum, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. Base and Ink are not part of the claim check.",
   },
   {
     question: "Is the balance check enforced on-chain?",
@@ -55,7 +55,7 @@ const FAQS = [
   {
     question: "Does the check stop all bots?",
     answer:
-      "No. It is a speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH, 0.05 HYPE, or 0.005 HYPE. The claim contract prevents replay and double claims, but it cannot prove a human is behind every wallet.",
+      "No. It is a speed bump, not sybil-proof identity. A determined operator can fund many wallets with 0.001 ETH or 0.01 HYPE. The claim contract prevents replay and double claims, but it cannot prove a human is behind every wallet.",
   },
   {
     question: "Is ELYZ worth anything?",

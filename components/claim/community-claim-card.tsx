@@ -11,10 +11,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getElysiumChain } from "@/lib/chains";
-import { CLAIM_CHAIN_ID, IS_CONFIGURED } from "@/lib/config";
+import {
+  CLAIM_CHAIN_ID,
+  IS_CONFIGURED,
+  TOKENOMICS,
+} from "@/lib/config";
 import { formatAmount, formatCompact } from "@/lib/format";
 import { useClaimFlow } from "@/hooks/use-claim-flow";
 import { useClaimData } from "./claim-data";
+import { CommunityEligibilityCheck } from "./community-eligibility-check";
 import {
   ClaimCardFooter,
   ClaimError,
@@ -32,13 +37,14 @@ export function CommunityClaimCard() {
     chainId,
     data,
     community,
+    communityPoolRemaining: chainCommunityPoolRemaining,
+    communityClaimFee: chainCommunityClaimFee,
     symbol,
     decimals,
     paused,
     eligibility,
     claimEligibility,
     thresholdEligible,
-    bestClaimChain,
     refresh,
   } = useClaimData();
   const { openConnectModal } = useConnectModal();
@@ -48,11 +54,19 @@ export function CommunityClaimCard() {
     onSuccess: refresh,
   });
 
-  const communityClaimable = BigInt(community?.claimableAmount ?? "0");
-  const communityFee = BigInt(community?.claimFee ?? "0");
-  const communityPoolRemaining = BigInt(
-    data?.pools.communityRemaining ?? "0",
-  );
+  // The reward is a contract constant, so the card can show it before a wallet
+  // connects. The live claim status still replaces it with 0 once claimed.
+  const communityClaimable = community
+    ? BigInt(community.claimableAmount)
+    : TOKENOMICS.communityReward;
+  const communityFee = community
+    ? BigInt(community.claimFee)
+    : (chainCommunityClaimFee ?? 0n);
+  const communityFeeKnown =
+    Boolean(community) || chainCommunityClaimFee !== undefined;
+  const communityPoolRemaining =
+    chainCommunityPoolRemaining ??
+    (data ? BigInt(data.pools.communityRemaining) : undefined);
   const checking =
     Boolean(address) && eligibility.isLoading && !eligibility.data;
 
@@ -80,28 +94,6 @@ export function CommunityClaimCard() {
     return `Claim ${formatAmount(communityClaimable, decimals, 0)} ${symbol}`;
   })();
 
-  const detail = (() => {
-    if (!address) return "Connect the wallet you want to claim with.";
-    if (checking) return "Checking your mainnet ETH and HYPE balances…";
-    if (eligibility.isError) {
-      return "The mainnet balance check is unavailable. Retry to continue.";
-    }
-    if (community?.claimed) {
-      return "This wallet has already claimed its 1,000 ELYZ. You can still claim any eligible NFT rewards on the left.";
-    }
-    if (!thresholdEligible) {
-      return "The community claim requires 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. These are mainnet balances.";
-    }
-    if (claimEligibility.isError) {
-      return "The community reward could not be read. Retry to continue.";
-    }
-    if (!community) return "Reading the community pool from Elysium…";
-    if (communityPoolRemaining === 0n) {
-      return "The community pool is empty right now. Check back after a top-up.";
-    }
-    return `Eligible via ${bestClaimChain}. One claim per wallet; the HYPE fee is set by the owner.`;
-  })();
-
   const amountLabel = community?.claimed
     ? "already claimed"
     : "claimable once";
@@ -114,7 +106,7 @@ export function CommunityClaimCard() {
     if (checking) return { tone: "brand", label: "Checking" };
     if (eligibility.isError) return { tone: "warn", label: "Unavailable" };
     if (community?.claimed) return { tone: "mint", label: "Complete" };
-    if (!thresholdEligible) return { tone: "muted", label: "Locked" };
+    if (!thresholdEligible) return { tone: "muted", label: "Not eligible" };
     if (claimEligibility.isError) return { tone: "warn", label: "Unavailable" };
     if (!community) return { tone: "muted", label: "Syncing" };
     if (communityPoolRemaining === 0n) return { tone: "warn", label: "Empty" };
@@ -200,10 +192,10 @@ export function CommunityClaimCard() {
           </span>
           <div>
             <p className="text-[9px] uppercase tracking-[0.22em] text-paper-mute">
-              All wallets
+              Public
             </p>
-            <h2 className="mt-1 text-base font-semibold tracking-[-0.02em] text-paper">
-              Community claim
+            <h2 className="mt-1 text-[15px] font-semibold leading-tight tracking-[-0.02em] text-paper">
+              ELYZIUMA Community claim
             </h2>
           </div>
         </div>
@@ -213,7 +205,7 @@ export function CommunityClaimCard() {
       <div className="mt-6">
         <div className="flex items-end gap-2">
           <span className="tabular truncate font-mono text-[clamp(2.6rem,6vw,3.8rem)] font-semibold leading-[0.85] tracking-[-0.07em] text-paper">
-            {community ? formatAmount(communityClaimable, decimals, 0) : "—"}
+            {formatAmount(communityClaimable, decimals, 0)}
           </span>
           <span className="mb-1 shrink-0 text-[11px] font-bold tracking-[0.2em] text-mint">
             {symbol}
@@ -226,21 +218,38 @@ export function CommunityClaimCard() {
         <ClaimStat value="1" label="Per wallet" />
         <ClaimStat
           value={
-            data
-              ? `${formatCompact(communityPoolRemaining, decimals)}`
+            communityPoolRemaining !== undefined
+              ? formatCompact(communityPoolRemaining, decimals)
               : "—"
           }
           label="ELYZ left"
         />
         <ClaimStat
-          value={community ? formatAmount(communityFee, 18, 6) : "—"}
+          value={communityFeeKnown ? formatAmount(communityFee, 18, 6) : "—"}
           label="HYPE fee"
         />
       </dl>
 
-      <p className="mt-4 min-h-10 text-[11px] leading-5 text-paper-mute">
-        {detail}
-      </p>
+      {community?.claimed ? (
+        <div className="mt-5 rounded-2xl border border-mint/20 bg-mint/[0.05] px-3.5 py-3">
+          <p className="text-[11px] font-semibold text-mint">
+            Community reward already claimed
+          </p>
+          <p className="mt-0.5 text-[10px] leading-4 text-paper-mute">
+            This wallet has received its 1,000 ELYZ. Eligible NFT rewards are
+            still claimable on the left.
+          </p>
+        </div>
+      ) : (
+        <CommunityEligibilityCheck
+          address={address}
+          data={eligibility.data}
+          isPending={eligibility.isLoading}
+          isError={eligibility.isError}
+          isFetching={eligibility.isFetching}
+          onRetry={() => void eligibility.refetch()}
+        />
+      )}
 
       <div className="mt-auto">
         <button
@@ -258,7 +267,7 @@ export function CommunityClaimCard() {
       {phase === "success" && hash ? <ClaimSuccessPanel hash={hash} /> : null}
       {error ? <ClaimError message={error} /> : null}
 
-      <ClaimCardFooter fee={community ? communityFee : undefined} />
+      <ClaimCardFooter fee={communityFeeKnown ? communityFee : undefined} />
     </article>
   );
 }

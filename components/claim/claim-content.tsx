@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { ArrowUpRight, Fuel } from "lucide-react";
 import { ClaimCards } from "@/components/claim/claim-cards";
-import { EligibilityPanel } from "@/components/eligibility-panel";
 import { LINKS } from "@/lib/config";
 
 const FAQS = [
@@ -13,7 +12,7 @@ const FAQS = [
   {
     question: "Why does the community claim need a balance check?",
     answer:
-      "The 1,000 ELYZ community claim requires 0.001 ETH on Ethereum, 0.05 HYPE on Hyperliquid, or 0.005 HYPE on HyperEVM. These are mainnet balances. NFT holder claims are free and skip this check. It is a UI anti-sybil gate; the claim contract does not read balances on other chains.",
+      "The 1,000 ELYZ community claim requires 0.001 ETH on Ethereum, 0.01 HYPE on Hyperliquid, or 0.01 HYPE on HyperEVM. These are mainnet balances. NFT holder claims are free and skip this check. It is a UI anti-sybil gate; the claim contract does not read balances on other chains.",
   },
   {
     question: "What happens when an NFT is transferred?",
@@ -28,7 +27,7 @@ const FAQS = [
   {
     question: "What is the ELYZ supply?",
     answer:
-      "34,330,000 ELYZ: 22,220,000 reserved for 2,222 NFT holders, 11,110,000 for 11,110 community claims, and 1,000,000 allocated to the owner at deployment.",
+      "34,330,000 ELYZ: 22,220,000 reserved for 2,222 NFT holders and 12,110,000 for the community, including 1,000,000 allocated at deployment.",
   },
   {
     question: "Is the claim custodial?",
@@ -99,9 +98,7 @@ export function ClaimContent() {
 
       <section className="section-shell pb-10 sm:pb-12">
         <div className="mx-auto max-w-2xl">
-          <EligibilityPanel />
-
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] text-paper-mute">
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] text-paper-mute">
             <Fuel className="size-3.5 text-brand" />
             <span>
               Gas is paid in HYPE. NFT claims are free; the community fee is

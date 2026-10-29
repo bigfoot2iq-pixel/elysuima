@@ -35,6 +35,7 @@ export function HolderClaimCard() {
     chainId,
     data,
     nft,
+    nftPoolRemaining: chainNftPoolRemaining,
     symbol,
     decimals,
     paused,
@@ -52,7 +53,9 @@ export function HolderClaimCard() {
     onSuccess: refresh,
   });
 
-  const nftPoolRemaining = BigInt(data?.pools.nftRemaining ?? "0");
+  const nftPoolRemaining =
+    chainNftPoolRemaining ??
+    (data ? BigInt(data.pools.nftRemaining) : undefined);
   const nftClaimable = BigInt(nft?.claimableAmount ?? "0");
   const maxBatch = nft?.maxBatch ?? 50;
   const claimableIds = (nft?.claimableTokenIds ?? [])
@@ -305,8 +308,8 @@ export function HolderClaimCard() {
             <p className="text-[9px] uppercase tracking-[0.22em] text-paper-mute">
               NFT holders
             </p>
-            <h2 className="mt-1 text-base font-semibold tracking-[-0.02em] text-paper">
-              Holder claim
+            <h2 className="mt-1 text-[15px] font-semibold leading-tight tracking-[-0.02em] text-paper">
+              ELYZIUMA Holder claim
             </h2>
           </div>
         </div>

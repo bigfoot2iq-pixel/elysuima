@@ -14,7 +14,7 @@ export type AdminSessionStatus = {
 };
 
 /**
- * Reads the owner-console session from the server. The claim page uses the
+ * Reads the private-access session from the server. The claim page uses the
  * same 12-hour session as `/admin`, so the shared navigation only shows the
  * private claim link once that session is valid.
  */

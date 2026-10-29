@@ -9,6 +9,7 @@ import {
   Pause,
   Play,
   Send,
+  Settings2,
   ShieldCheck,
   Wallet,
 } from "lucide-react";
@@ -36,11 +37,13 @@ import {
 } from "@/lib/config";
 import { getElysiumChain } from "@/lib/chains";
 import { formatAmount, shortAddress } from "@/lib/format";
+import { PoolProgress } from "@/components/pool-progress";
 import { cn } from "@/lib/utils";
 import { useClaimData, useHealth } from "./admin-data";
 import {
   CardHeading,
   ConnectPrompt,
+  KeyValueRow,
   MiniStat,
   Notice,
   Panel,
@@ -99,6 +102,16 @@ export function ClaimSection({ address }: { address?: Address }) {
     claim.tokenBalance !== undefined && claim.tokenBalance > outstanding
       ? claim.tokenBalance - outstanding
       : 0n;
+  const nftPoolTotal =
+    claim.nftClaimedTotal !== undefined &&
+    claim.nftPoolRemaining !== undefined
+      ? claim.nftClaimedTotal + claim.nftPoolRemaining
+      : undefined;
+  const communityPoolTotal =
+    claim.communityClaimedTotal !== undefined &&
+    claim.communityPoolRemaining !== undefined
+      ? claim.communityClaimedTotal + claim.communityPoolRemaining
+      : undefined;
 
   useEffect(() => {
     if (!hash || !receipt.isSuccess || handledSuccess.current === hash) return;
@@ -301,6 +314,109 @@ export function ClaimSection({ address }: { address?: Address }) {
               tone="warn"
             />
           </div>
+        ) : null}
+
+        {claim.configured ? (
+          <Panel>
+            <CardHeading
+              icon={Settings2}
+              title="Token & claim configuration"
+              description="On-chain reward, fee, and pool settings. Reward amounts, pool sizes, and the batch cap are fixed in the contract; the community fee, fee recipient, and pause state stay owner-controlled."
+              aside={
+                <StatusPill tone={claim.paused ? "warn" : "mint"}>
+                  {claim.paused ? "Paused" : "Live"}
+                </StatusPill>
+              }
+            />
+
+            <div className="mt-4 grid gap-x-6 sm:grid-cols-2">
+              <KeyValueRow
+                label="ELYZ per NFT"
+                value={
+                  claim.nftReward !== undefined
+                    ? `${formatAmount(
+                        claim.nftReward,
+                        claim.decimals,
+                        0,
+                      )} ${claim.symbol}`
+                    : "—"
+                }
+              />
+              <KeyValueRow
+                label="Community reward"
+                value={
+                  claim.communityReward !== undefined
+                    ? `${formatAmount(
+                        claim.communityReward,
+                        claim.decimals,
+                        0,
+                      )} ${claim.symbol}`
+                    : "—"
+                }
+              />
+              <KeyValueRow
+                label="Batch cap"
+                value={
+                  claim.maxBatch !== undefined
+                    ? `${formatAmount(claim.maxBatch, 0, 0)} NFTs`
+                    : "—"
+                }
+              />
+              <KeyValueRow
+                label="Community fee"
+                value={
+                  claim.communityClaimFee !== undefined
+                    ? `${formatHype(claim.communityClaimFee)} HYPE`
+                    : "—"
+                }
+                tone="brand"
+              />
+              <KeyValueRow
+                label="Fee recipient"
+                value={shortAddress(claim.feeRecipient, 6)}
+              />
+              <KeyValueRow
+                label="ELYZ token"
+                value={`${claim.symbol} · ${shortAddress(TOKEN_ADDRESS, 4)}`}
+                tone="brand"
+              />
+              <KeyValueRow
+                label="Claim contract"
+                value={shortAddress(CLAIM_ADDRESS, 5)}
+              />
+              <KeyValueRow
+                label="Claim network"
+                value={`${claimChain.name} · ${CLAIM_CHAIN_ID}`}
+              />
+            </div>
+
+            <div className="mt-5 grid gap-4 border-t border-paper/[0.07] pt-4 sm:grid-cols-2">
+              <PoolProgress
+                label="Holder pool"
+                claimed={claim.nftClaimedTotal}
+                total={nftPoolTotal}
+                remaining={claim.nftPoolRemaining}
+                symbol={claim.symbol}
+                decimals={claim.decimals}
+                tone="brand"
+              />
+              <PoolProgress
+                label="Community pool"
+                claimed={claim.communityClaimedTotal}
+                total={communityPoolTotal}
+                remaining={claim.communityPoolRemaining}
+                symbol={claim.symbol}
+                decimals={claim.decimals}
+                tone="mint"
+              />
+            </div>
+
+            <p className="mt-3 text-[9px] leading-5 text-paper-mute">
+              Rewards and pool sizes are immutable, so they can only change with
+              a new claim contract. Use the panels below to update the fee,
+              fee recipient, or pause state.
+            </p>
+          </Panel>
         ) : null}
 
         {claim.configured && health.data?.funded === false ? (

@@ -13,8 +13,8 @@ export const ADMIN_SESSION_TTL_SECONDS = 12 * 60 * 60;
 export const ADMIN_LOGIN_MAX_AGE_SECONDS = 5 * 60;
 
 /**
- * The message the owner signs to unlock the console. It contains every value
- * the server stores in the session cookie, so the cookie cannot be forged or
+ * The message signed to unlock private access. It contains every value the
+ * server stores in the session cookie, so the cookie cannot be forged or
  * edited without a valid wallet signature.
  */
 export function buildAdminSessionMessage(input: {
@@ -28,14 +28,14 @@ export function buildAdminSessionMessage(input: {
     : input.address;
 
   return [
-    "Elyziuma owner console",
+    "Elyziuma private access",
     "",
     `Wallet: ${address}`,
     `Issued at: ${new Date(input.issuedAt * 1000).toISOString()}`,
     `Expires at: ${new Date(input.expiresAt * 1000).toISOString()}`,
     `Nonce: ${input.nonce}`,
     "",
-    `Signing this message unlocks the admin console in this browser for ${Math.round(
+    `Signing this message unlocks Elyziuma access in this browser for ${Math.round(
       ADMIN_SESSION_TTL_SECONDS / 3600,
     )} hours.`,
     "It does not send a transaction or approve any token.",
