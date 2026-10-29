@@ -65,7 +65,7 @@ export function CommunityEligibilityCheck({
         tone: "muted" as const,
         icon: null,
         title: "Connect to check",
-        body: "Connect the wallet you want to claim with, then we'll read its mainnet balances.",
+        body: "Connect a wallet to read its mainnet balances.",
       };
     }
     if (checking) {
@@ -73,7 +73,7 @@ export function CommunityEligibilityCheck({
         tone: "brand" as const,
         icon: <Loader2 className="size-3.5 animate-spin" />,
         title: "Checking your balances",
-        body: "Reading Ethereum, Hyperliquid, and HyperEVM mainnet balances.",
+        body: "Reading your mainnet balances.",
       };
     }
     if (isError) {
@@ -81,7 +81,7 @@ export function CommunityEligibilityCheck({
         tone: "warn" as const,
         icon: <AlertTriangle className="size-3.5" />,
         title: "Balance check unavailable",
-        body: "The eligibility service did not respond. Retry to try again.",
+        body: "Retry in a moment.",
       };
     }
     if (allUnavailable) {
@@ -89,7 +89,7 @@ export function CommunityEligibilityCheck({
         tone: "warn" as const,
         icon: <AlertTriangle className="size-3.5" />,
         title: "Networks unreachable",
-        body: "None of the three RPCs responded. Retry in a moment.",
+        body: "No RPC responded. Retry in a moment.",
       };
     }
     if (best) {
@@ -97,14 +97,14 @@ export function CommunityEligibilityCheck({
         tone: "mint" as const,
         icon: <Check className="size-3.5" />,
         title: `Eligible via ${best.chain.name}`,
-        body: "One requirement is met, so the community claim is unlocked.",
+        body: "Community claim unlocked.",
       };
     }
     return {
       tone: "muted" as const,
       icon: <X className="size-3.5" />,
       title: "No requirement met yet",
-      body: "Fund any one of these mainnet balances, then recheck. Balances can take about 30 seconds to refresh.",
+      body: "Fund one, then recheck. Balances can take ~30s to refresh.",
     };
   })();
 
@@ -138,12 +138,11 @@ export function CommunityEligibilityCheck({
         </button>
       </div>
 
-      <p className="mt-1.5 text-[10px] leading-4 text-paper-mute">
-        Hold at least one of these mainnet balances. The check only reads your
-        wallet — nothing is signed.
+      <p className="mt-1 text-[10px] leading-4 text-paper-mute">
+        Hold any one of these mainnet balances. Nothing is signed.
       </p>
 
-      <ul className="mt-3 space-y-1.5">
+      <ul className="mt-2.5 grid grid-cols-3 gap-1.5">
         {rows.map(({ chain, result }) => {
           const met = result?.ok === true;
           const failed = Boolean(result && !result.ok && !result.error);
@@ -162,7 +161,7 @@ export function CommunityEligibilityCheck({
             <li
               key={chain.key}
               className={cn(
-                "flex items-center gap-2.5 rounded-xl border px-2.5 py-2 transition",
+                "min-w-0 rounded-xl border px-2 py-2 transition",
                 met
                   ? ROW_STYLES.met
                   : unavailable
@@ -170,58 +169,55 @@ export function CommunityEligibilityCheck({
                     : ROW_STYLES.default,
               )}
             >
-              <ChainIcon chainKey={chain.key} size={24} />
-
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate text-[11px] font-medium text-paper">
-                    {chain.name}
-                  </span>
-                  <span className="hidden rounded-full border border-paper/[0.08] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-paper-mute sm:inline">
-                    {chain.nativeSymbol}
-                  </span>
-                </div>
-                <span className="mt-0.5 block font-mono text-[9px] text-paper-mute">
-                  {chain.minBalance} {chain.nativeSymbol} required
+              <div className="flex items-center gap-1.5">
+                <ChainIcon chainKey={chain.key} size={18} />
+                <span className="min-w-0 flex-1 truncate text-[9px] font-medium text-paper sm:text-[10px]">
+                  {chain.name}
                 </span>
               </div>
 
-              <span
-                className={cn(
-                  "tabular shrink-0 font-mono text-[10px]",
-                  met ? "text-mint" : "text-paper",
-                )}
-              >
-                {result && !result.error
-                  ? formatAmount(BigInt(result.balance), 18, 6)
-                  : checking
-                    ? "…"
-                    : "—"}
-              </span>
+              <p className="mt-1 truncate font-mono text-[8px] text-paper-mute">
+                min {chain.minBalance} {chain.nativeSymbol}
+              </p>
 
-              <span
-                className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                  met
-                    ? "border-mint/30 bg-mint/10 text-mint"
-                    : unavailable
-                      ? "border-warn/30 bg-warn/10 text-warn"
-                      : "border-paper/[0.08] text-paper-mute",
-                )}
-              >
-                {met ? (
-                  <Check className="size-2.5" />
-                ) : unavailable ? (
-                  <AlertTriangle className="size-2.5" />
-                ) : checking ? (
-                  <Loader2 className="size-2.5 animate-spin" />
-                ) : failed ? (
-                  <X className="size-2.5" />
-                ) : (
-                  <Minus className="size-2.5" />
-                )}
-                <span className="sr-only">{statusLabel}</span>
-              </span>
+              <div className="mt-1 flex items-center justify-between gap-1">
+                <span
+                  className={cn(
+                    "tabular truncate font-mono text-[10px]",
+                    met ? "text-mint" : "text-paper",
+                  )}
+                >
+                  {result && !result.error
+                    ? formatAmount(BigInt(result.balance), 18, 6)
+                    : checking
+                      ? "…"
+                      : "—"}
+                </span>
+
+                <span
+                  className={cn(
+                    "flex size-4 shrink-0 items-center justify-center rounded-full border",
+                    met
+                      ? "border-mint/30 bg-mint/10 text-mint"
+                      : unavailable
+                        ? "border-warn/30 bg-warn/10 text-warn"
+                        : "border-paper/[0.08] text-paper-mute",
+                  )}
+                >
+                  {met ? (
+                    <Check className="size-2.5" />
+                  ) : unavailable ? (
+                    <AlertTriangle className="size-2.5" />
+                  ) : checking ? (
+                    <Loader2 className="size-2.5 animate-spin" />
+                  ) : failed ? (
+                    <X className="size-2.5" />
+                  ) : (
+                    <Minus className="size-2.5" />
+                  )}
+                  <span className="sr-only">{statusLabel}</span>
+                </span>
+              </div>
             </li>
           );
         })}
@@ -230,7 +226,7 @@ export function CommunityEligibilityCheck({
       <div
         aria-live="polite"
         className={cn(
-          "mt-3 flex items-start gap-2 rounded-xl border px-3 py-2.5",
+          "mt-2.5 flex items-start gap-2 rounded-xl border px-3 py-2",
           TONE_STYLES[summary.tone],
         )}
       >
@@ -240,8 +236,8 @@ export function CommunityEligibilityCheck({
           <span className="mt-1 size-1.5 shrink-0 rounded-full bg-current" />
         )}
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold">{summary.title}</p>
-          <p className="mt-0.5 text-[10px] leading-4 opacity-80">
+          <p className="text-[10px] font-semibold">{summary.title}</p>
+          <p className="mt-0.5 text-[9px] leading-4 opacity-80">
             {summary.body}
           </p>
         </div>
