@@ -13,6 +13,8 @@ export function PoolProgress({
   symbol,
   decimals,
   tone,
+  claimedLabel = "claimed",
+  totalText,
 }: {
   label: string;
   claimed?: bigint;
@@ -21,6 +23,10 @@ export function PoolProgress({
   symbol: string;
   decimals: number;
   tone: "brand" | "mint";
+  /** Wording for the filled portion, e.g. "claimed" or "active". */
+  claimedLabel?: string;
+  /** Optional exact total, used when compact notation would hide detail. */
+  totalText?: string;
 }) {
   const poolTotal = total !== undefined && total > 0n ? total : undefined;
   const percent =
@@ -36,19 +42,19 @@ export function PoolProgress({
         </span>
         <span className="tabular font-mono text-[10px] text-paper-dim">
           {poolTotal !== undefined && claimed !== undefined
-            ? `${formatPercent(percent / 100, 2)} claimed`
+            ? `${formatPercent(percent / 100, 2)} ${claimedLabel}`
             : "Syncing…"}
         </span>
       </div>
       <div
         role="progressbar"
-        aria-label={`${label} claimed`}
+        aria-label={`${label} progress`}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
         aria-valuetext={
           poolTotal !== undefined && claimed !== undefined
-            ? `${formatPercent(percent / 100, 2)} claimed`
+            ? `${formatPercent(percent / 100, 2)} ${claimedLabel}`
             : "Pool data is loading"
         }
         className="mt-2 h-1.5 overflow-hidden rounded-full bg-paper/[0.08]"
@@ -66,12 +72,18 @@ export function PoolProgress({
       <div className="mt-1.5 flex items-center justify-between gap-3 font-mono text-[9px] text-paper-mute">
         <span>
           {claimed !== undefined
-            ? `${formatAmount(claimed, decimals, 0)} ${symbol} claimed`
+            ? `${formatAmount(claimed, decimals, 0)} ${symbol} ${claimedLabel}`
             : "—"}
         </span>
         <span>
           {remaining !== undefined
-            ? `${formatCompact(remaining, decimals)} left`
+            ? `${formatCompact(remaining, decimals)} left${
+                poolTotal !== undefined
+                  ? ` of ${
+                      totalText ?? formatCompact(poolTotal, decimals)
+                    }`
+                  : ""
+              }`
             : "—"}
         </span>
       </div>

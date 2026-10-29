@@ -1,6 +1,7 @@
 "use client";
 
 import { IS_CONFIGURED } from "@/lib/config";
+import { formatAmount } from "@/lib/format";
 import { useClaimData } from "./claim-data";
 import { ClaimPoolProgress } from "./claim-ui";
 
@@ -13,6 +14,7 @@ export function ClaimPoolsProgress() {
   const {
     nftPool,
     communityPool,
+    ownerAllocation,
     nftPoolRemaining,
     communityPoolRemaining,
     symbol,
@@ -27,12 +29,15 @@ export function ClaimPoolsProgress() {
       : nftPool > nftPoolRemaining
         ? nftPool - nftPoolRemaining
         : 0n;
+  // The owner allocation is part of the public community allocation. Count it
+  // as active from the start so this bar matches the 12,110,000 Community cell.
   const communityClaimed =
-    communityPoolRemaining === undefined
-      ? undefined
-      : communityPool > communityPoolRemaining
-        ? communityPool - communityPoolRemaining
-        : 0n;
+    communityPoolRemaining === undefined ||
+    communityPool <= communityPoolRemaining
+      ? 0n
+      : communityPool - communityPoolRemaining;
+  const communityActive = ownerAllocation + communityClaimed;
+  const communityTotal = communityPool + ownerAllocation;
 
   return (
     <div className="mt-4 grid gap-px overflow-hidden rounded-2xl border border-paper/[0.08] bg-paper/[0.07] sm:grid-cols-2">
@@ -50,12 +55,14 @@ export function ClaimPoolsProgress() {
       <div className="bg-ink/85 px-4 py-3.5 sm:px-5">
         <ClaimPoolProgress
           label="Community pool"
-          claimed={communityClaimed}
-          total={communityPool}
+          claimed={communityActive}
+          total={communityTotal}
           remaining={communityPoolRemaining}
           symbol={symbol}
           decimals={decimals}
           tone="mint"
+          claimedLabel="active"
+          totalText={formatAmount(communityTotal, decimals, 0)}
         />
       </div>
     </div>

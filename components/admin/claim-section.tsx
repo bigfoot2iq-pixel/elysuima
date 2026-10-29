@@ -31,6 +31,7 @@ import { claimAbi } from "@/lib/abis";
 import {
   CLAIM_ADDRESS,
   CLAIM_CHAIN_ID,
+  TOKENOMICS,
   TOKEN_ADDRESS,
   explorerAddress,
   explorerTx,
@@ -111,6 +112,14 @@ export function ClaimSection({ address }: { address?: Address }) {
     claim.communityClaimedTotal !== undefined &&
     claim.communityPoolRemaining !== undefined
       ? claim.communityClaimedTotal + claim.communityPoolRemaining
+      : undefined;
+  const communityActive =
+    claim.communityClaimedTotal !== undefined
+      ? claim.communityClaimedTotal + TOKENOMICS.ownerAllocation
+      : undefined;
+  const communityDisplayTotal =
+    communityPoolTotal !== undefined
+      ? communityPoolTotal + TOKENOMICS.ownerAllocation
       : undefined;
 
   useEffect(() => {
@@ -402,19 +411,26 @@ export function ClaimSection({ address }: { address?: Address }) {
               />
               <PoolProgress
                 label="Community pool"
-                claimed={claim.communityClaimedTotal}
-                total={communityPoolTotal}
+                claimed={communityActive}
+                total={communityDisplayTotal}
                 remaining={claim.communityPoolRemaining}
                 symbol={claim.symbol}
                 decimals={claim.decimals}
                 tone="mint"
+                claimedLabel="active"
+                totalText={
+                  communityDisplayTotal !== undefined
+                    ? formatAmount(communityDisplayTotal, claim.decimals, 0)
+                    : undefined
+                }
               />
             </div>
 
             <p className="mt-3 text-[9px] leading-5 text-paper-mute">
-              Rewards and pool sizes are immutable, so they can only change with
-              a new claim contract. Use the panels below to update the fee,
-              fee recipient, or pause state.
+              Community progress includes the 1,000,000 ELYZ deployment
+              allocation as active. Rewards and pool sizes are immutable, so
+              they can only change with a new claim contract. Use the panels
+              below to update the fee, fee recipient, or pause state.
             </p>
           </Panel>
         ) : null}
