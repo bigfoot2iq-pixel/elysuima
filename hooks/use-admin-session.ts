@@ -13,11 +13,7 @@ export type AdminSessionStatus = {
   loginWindowSeconds: number;
 };
 
-/**
- * Reads the private-access session from the server. The claim page uses the
- * same 12-hour session as `/admin`, so the shared navigation only shows the
- * private claim link once that session is valid.
- */
+/** Reads the owner session used by the admin console. */
 export function useAdminSession() {
   return useQuery<AdminSessionStatus>({
     queryKey: ADMIN_SESSION_QUERY_KEY,

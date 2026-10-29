@@ -4,34 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { useAdminSession } from "@/hooks/use-admin-session";
 import { cn } from "@/lib/utils";
 import { TokenMark } from "./token-mark";
 import { WalletButton } from "./wallet-button";
 import { XAccountLink } from "./x-account-link";
 
-const PUBLIC_NAV = [
+const NAV = [
   { label: "Launchpad", href: "/launchpad" },
+  { label: "Claim", href: "/claim" },
   { label: "Faucet", href: "/faucet" },
   { label: "Roadmap", href: "/#roadmap" },
   { label: "How it works", href: "/#how-it-works" },
   { label: "FAQ", href: "/#faq" },
 ];
 
-const CLAIM_NAV = { label: "Claim", href: "/claim" };
-
-/** The claim page is private, so its link only appears with an allowed session. */
-function navigationFor(showClaim: boolean) {
-  if (!showClaim) return PUBLIC_NAV;
-
-  return [PUBLIC_NAV[0], CLAIM_NAV, ...PUBLIC_NAV.slice(1)];
-}
-
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const session = useAdminSession();
-  const nav = navigationFor(session.data?.authenticated === true);
 
   return (
     <header className="sticky top-0 z-50 border-b border-paper/[0.07] bg-ink/70 backdrop-blur-xl">
@@ -53,7 +42,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {nav.map((item) => {
+          {NAV.map((item) => {
             const active =
               item.href === pathname ||
               (item.href.startsWith("/") &&
@@ -101,7 +90,7 @@ export function SiteHeader() {
         )}
       >
         <div className="space-y-1 px-5 py-5">
-          {nav.map((item) => (
+          {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}

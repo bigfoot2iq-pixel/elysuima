@@ -78,7 +78,7 @@ The community claim requires 0.001 ETH on Ethereum mainnet or 0.01 HYPE on Hyper
 
 The claim page also shows live progress for the holder and community pools above the claim cards. Progress is read directly from the claim contract, so it is visible before a wallet connects.
 
-The `/claim` page is private while claims are being prepared. It is gated on the server by the same session as `/admin`, is `noindex, nofollow`, and is not linked from the public navigation or footer. Only the collection owner and the claim allowlist can connect and sign in to view it. This is a page-level gate, not an on-chain restriction: the deployed claim contracts remain callable by anyone who knows their address.
+The `/claim` page is public and linked from the site navigation and footer. It is indexable, and the live pool progress renders before a wallet connects. The deployed claim contract remains the final authority: the page-level eligibility checks are UI guidance, not an on-chain restriction.
 
 ---
 
@@ -269,7 +269,6 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel KV credentials. `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are also supported |
 | `LAUNCHPAD_ADMIN_ADDRESSES` | Optional allowlist of launchpad admins, as comma-separated addresses |
 | `ADMIN_OWNER_ADDRESS` | Wallet allowed to unlock `/admin`. Defaults to the Elyziuma collection owner |
-| `CLAIM_ALLOWED_ADDRESSES` | Optional extra wallets allowed to open `/claim`, as comma-separated addresses. Claim-only; `/admin` stays owner-only |
 | `ETH_RPC_URL`, `HYPEREVM_RPC_URL`, `BASE_RPC_URL`, `INK_RPC_URL` | Optional eligibility RPC overrides. Hyperliquid (HyperCore) is read from the official info API |
 
 ### Deploy variables
@@ -496,7 +495,7 @@ Exchanges a signed owner login message for an `HttpOnly` session cookie. Body:
 }
 ```
 
-The signature must cover `address`, both timestamps, and the nonce. Only the collection owner and wallets on the claim allowlist are accepted, and the login message must be less than five minutes old. Sessions last 12 hours.
+The signature must cover `address`, both timestamps, and the nonce. Only the collection owner is accepted, and the login message must be less than five minutes old. Sessions last 12 hours.
 
 ### `DELETE /api/admin/session`
 
@@ -512,7 +511,7 @@ Clears the owner session cookie (the **Lock** button in the console footer).
 
 The console is gated on the server before any console data is rendered. Without a valid session the page only sends the unlock screen. To unlock, the collection owner connects the wallet configured in `ADMIN_OWNER_ADDRESS` — it defaults to `0xb181FDFe71A0a0f56574D88f22B6BaFD142192F6` — and signs a free message. The server verifies the signature, the owner address, and the five-minute login window, then sets a 12-hour `HttpOnly` session cookie. The cookie carries the signed message itself, so it cannot be forged or edited without the owner's key. The footer has a **Lock** action that clears the session immediately.
 
-The private `/claim` page uses the same session. Its link appears in the main navigation only after an allowed wallet unlocks a session, and signing out hides it again. Claim access is limited to the collection owner, the built-in allowlist in `lib/server/claim-access.ts`, and any addresses added through `CLAIM_ALLOWED_ADDRESSES`; those extra wallets still cannot open `/admin`.
+The `/claim` page is public and does not use the admin session. Its link is always present in the main navigation and footer.
 
 Writes remain independently protected: contract calls are owner transactions, and launchpad settings changes require their own signed message.
 
@@ -559,7 +558,7 @@ The public launchpad's display settings - collection address, mint method, max s
 - Per-IP rate limits on `/api/eligibility` and `/api/claim/eligibility`.
 - Short-lived claim-eligibility caching keyed by block number.
 - Launchpad admin signatures with a five-minute window and replay guard.
-- Owner-console sessions require a fresh owner-wallet signature, are stored in a 12-hour `HttpOnly` cookie, and are verified on the server before the console or the private `/claim` page renders.
+- Owner-console sessions require a fresh owner-wallet signature, are stored in a 12-hour `HttpOnly` cookie, and are verified on the server before the console renders.
 - RPC chain ID and collection bytecode checks before saving settings.
 
 ### Limitations

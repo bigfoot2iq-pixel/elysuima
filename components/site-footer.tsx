@@ -5,6 +5,7 @@ import { TokenMark } from "./token-mark";
 
 const PRODUCT = [
   { label: "Launchpad", href: "/launchpad" },
+  { label: "Claim", href: "/claim" },
   { label: "Faucet", href: "/faucet" },
   { label: "Roadmap", href: "/#roadmap" },
   { label: "Our vision", href: "/#vision" },

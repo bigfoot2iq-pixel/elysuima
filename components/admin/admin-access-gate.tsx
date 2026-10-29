@@ -26,39 +26,15 @@ import { shortAddress } from "@/lib/format";
 import { sameAddress, responseError, txError } from "./admin-utils";
 import { Notice, Panel } from "./admin-ui";
 
-type AccessContext = "admin" | "claim";
-
-const ACCESS_COPY: Record<
-  AccessContext,
-  {
-    badge: string;
-    title: string;
-    description: string;
-    successTitle: string;
-    errorTitle: string;
-    verificationStep: string;
-  }
-> = {
-  admin: {
-    badge: "Owner access",
-    title: "The owner console is locked.",
-    description:
-      "Only the wallet that owns the Elyziuma NFT collection can open this console. Connect the owner wallet and sign a free message — no transaction, no gas, no approvals.",
-    successTitle: "Owner console unlocked",
-    errorTitle: "Could not unlock the console",
-    verificationStep:
-      "The server verifies the signature before any console data loads.",
-  },
-  claim: {
-    badge: "Private page",
-    title: "The claim page is private.",
-    description:
-      "Only allowlisted wallets can open this page. Connect an allowlisted wallet and sign a free message — no transaction, no gas, no approvals.",
-    successTitle: "Claim page unlocked",
-    errorTitle: "Could not unlock the claim page",
-    verificationStep:
-      "The server verifies the signature before any claim data loads.",
-  },
+const ACCESS_COPY = {
+  badge: "Owner access",
+  title: "The owner console is locked.",
+  description:
+    "Only the wallet that owns the Elyziuma NFT collection can open this console. Connect the owner wallet and sign a free message — no transaction, no gas, no approvals.",
+  successTitle: "Owner console unlocked",
+  errorTitle: "Could not unlock the console",
+  verificationStep:
+    "The server verifies the signature before any console data loads.",
 };
 
 function createNonce() {
@@ -80,16 +56,7 @@ function useMounted() {
   );
 }
 
-export function AdminAccessGate({
-  ownerAddress,
-  allowedAddresses,
-  context = "admin",
-}: {
-  ownerAddress: Address;
-  /** Wallets accepted on this page. Defaults to the owner only. */
-  allowedAddresses?: Address[];
-  context?: AccessContext;
-}) {
+export function AdminAccessGate({ ownerAddress }: { ownerAddress: Address }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const mounted = useMounted();
@@ -101,19 +68,11 @@ export function AdminAccessGate({
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const allowlist =
-    allowedAddresses && allowedAddresses.length > 0
-      ? allowedAddresses
-      : [ownerAddress];
-  const isAllowed = Boolean(
-    address && allowlist.some((entry) => sameAddress(address, entry)),
-  );
-  const isClaim = context === "claim";
+  const isOwner = Boolean(address && sameAddress(address, ownerAddress));
   const hours = Math.round(ADMIN_SESSION_TTL_SECONDS / 3600);
-  const copy = ACCESS_COPY[context];
 
   async function unlock() {
-    if (!address || !isAllowed || signing) return;
+    if (!address || !isOwner || signing) return;
 
     setSigning(true);
     setError(null);
@@ -138,7 +97,7 @@ export function AdminAccessGate({
 
       if (!response.ok) throw new Error(await responseError(response));
 
-      toast.success(copy.successTitle, {
+      toast.success(ACCESS_COPY.successTitle, {
         description: `This browser stays unlocked for ${hours} hours.`,
       });
       await queryClient.invalidateQueries({
@@ -164,7 +123,7 @@ export function AdminAccessGate({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/[0.06] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-brand">
               <LockKeyhole className="size-3" />
-              {copy.badge}
+              {ACCESS_COPY.badge}
             </span>
             <span className="inline-flex items-center gap-2 rounded-full border border-paper/10 bg-paper/[0.03] px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-paper-dim">
               <ShieldCheck className="size-3" />
@@ -173,20 +132,18 @@ export function AdminAccessGate({
           </div>
 
           <h1 className="mt-6 max-w-[24ch] text-3xl font-semibold tracking-[-0.04em] text-paper sm:text-4xl">
-            {copy.title}
+            {ACCESS_COPY.title}
           </h1>
           <p className="mt-4 max-w-lg text-[13px] leading-7 text-paper-dim">
-            {copy.description}
+            {ACCESS_COPY.description}
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-paper/[0.07] bg-ink/40 px-3.5 py-2.5">
             <span className="text-[9px] uppercase tracking-[0.14em] text-paper-mute">
-              {isClaim ? "Allowlisted wallets" : "Collection owner"}
+              Collection owner
             </span>
             <span className="font-mono text-[11px] text-paper">
-              {isClaim
-                ? `${allowlist.length} wallets`
-                : shortAddress(ownerAddress, 6)}
+              {shortAddress(ownerAddress, 6)}
             </span>
           </div>
 
@@ -207,14 +164,11 @@ export function AdminAccessGate({
                     </span>
                     <div>
                       <p className="text-xs font-semibold text-paper">
-                        {isClaim
-                          ? "Connect an allowlisted wallet"
-                          : "Connect the owner wallet"}
+                        Connect the owner wallet
                       </p>
                       <p className="mt-1 text-[11px] leading-5 text-paper-mute">
-                        {isClaim
-                          ? "The wallet must match one of the allowlisted addresses above."
-                          : "The wallet must match the collection owner address above."}
+                        The wallet must match the collection owner address
+                        above.
                       </p>
                     </div>
                   </div>
@@ -227,7 +181,7 @@ export function AdminAccessGate({
                   </button>
                 </div>
               </Panel>
-            ) : isAllowed ? (
+            ) : isOwner ? (
               <Panel className="p-4 sm:p-5">
                 <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">
@@ -236,9 +190,7 @@ export function AdminAccessGate({
                     </span>
                     <div>
                       <p className="text-xs font-semibold text-paper">
-                        {isClaim
-                          ? "Allowlisted wallet connected"
-                          : "Owner wallet connected"}
+                        Owner wallet connected
                       </p>
                       <p className="mt-1 text-[11px] leading-5 text-paper-mute">
                         {shortAddress(address, 6)} · Sign once to unlock this
@@ -270,18 +222,14 @@ export function AdminAccessGate({
                     </span>
                     <div>
                       <p className="text-xs font-semibold text-paper">
-                        {isClaim
-                          ? "This wallet is not allowlisted"
-                          : "This wallet is not the collection owner"}
+                        This wallet is not the collection owner
                       </p>
                       <p className="mt-1 text-[11px] leading-5 text-paper-mute">
                         Connected as{" "}
                         <span className="font-mono text-paper-dim">
                           {address ? shortAddress(address, 6) : "unknown"}
                         </span>
-                        . {isClaim
-                          ? "Switch to an allowlisted wallet to continue."
-                          : "Switch to the owner wallet to continue."}
+                        . Switch to the owner wallet to continue.
                       </p>
                     </div>
                   </div>
@@ -301,7 +249,7 @@ export function AdminAccessGate({
             <div className="mt-4">
               <Notice
                 tone="danger"
-                title={copy.errorTitle}
+                title={ACCESS_COPY.errorTitle}
                 body={error}
               />
             </div>
@@ -310,9 +258,7 @@ export function AdminAccessGate({
           <ol className="mt-7 space-y-2.5 border-t border-paper/[0.07] pt-5 text-[11px] leading-5 text-paper-mute">
             <li className="flex gap-2.5">
               <span className="font-mono text-[9px] text-brand">01</span>
-              {isClaim
-                ? "Connect one of the allowlisted wallets."
-                : "Connect the wallet that owns the NFT collection."}
+              Connect the wallet that owns the NFT collection.
             </li>
             <li className="flex gap-2.5">
               <span className="font-mono text-[9px] text-brand">02</span>
@@ -320,7 +266,7 @@ export function AdminAccessGate({
             </li>
             <li className="flex gap-2.5">
               <span className="font-mono text-[9px] text-brand">03</span>
-              {copy.verificationStep}
+              {ACCESS_COPY.verificationStep}
             </li>
           </ol>
 

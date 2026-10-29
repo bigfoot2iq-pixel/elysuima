@@ -13,7 +13,6 @@ import {
   ADMIN_SESSION_TTL_SECONDS,
   buildAdminSessionMessage,
 } from "@/lib/admin/access";
-import { isClaimAccessAddress } from "./claim-access";
 
 /**
  * Hard fallback for the wallet that owns the Elyziuma NFT collection. It can
@@ -161,30 +160,9 @@ export async function readAdminSession(): Promise<AdminSession | null> {
 }
 
 /**
- * Reads a session for the private claim page. The collection owner and the
- * claim-only allowlist are accepted; the owner console stays owner-only.
- */
-export async function readClaimSession(): Promise<AdminSession | null> {
-  const raw = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
-  if (!raw) return null;
-
-  const record = decodeAdminSession(raw);
-  if (!record) return null;
-
-  const now = Math.floor(Date.now() / 1000);
-  const session = await verifySessionRecord(record, now);
-  if (!session) return null;
-  if (!isClaimAccessAddress(session.address, getAdminOwnerAddress())) {
-    return null;
-  }
-
-  return session;
-}
-
-/**
  * Validates a signed login message and returns the session to persist.
  * Throws `AdminSessionError` when the message is stale, forged, or signed by
- * a wallet that is neither the collection owner nor claim-allowlisted.
+ * a wallet other than the collection owner.
  */
 export async function authenticateAdminLogin(input: {
   address: string;
@@ -227,10 +205,10 @@ export async function authenticateAdminLogin(input: {
   const address = getAddress(input.address);
   const owner = getAdminOwnerAddress();
 
-  if (!isClaimAccessAddress(address, owner)) {
+  if (address !== owner) {
     throw new AdminSessionError(
       "NOT_AUTHORIZED",
-      "This wallet is not on the claim access list.",
+      "This wallet is not the collection owner.",
       403,
     );
   }
@@ -265,7 +243,7 @@ export async function authenticateAdminLogin(input: {
   };
 
   const session = await verifySessionRecord(record, now);
-  if (!session || !isClaimAccessAddress(session.address, owner)) {
+  if (!session || session.address !== owner) {
     throw new AdminSessionError(
       "INVALID_SIGNATURE",
       "The wallet signature did not match this login request.",
