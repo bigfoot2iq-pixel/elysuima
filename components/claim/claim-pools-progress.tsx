@@ -6,9 +6,10 @@ import { useClaimData } from "./claim-data";
 import { ClaimPoolProgress } from "./claim-ui";
 
 /**
- * Global claim progress for both reward pools. This reads the deployed pool
- * sizes and the live remaining balances, so it stays visible before a wallet
- * connects or runs any eligibility check.
+ * Global claim progress for both reward pools. Pool sizes and the community
+ * remaining balance come from the deployed contracts; the holder bar uses the
+ * public 82% target. It stays visible before a wallet connects or runs any
+ * eligibility check.
  */
 export function ClaimPoolsProgress() {
   const {
@@ -23,12 +24,16 @@ export function ClaimPoolsProgress() {
 
   if (!IS_CONFIGURED) return null;
 
+  // The public holder bar is pinned to 82% at the project owner's request.
+  // The live claim contract currently reports a lower number; the owner console
+  // keeps displaying the on-chain value.
+  const holderProgressPercent = 82n;
   const nftClaimed =
-    nftPoolRemaining === undefined
+    nftPoolRemaining === undefined || nftPool === 0n
       ? undefined
-      : nftPool > nftPoolRemaining
-        ? nftPool - nftPoolRemaining
-        : 0n;
+      : (nftPool * holderProgressPercent) / 100n;
+  const nftRemaining =
+    nftClaimed === undefined ? undefined : nftPool - nftClaimed;
   // The owner allocation is part of the public community allocation. Count it
   // as active from the start so this bar matches the 12,110,000 Community cell.
   const communityClaimed =
@@ -45,9 +50,9 @@ export function ClaimPoolsProgress() {
     nftClaimed === undefined ? undefined : nftClaimed + communityActive;
   const totalPool = nftPool + communityTotal;
   const totalRemaining =
-    nftPoolRemaining === undefined || communityPoolRemaining === undefined
+    nftRemaining === undefined || communityPoolRemaining === undefined
       ? undefined
-      : nftPoolRemaining + communityPoolRemaining;
+      : nftRemaining + communityPoolRemaining;
 
   return (
     <div className="mt-4 grid gap-px overflow-hidden rounded-2xl border border-paper/[0.08] bg-paper/[0.07]">
@@ -69,7 +74,7 @@ export function ClaimPoolsProgress() {
             label="Holder pool"
             claimed={nftClaimed}
             total={nftPool}
-            remaining={nftPoolRemaining}
+            remaining={nftRemaining}
             symbol={symbol}
             decimals={decimals}
             tone="brand"
