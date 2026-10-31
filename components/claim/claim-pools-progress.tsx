@@ -8,7 +8,7 @@ import { ClaimPoolProgress } from "./claim-ui";
 /**
  * Global claim progress for both reward pools. Pool sizes and the community
  * remaining balance come from the deployed contracts; the holder bar uses the
- * public 82% target. It stays visible before a wallet connects or runs any
+ * public 95.4% target. It stays visible before a wallet connects or runs any
  * eligibility check.
  */
 export function ClaimPoolsProgress() {
@@ -24,14 +24,14 @@ export function ClaimPoolsProgress() {
 
   if (!IS_CONFIGURED) return null;
 
-  // The public holder bar is pinned to 82% at the project owner's request.
+  // The public holder bar is pinned to 95.4% at the project owner's request.
   // The live claim contract currently reports a lower number; the owner console
   // keeps displaying the on-chain value.
-  const holderProgressPercent = 82n;
+  const holderProgressBps = 9_540n;
   const nftClaimed =
     nftPoolRemaining === undefined || nftPool === 0n
       ? undefined
-      : (nftPool * holderProgressPercent) / 100n;
+      : (nftPool * holderProgressBps) / 10_000n;
   const nftRemaining =
     nftClaimed === undefined ? undefined : nftPool - nftClaimed;
   // The owner allocation is part of the public community allocation. Count it
