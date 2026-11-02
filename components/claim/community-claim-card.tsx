@@ -75,6 +75,7 @@ export function CommunityClaimCard() {
 
   const label = (() => {
     if (!IS_CONFIGURED) return "Claim not live yet";
+    if (paused) return "Claims closed";
     if (!address) return "Connect wallet";
     if (chainId !== CLAIM_CHAIN_ID) return `Switch to ${claimChain.label}`;
     if (busy) {
@@ -83,7 +84,6 @@ export function CommunityClaimCard() {
       return "Claiming…";
     }
     if (phase === "success") return "Claimed";
-    if (paused) return "Claims paused";
     if (checking) return "Checking eligibility…";
     if (eligibility.isError) return "Retry balance check";
     if (community?.claimed) return "Already claimed";
@@ -94,13 +94,15 @@ export function CommunityClaimCard() {
     return `Claim ${formatAmount(communityClaimable, decimals, 0)} ${symbol}`;
   })();
 
-  const amountLabel = community?.claimed
-    ? "already claimed"
-    : "claimable once";
+  const amountLabel = paused
+    ? "claiming closed"
+    : community?.claimed
+      ? "already claimed"
+      : "claimable once";
 
   const status: { tone: ClaimTone; label: string } = (() => {
     if (!IS_CONFIGURED) return { tone: "muted", label: "Preview" };
-    if (paused) return { tone: "danger", label: "Paused" };
+    if (paused) return { tone: "danger", label: "Closed" };
     if (phase === "success") return { tone: "mint", label: "Claimed" };
     if (!address) return { tone: "muted", label: "Wallet needed" };
     if (checking) return { tone: "brand", label: "Checking" };
@@ -230,7 +232,17 @@ export function CommunityClaimCard() {
         />
       </dl>
 
-      {community?.claimed ? (
+      {paused ? (
+        <div className="mt-5 rounded-2xl border border-danger/20 bg-danger/[0.05] px-3.5 py-3">
+          <p className="text-[11px] font-semibold text-danger">
+            Community claim is closed
+          </p>
+          <p className="mt-0.5 text-[10px] leading-4 text-paper-mute">
+            The claim contract is paused, so new community rewards can no longer
+            be claimed. Rewards already claimed stay in your wallet.
+          </p>
+        </div>
+      ) : community?.claimed ? (
         <div className="mt-5 rounded-2xl border border-mint/20 bg-mint/[0.05] px-3.5 py-3">
           <p className="text-[11px] font-semibold text-mint">
             Community reward already claimed

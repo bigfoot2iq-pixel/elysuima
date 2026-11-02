@@ -5,6 +5,7 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useSwitchChain } from "wagmi";
 import {
   Loader2,
+  LockKeyhole,
   RefreshCw,
   Search,
   Sparkles,
@@ -87,12 +88,12 @@ export function HolderClaimCard() {
 
   const label = (() => {
     if (!IS_CONFIGURED) return "Claim not live yet";
+    if (paused) return "Claims closed";
     if (!address) return "Connect wallet";
     if (!hasChecked) return "Check eligibility";
     if (checking) return "Checking your NFTs…";
     if (phase === "success") return "Claimed";
     if (claimEligibility.isError || !nft) return "Retry NFT check";
-    if (paused) return "Claims paused";
     if (busy) {
       if (phase === "authorizing") return "Switching network…";
       if (phase === "submitting") return "Confirm in wallet…";
@@ -107,6 +108,9 @@ export function HolderClaimCard() {
   })();
 
   const detail = (() => {
+    if (paused) {
+      return "Holder claiming is closed. The claim contract is paused, so NFT rewards can no longer be claimed.";
+    }
     if (claimEligibility.isError) {
       return "The NFT check could not be reached. Retry to load your holdings.";
     }
@@ -172,6 +176,14 @@ export function HolderClaimCard() {
         body: "The claim contract has not been configured for this deployment.",
       };
     }
+    if (paused) {
+      return {
+        tone: "border-danger/30 bg-danger/10 text-danger",
+        icon: <LockKeyhole className="size-5" />,
+        title: "Holder claim is closed",
+        body: "The claim contract is paused, so NFT rewards can no longer be claimed. Rewards already claimed stay in your wallet.",
+      };
+    }
     if (!address) {
       return {
         tone: "border-brand/25 bg-brand/10 text-brand",
@@ -214,11 +226,11 @@ export function HolderClaimCard() {
 
   const status: { tone: ClaimTone; label: string } = (() => {
     if (!IS_CONFIGURED) return { tone: "muted", label: "Preview" };
+    if (paused) return { tone: "danger", label: "Closed" };
     if (!address) return { tone: "muted", label: "Wallet needed" };
     if (!hasChecked) return { tone: "muted", label: "Not checked" };
     if (checking) return { tone: "brand", label: "Checking" };
     if (claimEligibility.isError) return { tone: "warn", label: "Unavailable" };
-    if (paused) return { tone: "danger", label: "Paused" };
     if (phase === "success") return { tone: "mint", label: "Claimed" };
     if (!nft) return { tone: "warn", label: "Unavailable" };
     if (nftBalance === 0n) return { tone: "muted", label: "No NFTs" };
@@ -229,12 +241,13 @@ export function HolderClaimCard() {
 
   const disabled = (() => {
     if (!IS_CONFIGURED) return true;
+    if (paused) return true;
     if (busy) return true;
     if (!address) return false;
     if (!hasChecked) return false;
     if (checking) return true;
     if (claimEligibility.isError || !nft) return false;
-    if (paused || phase === "success") return true;
+    if (phase === "success") return true;
     if (nftBalance === 0n || unclaimedCount === 0 || nftPoolRemaining === 0n) {
       return true;
     }

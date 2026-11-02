@@ -81,6 +81,12 @@ function useClaimDataValue() {
         functionName: "communityClaimFee",
         chainId: CLAIM_CHAIN_ID,
       },
+      {
+        address: CLAIM_ADDRESS,
+        abi: claimAbi,
+        functionName: "paused",
+        chainId: CLAIM_CHAIN_ID,
+      },
     ],
     query: {
       enabled: IS_CONFIGURED,
@@ -98,6 +104,7 @@ function useClaimDataValue() {
     nftPoolRemainingResult,
     communityPoolRemainingResult,
     communityClaimFeeResult,
+    pausedResult,
   ] = tokenData ?? [];
 
   const symbol =
@@ -132,6 +139,12 @@ function useClaimDataValue() {
     communityClaimFeeResult?.status === "success"
       ? (communityClaimFeeResult.result as bigint)
       : undefined;
+  // Read the pause state directly so the closed state is visible to every
+  // visitor, including wallets that have not connected or run a claim check.
+  const pausedOnChain =
+    pausedResult?.status === "success"
+      ? (pausedResult.result as boolean)
+      : undefined;
   const ownerAllocation =
     totalSupply > nftPool + communityPool
       ? totalSupply - nftPool - communityPool
@@ -140,7 +153,7 @@ function useClaimDataValue() {
   const data = claimEligibility.data;
   const nft = data?.nft;
   const community = data?.community;
-  const paused = data?.paused ?? false;
+  const paused = pausedOnChain ?? data?.paused ?? false;
   const claimChains = eligibility.data?.chains.filter((chain) =>
     CLAIM_ELIGIBILITY_CHAINS.some(
       (claimChain) => claimChain.key === chain.key,

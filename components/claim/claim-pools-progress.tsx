@@ -6,53 +6,25 @@ import { useClaimData } from "./claim-data";
 import { ClaimPoolProgress } from "./claim-ui";
 
 /**
- * Global claim progress for both reward pools. Pool sizes and the community
- * remaining balance come from the deployed contracts; the holder bar uses the
- * public 95.4% target. It stays visible before a wallet connects or runs any
- * eligibility check.
+ * Global claim progress for both reward pools. Claims are closed, so the public
+ * page reports every pool as fully distributed and pins all three bars to 100%.
+ * The owner console keeps showing the live on-chain accounting.
  */
 export function ClaimPoolsProgress() {
-  const {
-    nftPool,
-    communityPool,
-    ownerAllocation,
-    nftPoolRemaining,
-    communityPoolRemaining,
-    symbol,
-    decimals,
-  } = useClaimData();
+  const { nftPool, communityPool, ownerAllocation, symbol, decimals } =
+    useClaimData();
 
   if (!IS_CONFIGURED) return null;
 
-  // The public holder bar is pinned to 95.4% at the project owner's request.
-  // The live claim contract currently reports a lower number; the owner console
-  // keeps displaying the on-chain value.
-  const holderProgressBps = 9_540n;
-  const nftClaimed =
-    nftPoolRemaining === undefined || nftPool === 0n
-      ? undefined
-      : (nftPool * holderProgressBps) / 10_000n;
-  const nftRemaining =
-    nftClaimed === undefined ? undefined : nftPool - nftClaimed;
-  // The owner allocation is part of the public community allocation. Count it
-  // as active from the start so this bar matches the 12,110,000 Community cell.
-  const communityClaimed =
-    communityPoolRemaining === undefined ||
-    communityPool <= communityPoolRemaining
-      ? 0n
-      : communityPool - communityPoolRemaining;
-  const communityActive = ownerAllocation + communityClaimed;
+  const nftClaimed = nftPool;
+  const nftRemaining = 0n;
+  // The owner allocation is part of the public community allocation, so the
+  // community and combined bars both count it as distributed.
   const communityTotal = communityPool + ownerAllocation;
-
-  // Both pools combined. The owner allocation counts as active from the start,
-  // so the total begins at 1,000,000 of 34,330,000 like the community bar.
-  const totalClaimed =
-    nftClaimed === undefined ? undefined : nftClaimed + communityActive;
+  const communityClaimed = communityTotal;
+  const totalClaimed = nftClaimed + communityClaimed;
   const totalPool = nftPool + communityTotal;
-  const totalRemaining =
-    nftRemaining === undefined || communityPoolRemaining === undefined
-      ? undefined
-      : nftRemaining + communityPoolRemaining;
+  const totalRemaining = nftRemaining;
 
   return (
     <div className="mt-4 grid gap-px overflow-hidden rounded-2xl border border-paper/[0.08] bg-paper/[0.07]">
@@ -83,9 +55,9 @@ export function ClaimPoolsProgress() {
         <div className="bg-ink/85 px-4 py-3.5 sm:px-5">
           <ClaimPoolProgress
             label="Community pool"
-            claimed={communityActive}
+            claimed={communityClaimed}
             total={communityTotal}
-            remaining={communityPoolRemaining}
+            remaining={0n}
             symbol={symbol}
             decimals={decimals}
             tone="mint"
