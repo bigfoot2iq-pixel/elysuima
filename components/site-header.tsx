@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useAccount } from "wagmi";
+import { isCheckerAddress } from "@/lib/checker-access";
 import { cn } from "@/lib/utils";
 import { TokenMark } from "./token-mark";
 import { WalletButton } from "./wallet-button";
@@ -11,6 +13,8 @@ import { XAccountLink } from "./x-account-link";
 
 const NAV = [
   { label: "Launchpad", href: "/launchpad" },
+  { label: "Checker", href: "/checker" },
+  { label: "Raffles", href: "/raffles" },
   { label: "Claim", href: "/claim" },
   { label: "Faucet", href: "/faucet" },
   { label: "Roadmap", href: "/#roadmap" },
@@ -21,6 +25,10 @@ const NAV = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { address } = useAccount();
+  const navItems = isCheckerAddress(address)
+    ? NAV
+    : NAV.filter((item) => item.href !== "/checker");
 
   return (
     <header className="sticky top-0 z-50 border-b border-paper/[0.07] bg-ink/70 backdrop-blur-xl">
@@ -42,7 +50,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {NAV.map((item) => {
+          {navItems.map((item) => {
             const active =
               item.href === pathname ||
               (item.href.startsWith("/") &&
@@ -54,7 +62,7 @@ export function SiteHeader() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-full px-4 py-2 text-sm transition",
+                  "rounded-full px-3 py-2 text-sm transition lg:px-2 xl:px-4",
                   active
                     ? "bg-paper/[0.07] font-medium text-paper"
                     : "text-paper-dim hover:bg-paper/[0.05] hover:text-paper",
@@ -67,7 +75,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <XAccountLink className="hidden sm:inline-flex" />
+          <XAccountLink className="hidden sm:inline-flex lg:hidden xl:inline-flex" />
           <div className="hidden sm:block">
             <WalletButton />
           </div>
@@ -86,11 +94,11 @@ export function SiteHeader() {
       <div
         className={cn(
           "overflow-hidden border-t border-paper/[0.06] bg-ink/95 transition-[max-height,opacity] duration-300 lg:hidden",
-          open ? "max-h-[28rem] opacity-100" : "max-h-0 opacity-0",
+          open ? "max-h-[36rem] opacity-100" : "max-h-0 opacity-0",
         )}
       >
         <div className="space-y-1 px-5 py-5">
-          {NAV.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}

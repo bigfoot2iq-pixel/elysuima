@@ -182,6 +182,32 @@ When `startAt` is set and still in the future, `/launchpad` stays fully visible 
 
 ---
 
+## Mint checker
+
+`/checker` checks the connected wallet against the GTD and FCFS allowlists. It is read-only: no signature, no gas, and it does not change the launchpad mint flow. GTD wallets see the Guaranteed Mint phase, FCFS wallets see the First Come, First Served phase, and wallets on both lists see Full Mint Access. Wallets on neither list see the not-eligible state, with a note that Kalos Genesis holders are automatically FCFS.
+
+The page is private. Only the wallet in `NEXT_PUBLIC_CHECKER_ACCESS_ADDRESS` (default `0xa4575566BF5386CB5ba48EdcBeA71235bD94fE4d`) can open it. The checker links in the header and footer are hidden unless that wallet is connected, the page is `noindex`, and `POST /api/mint/eligibility` returns `403 NOT_AUTHORIZED` for every other address. This is an address-level gate, not a signed session; the allowed address is public in the browser bundle.
+
+The lists live in Google Sheets and are exposed through a Google Apps Script web app. The Next.js server calls the web app from `POST /api/mint/eligibility`, caches a wallet's result for 60 seconds, and rate-limits callers. The Apps Script needs to accept:
+
+```http
+GET <MINT_CHECKER_API_URL>?address=0x...
+```
+
+and return:
+
+```json
+{ "ok": true, "address": "0x...", "gtd": true, "fcfs": false, "tier": "gtd" }
+```
+
+`tier` is one of `gtd`, `fcfs`, `both`, or `none`. The endpoint can take a few seconds on a cold start; the browser shows a checking state and the route allows up to 60 seconds. The Apps Script deployment must use **Execute as: Me** and **Who has access: Anyone**. If the endpoint requires a shared secret, set `MINT_CHECKER_API_KEY`; the server appends it as `key`.
+
+The Apps Script must read the correct tab for each list. If the GTD and FCFS tabs are renamed or reordered, update the script's tab names and deploy a new version. A wrong FCFS tab returns `fcfs: false` for every wallet, which the checker displays as not eligible.
+
+`MINT_CHECKER_API_URL` and `MINT_CHECKER_CACHE_SECONDS` are optional; the defaults point at the production checker and cache each wallet for 60 seconds. The sheets can stay private because the Apps Script runs as the account that deployed it.
+
+---
+
 ## Quick start
 
 Requirements:
@@ -252,6 +278,7 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | `NEXT_PUBLIC_LAUNCHPAD_COLLECTION_ADDRESS` | Optional default NFT collection. The owner console manages the same collection |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | WalletConnect Cloud project ID; injected wallets work without it |
 | `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata and OG images |
+| `NEXT_PUBLIC_CHECKER_ACCESS_ADDRESS` | Wallet allowed into the private `/checker` page. Defaults to `0xa4575566BF5386CB5ba48EdcBeA71235bD94fE4d` |
 
 ### Server variables
 
@@ -270,6 +297,9 @@ Both are npm-10 compatible: older npm versions ignore the fields and behave as b
 | `LAUNCHPAD_ADMIN_ADDRESSES` | Optional allowlist of launchpad admins, as comma-separated addresses |
 | `ADMIN_OWNER_ADDRESS` | Wallet allowed to unlock `/admin`. Defaults to the Elyziuma collection owner |
 | `ETH_RPC_URL`, `HYPEREVM_RPC_URL`, `BASE_RPC_URL`, `INK_RPC_URL` | Optional eligibility RPC overrides. Hyperliquid (HyperCore) is read from the official info API |
+| `MINT_CHECKER_API_URL` | Optional. Google Apps Script web app URL for the `/checker` allowlist lookup. Defaults to the production checker |
+| `MINT_CHECKER_API_KEY` | Optional. Shared secret appended as `key` when the Apps Script requires one |
+| `MINT_CHECKER_CACHE_SECONDS` | Optional. Per-wallet cache lifetime for the checker; defaults to `60` |
 
 ### Deploy variables
 
@@ -372,6 +402,30 @@ Request:
 ```
 
 `chains` is optional. When omitted, all supported chains are checked. The claim page requests only `ethereum` and `hyperevm`; the launchpad omits it for its five-chain guard. Response includes the balance, the per-chain minimum, and the status for each checked chain, the best qualifying chain, and `checkedAt`. Results are cached for 30 seconds per address and chain set.
+
+### `POST /api/mint/eligibility`
+
+Checks the connected wallet against the GTD and FCFS allowlists.
+
+Request:
+
+```json
+{ "address": "0x..." }
+```
+
+Success response:
+
+```json
+{
+  "address": "0x...",
+  "gtd": true,
+  "fcfs": false,
+  "tier": "gtd",
+  "checkedAt": 1760000000000
+}
+```
+
+`tier` is `gtd`, `fcfs`, `both`, or `none`. The route calls the configured Google Apps Script web app, caches the result for 60 seconds, and rate-limits by IP. It only accepts the wallet in `NEXT_PUBLIC_CHECKER_ACCESS_ADDRESS`; every other address receives `403 NOT_AUTHORIZED`. Other errors include `INVALID_BODY`, `INVALID_ADDRESS`, `RATE_LIMITED`, `CHECK_UNAVAILABLE`, and `CHECK_FAILED`.
 
 ### `POST /api/claim/eligibility`
 
@@ -558,6 +612,8 @@ The public launchpad's display settings - collection address, mint method, max s
 - Per-IP rate limits on `/api/eligibility` and `/api/claim/eligibility`.
 - Short-lived claim-eligibility caching keyed by block number.
 - Launchpad admin signatures with a five-minute window and replay guard.
+- Mint checker: per-IP rate limit and a short per-wallet cache. It is informational and never gates the mint; the launchpad contract remains the final authority.
+- The checker is gated by the configured wallet address in both the UI and the API. The allowed address is public (it is inlined into the browser bundle); this is an address-level allowlist, not a signed session.
 - Owner-console sessions require a fresh owner-wallet signature, are stored in a 12-hour `HttpOnly` cookie, and are verified on the server before the console renders.
 - RPC chain ID and collection bytecode checks before saving settings.
 
@@ -620,11 +676,13 @@ npm run build
 app/
   page.tsx                       Landing page
   launchpad/page.tsx             NFT launchpad
+  checker/page.tsx               GTD / FCFS mint checker
   faucet/page.tsx                Testnet HYPE faucet (in-app claim + official links)
   admin/page.tsx                 Unified admin console, owner-signature gate
   admin/launchpad/page.tsx       Redirect to /admin#collection
   admin/collection/page.tsx      Redirect to /admin#collection
   api/claim/eligibility/route.ts NFT ownership + claim status for a wallet
+  api/mint/eligibility/route.ts  GTD / FCFS allowlist check via Apps Script
   api/faucet/route.ts            In-app testnet HYPE drip
   api/eligibility/route.ts       Five-chain balance check (UI gate)
   api/health/route.ts            Claim funding / pause / fee health
@@ -647,6 +705,7 @@ components/
     admin-data.ts                Shared reads and admin status
     admin-ui.tsx                 Console primitives
   launchpad/                     Hero, mint card, details, teaser
+  checker/                       Mint checker panel, result states, and info cards
   ...                            Claim cards, tokenomics strip, pool progress, eligibility step, stats, feed, FAQ
 contracts/
   src/ElyziumaToken.sol          Fixed-supply ERC-20
@@ -656,13 +715,14 @@ contracts/
   test/ElyziumaNFT.t.sol         Foundry tests
   script/Deploy.s.sol            Deploy + fund both pools
   script/DeployNFT.s.sol         Deploy the collection
-hooks/                           Claim flow, claim eligibility, clocks, launchpad config
+hooks/                           Claim flow, claim eligibility, clocks, launchpad config, mint checker
 lib/
   abis.ts                        Claim/token/NFT-read ABIs
   chains.ts                      Elysium + eligibility chains
   config.ts                      Public config and links
+  mint-eligibility.ts            Shared mint-checker response types
   launchpad/                     Shared types, config, ABIs, status, runtime
-  server/                        RPC, claim eligibility, launchpad persistence
+  server/                        RPC, claim eligibility, launchpad persistence, mint checker
 data/launchpad.json              Runtime settings (gitignored, created on save)
 ```
 

@@ -1,10 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { useAccount } from "wagmi";
+import { isCheckerAddress } from "@/lib/checker-access";
 import { LINKS } from "@/lib/config";
 import { TokenMark } from "./token-mark";
 
 const PRODUCT = [
   { label: "Launchpad", href: "/launchpad" },
+  { label: "Mint checker", href: "/checker" },
+  { label: "Raffles", href: "/raffles" },
   { label: "Claim", href: "/claim" },
   { label: "Faucet", href: "/faucet" },
   { label: "Roadmap", href: "/#roadmap" },
@@ -20,7 +26,67 @@ const ELYSIUM = [
   { label: "Docs", href: LINKS.docs },
 ];
 
-export function SiteFooter() {
+const COMPACT_LINKS = [
+  { label: "Launchpad", href: "/launchpad" },
+  { label: "Mint checker", href: "/checker" },
+  { label: "Raffles", href: "/raffles" },
+  { label: "Claim", href: "/claim" },
+  { label: "Faucet", href: "/faucet" },
+  { label: "X", href: LINKS.x },
+  { label: "Docs", href: LINKS.docs },
+];
+
+export function SiteFooter({ compact = false }: { compact?: boolean }) {
+  const { address } = useAccount();
+  const showChecker = isCheckerAddress(address);
+  const productLinks = showChecker
+    ? PRODUCT
+    : PRODUCT.filter((link) => link.href !== "/checker");
+  const compactLinks = showChecker
+    ? COMPACT_LINKS
+    : COMPACT_LINKS.filter((link) => link.href !== "/checker");
+
+  if (compact) {
+    return (
+      <footer className="relative border-t border-paper/[0.07]">
+        <div className="section-shell flex flex-col gap-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/" className="inline-flex items-center gap-2.5">
+            <TokenMark size={30} glow />
+            <span className="flex flex-col leading-none">
+              <span className="text-[11px] font-bold tracking-[0.22em] text-paper">
+                ELYZIUMA
+              </span>
+              <span className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.2em] text-brand/80">
+                raffles · elysium
+              </span>
+            </span>
+          </Link>
+
+          <nav
+            aria-label="Footer"
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[9px] uppercase tracking-[0.14em] text-paper-mute"
+          >
+            {compactLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target={link.href.startsWith("http") ? "_blank" : undefined}
+                rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+                className="transition hover:text-brand"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-paper-mute/70">
+            © 2026 Elyziuma · UI preview
+          </p>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer className="relative border-t border-paper/[0.07]">
       <div className="section-shell pb-10 pt-12 sm:pb-14 sm:pt-16">
@@ -51,7 +117,7 @@ export function SiteFooter() {
             </a>
           </div>
 
-          <FooterColumn title="Product" links={PRODUCT} />
+          <FooterColumn title="Product" links={productLinks} />
           <FooterColumn title="Elysium" links={ELYSIUM} />
 
           <div>
